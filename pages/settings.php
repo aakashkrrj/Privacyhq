@@ -1,7 +1,3 @@
-<?php
-require_once __DIR__ . '/../includes/auth.php';
-requireLogin();
-?>
 <!DOCTYPE html>
 
 <html class="light" lang="en"><head>
@@ -259,7 +255,7 @@ requireLogin();
 </div>
 <!-- Sign Out -->
 <div class="pt-lg">
-<button onclick="window.location.href='/governance/logout.php'" class="w-full flex items-center justify-center gap-sm bg-surface-container-lowest text-error border border-error/20 py-md rounded-xl font-body-lg hover:bg-error-container/20 transition-all active:scale-95">
+<button class="w-full flex items-center justify-center gap-sm bg-surface-container-lowest text-error border border-error/20 py-md rounded-xl font-body-lg hover:bg-error-container/20 transition-all active:scale-95">
 <span class="material-symbols-outlined" data-icon="logout">logout</span>
                     Sign Out
                 </button>

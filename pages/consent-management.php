@@ -1,14 +1,3 @@
-<?php
-require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../backend/services/ConsentService.php';
-requireLogin();
-
-$consentService = new ConsentService();
-$activeCount = $consentService->countActiveConsents();
-$expiredCount = $consentService->countExpiredConsents();
-$consentsResponse = $consentService->getConsents([], 1, 5); // Just 5 for UI display
-$recentConsents = $consentsResponse['data'];
-?>
 <!DOCTYPE html>
 
 <html class="light" lang="en"><head>
@@ -162,53 +151,80 @@ $recentConsents = $consentsResponse['data'];
 <div class="grid grid-cols-2 gap-md">
 <div class="bg-surface-container-lowest p-md rounded-xl border border-surface-variant consent-card-shadow">
 <p class="font-label-md text-label-md text-outline uppercase tracking-wider">Total Active</p>
-<p class="font-display text-display text-primary mt-base"><?= number_format($activeCount) ?></p>
+<p class="font-display text-display text-primary mt-base">1,284</p>
 </div>
 <div class="bg-surface-container-lowest p-md rounded-xl border border-surface-variant consent-card-shadow">
-<p class="font-label-md text-label-md text-outline uppercase tracking-wider">Total Expired</p>
-<p class="font-display text-display text-secondary mt-base"><?= number_format($expiredCount) ?></p>
+<p class="font-label-md text-label-md text-outline uppercase tracking-wider">Renewal Rate</p>
+<p class="font-display text-display text-secondary mt-base">92%</p>
 </div>
 </div>
 <!-- Consent Records List -->
 <section class="flex flex-col gap-stack-gap">
 <h2 class="font-title-md text-title-md text-on-surface px-base">Recent Records</h2>
-
-<?php if (empty($recentConsents)): ?>
-    <div class="p-md text-center text-outline">No consent records found.</div>
-<?php else: ?>
-    <?php foreach ($recentConsents as $c): ?>
-        <?php
-            $bg = 'bg-surface-variant';
-            $icon = 'history';
-            $badgeBg = 'bg-outline-variant/30 text-outline';
-            if ($c['status'] === 'Active') {
-                $bg = 'bg-primary-fixed';
-                $icon = 'person';
-                $badgeBg = 'bg-green-500/10 text-green-700';
-            } elseif ($c['status'] === 'Withdrawn') {
-                $bg = 'bg-secondary-fixed';
-                $icon = 'analytics';
-                $badgeBg = 'bg-red-500/10 text-red-700';
-            }
-        ?>
-        <div class="bg-surface-container-lowest p-md rounded-xl border border-surface-variant consent-card-shadow flex items-center justify-between hover:border-primary-fixed-dim transition-all cursor-pointer <?= $c['status'] === 'Expired' ? 'opacity-70' : '' ?>">
-            <div class="flex items-center gap-md">
-                <div class="w-10 h-10 rounded-full <?= $bg ?> flex items-center justify-center">
-                    <span class="material-symbols-outlined <?= str_replace('-fixed', '-on-fixed', str_replace('bg-', 'text-on-', $bg)) ?>" data-icon="<?= $icon ?>"><?= $icon ?></span>
-                </div>
-                <div>
-                    <p class="font-title-md text-body-md font-semibold text-on-surface"><?= htmlspecialchars($c['first_name'] . ' ' . $c['last_name']) ?></p>
-                    <p class="font-caption text-caption text-outline"><?= htmlspecialchars($c['purpose_name']) ?></p>
-                </div>
-            </div>
-            <div class="flex flex-col items-end gap-xs">
-                <span class="px-2 py-0.5 rounded-full <?= $badgeBg ?> text-[10px] font-bold uppercase tracking-tighter"><?= htmlspecialchars($c['status']) ?></span>
-                <p class="font-caption text-caption text-outline"><?= date('M d, Y', strtotime($c['created_at'])) ?></p>
-            </div>
-        </div>
-    <?php endforeach; ?>
-<?php endif; ?>
-
+<!-- Record Item 1 -->
+<div class="bg-surface-container-lowest p-md rounded-xl border border-surface-variant consent-card-shadow flex items-center justify-between hover:border-primary-fixed-dim transition-all cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-fixed" data-icon="person">person</span>
+</div>
+<div>
+<p class="font-title-md text-body-md font-semibold text-on-surface">Eleanor Shellstrop</p>
+<p class="font-caption text-caption text-outline">Marketing &amp; Newsletters</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-xs">
+<span class="px-2 py-0.5 rounded-full bg-green-500/10 text-green-700 text-[10px] font-bold uppercase tracking-tighter">Active</span>
+<p class="font-caption text-caption text-outline">Oct 24, 2023</p>
+</div>
+</div>
+<!-- Record Item 2 -->
+<div class="bg-surface-container-lowest p-md rounded-xl border border-surface-variant consent-card-shadow flex items-center justify-between hover:border-primary-fixed-dim transition-all cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-fixed" data-icon="analytics">analytics</span>
+</div>
+<div>
+<p class="font-title-md text-body-md font-semibold text-on-surface">Chidi Anagonye</p>
+<p class="font-caption text-caption text-outline">Behavioral Analytics</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-xs">
+<span class="px-2 py-0.5 rounded-full bg-red-500/10 text-red-700 text-[10px] font-bold uppercase tracking-tighter">Withdrawn</span>
+<p class="font-caption text-caption text-outline">Oct 22, 2023</p>
+</div>
+</div>
+<!-- Record Item 3 -->
+<div class="bg-surface-container-lowest p-md rounded-xl border border-surface-variant consent-card-shadow flex items-center justify-between hover:border-primary-fixed-dim transition-all cursor-pointer">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-on-tertiary-fixed" data-icon="cloud">cloud</span>
+</div>
+<div>
+<p class="font-title-md text-body-md font-semibold text-on-surface">Tahani Al-Jamil</p>
+<p class="font-caption text-caption text-outline">Third-party Cloud Storage</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-xs">
+<span class="px-2 py-0.5 rounded-full bg-green-500/10 text-green-700 text-[10px] font-bold uppercase tracking-tighter">Active</span>
+<p class="font-caption text-caption text-outline">Oct 20, 2023</p>
+</div>
+</div>
+<!-- Record Item 4 -->
+<div class="bg-surface-container-lowest p-md rounded-xl border border-surface-variant consent-card-shadow flex items-center justify-between hover:border-primary-fixed-dim transition-all cursor-pointer opacity-70">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-outline" data-icon="history">history</span>
+</div>
+<div>
+<p class="font-title-md text-body-md font-semibold text-on-surface">Jason Mendoza</p>
+<p class="font-caption text-caption text-outline">Customer Support Logs</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-xs">
+<span class="px-2 py-0.5 rounded-full bg-outline-variant/30 text-outline text-[10px] font-bold uppercase tracking-tighter">Expired</span>
+<p class="font-caption text-caption text-outline">Sep 15, 2023</p>
+</div>
+</div>
 </section>
 </main>
 <!-- FAB: Add Consent -->
