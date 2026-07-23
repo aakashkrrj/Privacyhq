@@ -1,367 +1,199 @@
 <?php
-require_once __DIR__ . '/../includes/auth.php';
-requireLogin();
-?>
-<!DOCTYPE html>
+// Ensure DB connection is loaded
+require_once __DIR__ . '/../includes/db.php';
 
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
-<title>Privacy Assessment | PrivacyHQ</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            "colors": {
-                    "on-surface-variant": "#404752",
-                    "on-secondary-container": "#003f6d",
-                    "secondary-fixed": "#d1e4ff",
-                    "outline": "#717783",
-                    "surface-variant": "#e3e2e1",
-                    "on-secondary": "#ffffff",
-                    "surface-dim": "#dadad9",
-                    "on-tertiary-fixed-variant": "#004881",
-                    "error": "#ba1a1a",
-                    "tertiary-fixed": "#d3e4ff",
-                    "secondary": "#0061a3",
-                    "on-secondary-fixed-variant": "#00497d",
-                    "surface": "#faf9f8",
-                    "on-primary-container": "#ffffff",
-                    "on-secondary-fixed": "#001d36",
-                    "tertiary-container": "#2679c9",
-                    "on-surface": "#1a1c1c",
-                    "surface-container": "#efeeed",
-                    "surface-container-lowest": "#ffffff",
-                    "surface-container-high": "#e9e8e7",
-                    "secondary-fixed-dim": "#9ecaff",
-                    "surface-bright": "#faf9f8",
-                    "on-background": "#1a1c1c",
-                    "error-container": "#ffdad6",
-                    "on-tertiary": "#ffffff",
-                    "background": "#faf9f8",
-                    "on-primary": "#ffffff",
-                    "inverse-surface": "#2f3130",
-                    "tertiary": "#0060a9",
-                    "on-tertiary-fixed": "#001c38",
-                    "primary-container": "#0078d4",
-                    "tertiary-fixed-dim": "#a2c9ff",
-                    "primary-fixed": "#d3e3ff",
-                    "secondary-container": "#5badff",
-                    "surface-tint": "#0060ab",
-                    "on-tertiary-container": "#ffffff",
-                    "on-primary-fixed": "#001c39",
-                    "primary": "#005faa",
-                    "primary-fixed-dim": "#a3c9ff",
-                    "inverse-primary": "#a3c9ff",
-                    "on-error-container": "#93000a",
-                    "on-primary-fixed-variant": "#004883",
-                    "surface-container-low": "#f4f3f2",
-                    "surface-container-highest": "#e3e2e1",
-                    "inverse-on-surface": "#f1f0ef",
-                    "on-error": "#ffffff",
-                    "outline-variant": "#c0c7d4"
-            },
-            "borderRadius": {
-                    "DEFAULT": "0.25rem",
-                    "lg": "0.5rem",
-                    "xl": "0.75rem",
-                    "full": "9999px"
-            },
-            "spacing": {
-                    "sm": "8px",
-                    "base": "4px",
-                    "stack-gap": "12px",
-                    "md": "16px",
-                    "xs": "4px",
-                    "container-padding": "16px",
-                    "lg": "24px",
-                    "xl": "32px"
-            },
-            "fontFamily": {
-                    "headline-lg-mobile": ["Inter"],
-                    "headline-lg": ["Inter"],
-                    "body-lg": ["Inter"],
-                    "display": ["Inter"],
-                    "title-md": ["Inter"],
-                    "body-md": ["Inter"],
-                    "caption": ["Inter"],
-                    "label-md": ["Inter"]
-            },
-            "fontSize": {
-                    "headline-lg-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                    "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                    "display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                    "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
-                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                    "caption": ["11px", {"lineHeight": "14px", "fontWeight": "400"}],
-                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}]
+// Fetch dynamic Assessment records
+$assessment_list = [];
+$total_assessments = 0;
+$high_risk_count = 0;
+$under_review_count = 0;
+
+if ($conn && !$conn->connect_error) {
+    $result = $conn->query("SELECT * FROM assessments ORDER BY id DESC");
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $assessment_list[] = $row;
+            $total_assessments++;
+            if ($row['risk_level'] === 'High') {
+                $high_risk_count++;
             }
-          },
-        },
-      }
-    </script>
-<style>
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .progress-ring__circle { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; }
-        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(237, 235, 233, 0.5); }
-        .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
-    </style>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
+            if ($row['status'] === 'Under Review') {
+                $under_review_count++;
+            }
+        }
     }
-  </style>
-  </head>
-<body class="bg-surface text-on-surface min-h-screen pb-24">
-<!-- TopAppBar -->
-<header class="fixed top-0 left-0 w-full bg-surface dark:bg-background shadow-sm flex justify-between items-center px-container-padding h-16 z-50">
-<div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="security">security</span>
-<h1 class="font-display text-display text-primary dark:text-primary-fixed-dim text-headline-lg-mobile">PrivacyHQ</h1>
-</div>
-<div class="flex items-center gap-md">
-<button class="hover:bg-surface-container-low p-2 rounded-full transition-colors">
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
-</button>
-<div class="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center overflow-hidden">
-<img class="w-full h-full object-cover" data-alt="A professional headshot of a corporate compliance officer in a modern bright office environment. The person is wearing smart business attire, looking directly at the camera with a confident and enabling expression. High-key lighting, soft shadows, and a clean Microsoft Fluent design aesthetic with a shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjWyT2gvFuYfJQ2HAOg6kCMiF__EeSEDSqUCbx3tSRicBCnBJrnAkFuk7LvZtuCM4C-tZA6GtPQJIqR2psEf75TkjkzxwfyV6owoFdcwJdrHnH3M8iVCBuycnTVXYC7lWvJk0cE52sj_MHYsrQNKHe0EsWx2PjKesasvzdVMo787xrPFMdACdOrjcf5YRmsRMgV2u9aJHXQhecix-yncQrYzM3xOT6-bS0mRE5i1b8YQ6YIC354wz-eo3tyPMoPp8qL2VKEa-6cOze"/>
-</div>
-</div>
-</header>
-<main class="pt-20 pb-32 px-container-padding max-w-4xl mx-auto space-y-lg">
-<!-- Header Section -->
-<section class="flex justify-between items-end">
-<div class="space-y-base">
-<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Privacy Assessments</h2>
-<p class="font-body-md text-body-md text-outline">Manage and track your DPIA workflows.</p>
-</div>
-<div class="hidden md:block">
-<button class="bg-primary-container text-on-primary-container px-lg py-sm rounded-xl font-label-md flex items-center gap-sm hover:opacity-90 transition-opacity">
-<span class="material-symbols-outlined" data-icon="add">add</span>
-                    New DPIA
-                </button>
-</div>
-</section>
-<!-- Stats Overview (Asymmetric Layout) -->
-<section class="grid grid-cols-12 gap-md">
-<div class="col-span-12 md:col-span-8 glass-card rounded-xl p-md flex items-center justify-between shadow-sm">
-<div class="space-y-base">
-<span class="font-label-md text-label-md text-outline uppercase tracking-wider">Overall Progress</span>
-<h3 class="font-headline-lg text-headline-lg text-primary">84% Compliant</h3>
-<p class="font-body-md text-body-md text-on-surface-variant">4 Assessments pending review this week.</p>
-</div>
-<div class="relative w-24 h-24">
-<svg class="w-full h-full" viewbox="0 0 100 100">
-<circle class="text-surface-container stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="10"></circle>
-<circle class="text-primary stroke-current progress-ring__circle" cx="50" cy="50" fill="transparent" r="40" stroke-linecap="round" stroke-width="10" style="stroke-dasharray: 251.2; stroke-dashoffset: 40.192;"></circle>
-</svg>
-<div class="absolute inset-0 flex items-center justify-center font-title-md text-primary">84%</div>
-</div>
-</div>
-<div class="col-span-12 md:col-span-4 bg-tertiary-container text-on-tertiary-container rounded-xl p-md flex flex-col justify-between shadow-sm">
-<span class="material-symbols-outlined text-3xl" data-icon="bolt">bolt</span>
-<div>
-<h4 class="font-title-md text-title-md">Quick Actions</h4>
-<p class="font-body-md text-body-md opacity-90">Resume last audit: HR Data Flow</p>
-</div>
-</div>
-</section>
-<!-- Active Assessments List -->
-<section class="space-y-md">
-<div class="flex items-center justify-between">
-<h3 class="font-title-md text-title-md text-on-surface">Active Assessments</h3>
-<button class="text-primary font-label-md flex items-center gap-xs">
-                    View All <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
-</button>
-</div>
-<div class="space-y-stack-gap">
-<!-- Assessment Card 1 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-<div class="flex items-start justify-between mb-md">
-<div class="flex items-center gap-md">
-<div class="relative w-12 h-12">
-<svg class="w-full h-full" viewbox="0 0 100 100">
-<circle class="text-surface-container stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="8"></circle>
-<circle class="text-secondary stroke-current progress-ring__circle" cx="50" cy="50" fill="transparent" r="40" stroke-linecap="round" stroke-width="8" style="stroke-dasharray: 251.2; stroke-dashoffset: 75.36;"></circle>
-</svg>
-<div class="absolute inset-0 flex items-center justify-center font-caption text-secondary">70%</div>
-</div>
-<div>
-<h4 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Q4 Marketing Audit</h4>
-<p class="font-body-md text-body-md text-outline">Customer Segmentation Engine</p>
-</div>
-</div>
-<span class="bg-error/10 text-error px-sm py-1 rounded-full font-label-md">High Risk</span>
-</div>
-<div class="grid grid-cols-2 gap-md pt-md border-t border-surface-container">
-<div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-outline text-lg" data-icon="person">person</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Sarah Jenkins</span>
-</div>
-<div class="flex items-center gap-sm justify-end">
-<span class="material-symbols-outlined text-outline text-lg" data-icon="calendar_today">calendar_today</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Oct 24, 2023</span>
-</div>
-</div>
-</div>
-<!-- Assessment Card 2 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-<div class="flex items-start justify-between mb-md">
-<div class="flex items-center gap-md">
-<div class="relative w-12 h-12">
-<svg class="w-full h-full" viewbox="0 0 100 100">
-<circle class="text-surface-container stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="8"></circle>
-<circle class="text-secondary stroke-current progress-ring__circle" cx="50" cy="50" fill="transparent" r="40" stroke-linecap="round" stroke-width="8" style="stroke-dasharray: 251.2; stroke-dashoffset: 188.4;"></circle>
-</svg>
-<div class="absolute inset-0 flex items-center justify-center font-caption text-secondary">25%</div>
-</div>
-<div>
-<h4 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Vendor Risk Review</h4>
-<p class="font-body-md text-body-md text-outline">CloudService Pro API</p>
-</div>
-</div>
-<span class="bg-secondary/10 text-secondary px-sm py-1 rounded-full font-label-md">Medium Risk</span>
-</div>
-<div class="grid grid-cols-2 gap-md pt-md border-t border-surface-container">
-<div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-outline text-lg" data-icon="person">person</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Marcus Thorne</span>
-</div>
-<div class="flex items-center gap-sm justify-end">
-<span class="material-symbols-outlined text-outline text-lg" data-icon="calendar_today">calendar_today</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Nov 02, 2023</span>
-</div>
-</div>
-</div>
-<!-- Assessment Card 3 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-<div class="flex items-start justify-between mb-md">
-<div class="flex items-center gap-md">
-<div class="relative w-12 h-12">
-<svg class="w-full h-full" viewbox="0 0 100 100">
-<circle class="text-surface-container stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="8"></circle>
-<circle class="text-secondary stroke-current progress-ring__circle" cx="50" cy="50" fill="transparent" r="40" stroke-linecap="round" stroke-width="8" style="stroke-dasharray: 251.2; stroke-dashoffset: 25.12;"></circle>
-</svg>
-<div class="absolute inset-0 flex items-center justify-center font-caption text-secondary">90%</div>
-</div>
-<div>
-<h4 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Internal Payroll Sync</h4>
-<p class="font-body-md text-body-md text-outline">HR Database Migration</p>
-</div>
-</div>
-<span class="bg-on-tertiary-fixed-variant/10 text-on-tertiary-fixed-variant px-sm py-1 rounded-full font-label-md">Low Risk</span>
-</div>
-<div class="grid grid-cols-2 gap-md pt-md border-t border-surface-container">
-<div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-outline text-lg" data-icon="person">person</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Elena Rodriguez</span>
-</div>
-<div class="flex items-center gap-sm justify-end">
-<span class="material-symbols-outlined text-outline text-lg" data-icon="calendar_today">calendar_today</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Oct 30, 2023</span>
-</div>
-</div>
-</div>
-</div>
-</section>
-</main>
-<!-- FAB for Start New Assessment (Mobile) -->
-<div class="md:hidden fixed bottom-20 right-6 z-40">
-<button class="w-14 h-14 bg-primary-container text-on-primary-container rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-transform">
-<span class="material-symbols-outlined text-2xl" data-icon="add">add</span>
-</button>
-</div>
-<!-- Bottom Navigation Bar -->
-<!-- Standard Bottom Navigation -->
-<nav class="fixed bottom-0 left-0 right-0 w-full z-50
-            bg-surface shadow-[0px_-2px_4px_rgba(0,0,0,0.04)]
-            flex justify-around items-center h-16 px-2">
+}
+?>
 
-    <!-- Dashboard -->
-    <a href="/governance/index.php"
-       class="nav-dashboard flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Privacy Impact Assessments (DPIA)</h1>
+            <p class="text-sm text-gray-500">Evaluate and track risk levels for high-risk data processing activities.</p>
+        </div>
+        <button onclick="openAssessmentModal()" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+            + New Assessment
+        </button>
+    </div>
 
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            dashboard
-        </span>
+    <!-- Summary Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="p-5 bg-white rounded-xl border border-gray-200 shadow-sm">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Assessments</span>
+            <div class="mt-2 text-3xl font-bold text-gray-900"><?= $total_assessments ?></div>
+        </div>
+        <div class="p-5 bg-white rounded-xl border border-gray-200 shadow-sm">
+            <span class="text-xs font-semibold uppercase tracking-wider text-amber-600">Under Review</span>
+            <div class="mt-2 text-3xl font-bold text-amber-600"><?= $under_review_count ?></div>
+        </div>
+        <div class="p-5 bg-white rounded-xl border border-gray-200 shadow-sm">
+            <span class="text-xs font-semibold uppercase tracking-wider text-red-600">High Risk Items</span>
+            <div class="mt-2 text-3xl font-bold text-red-600"><?= $high_risk_count ?></div>
+        </div>
+    </div>
 
-        <span class="font-label-md text-label-md">Dashboard</span>
-    </a>
+    <!-- Assessments Table -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="font-semibold text-gray-700">Active DPIAs</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-200">
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Title</th>
+                        <th class="p-4">Assessor</th>
+                        <th class="p-4">Risk Level</th>
+                        <th class="p-4">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 text-sm">
+                    <?php if (empty($assessment_list)): ?>
+                        <tr>
+                            <td colspan="5" class="p-6 text-center text-gray-500">No assessments created yet.</td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($assessment_list as $item): ?>
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="p-4 font-mono text-gray-500">#<?= htmlspecialchars($item['id']) ?></td>
+                                <td class="p-4 font-medium text-gray-900"><?= htmlspecialchars($item['title']) ?></td>
+                                <td class="p-4 text-gray-600"><?= htmlspecialchars($item['assessor']) ?></td>
+                                <td class="p-4">
+                                    <?php
+                                    $riskClass = match($item['risk_level']) {
+                                        'High' => 'bg-red-50 text-red-700 border-red-200',
+                                        'Medium' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                        default => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    };
+                                    ?>
+                                    <span class="px-2.5 py-1 text-xs font-medium rounded-full border <?= $riskClass ?>">
+                                        <?= htmlspecialchars($item['risk_level']) ?>
+                                    </span>
+                                </td>
+                                <td class="p-4">
+                                    <?php
+                                    $statusClass = match($item['status']) {
+                                        'Approved' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                        'Under Review' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                        default => 'bg-gray-50 text-gray-700 border-gray-200',
+                                    };
+                                    ?>
+                                    <span class="px-2.5 py-1 text-xs font-medium rounded-full border <?= $statusClass ?>">
+                                        <?= htmlspecialchars($item['status']) ?>
+                                    </span>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-    <!-- Consent -->
-    <a href="/governance/pages/consent-management.php"
-       class="nav-consent flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
+<!-- Modal: New Assessment -->
+<div id="assessmentModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="font-bold text-gray-900">Create Privacy Assessment</h3>
+            <button onclick="closeAssessmentModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+        </div>
+        <form id="assessmentForm" class="p-4 space-y-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 uppercase mb-1">Assessment Title</label>
+                <input type="text" name="title" required class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. AI Customer Service Integration">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 uppercase mb-1">Assessor Email / Name</label>
+                <input type="text" name="assessor" required class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="jane@company.com">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 uppercase mb-1">Risk Level</label>
+                    <select name="risk_level" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 uppercase mb-1">Status</label>
+                    <select name="status" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="Draft">Draft</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="Approved">Approved</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeAssessmentModal()" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Save Assessment</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            verified_user
-        </span>
-
-        <span class="font-label-md text-label-md">Consent</span>
-    </a>
-
-    <!-- Requests -->
-    <a href="/governance/pages/data-requests.php"
-       class="nav-requests flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
-
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            gavel
-        </span>
-
-        <span class="font-label-md text-label-md">Requests</span>
-    </a>
-
-    <!-- Assess -->
-    <a href="/governance/pages/assessments.php"
-       class="nav-assess flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
-
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            assignment_turned_in
-        </span>
-
-        <span class="font-label-md text-label-md">Assess</span>
-    </a>
-
-    <!-- More -->
-    <a href="/governance/pages/more.php"
-       class="nav-more flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
-
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            menu
-        </span>
-
-        <span class="font-label-md text-label-md">More</span>
-    </a>
-
-</nav>
 <script>
-        // Micro-interaction for cards
-        document.querySelectorAll('.group').forEach(card => {
-            card.addEventListener('mousedown', () => {
-                card.style.transform = 'scale(0.98)';
-            });
-            card.addEventListener('mouseup', () => {
-                card.style.transform = 'scale(1)';
-            });
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'scale(1)';
-            });
-        });
-    </script>
-</body></html>
+function openAssessmentModal() {
+    document.getElementById('assessmentModal').classList.remove('hidden');
+}
+
+function closeAssessmentModal() {
+    document.getElementById('assessmentModal').classList.add('hidden');
+    document.getElementById('assessmentForm').reset();
+}
+
+document.getElementById('assessmentForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    fetch('api/save-assessment.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(async response => {
+        const isJson = response.headers.get('content-type')?.includes('application/json');
+        const data = isJson ? await response.json() : null;
+
+        if (!response.ok) {
+            const error = (data && data.message) || response.statusText;
+            return Promise.reject(error);
+        }
+        return data;
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            closeAssessmentModal();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        alert('Failed to save assessment: ' + error);
+    });
+});
+</script>
