@@ -1,6 +1,28 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../backend/services/AssessmentService.php';
 requireLogin();
+
+$service = new AssessmentService();
+$stats = $service->getDashboardStats();
+
+// We get the active assessments by filtering out closed ones (assuming closed is not what we want to see here)
+// For simplicity we just fetch the latest active ones
+$assessments = $service->getAssessments([], 1, 50, 'due_date', 'ASC');
+
+/**
+ * Helper to determine risk badge theme
+ */
+function getRiskTheme($riskName) {
+    $riskName = strtolower($riskName ?? '');
+    if (strpos($riskName, 'high') !== false || strpos($riskName, 'critical') !== false) {
+        return ['bg' => 'bg-error/10', 'text' => 'text-error'];
+    } elseif (strpos($riskName, 'medium') !== false) {
+        return ['bg' => 'bg-secondary/10', 'text' => 'text-secondary'];
+    } else {
+        return ['bg' => 'bg-on-tertiary-fixed-variant/10', 'text' => 'text-on-tertiary-fixed-variant'];
+    }
+}
 ?>
 <!DOCTYPE html>
 
@@ -154,15 +176,15 @@ requireLogin();
 <div class="col-span-12 md:col-span-8 glass-card rounded-xl p-md flex items-center justify-between shadow-sm">
 <div class="space-y-base">
 <span class="font-label-md text-label-md text-outline uppercase tracking-wider">Overall Progress</span>
-<h3 class="font-headline-lg text-headline-lg text-primary">84% Compliant</h3>
-<p class="font-body-md text-body-md text-on-surface-variant">4 Assessments pending review this week.</p>
+<h3 class="font-headline-lg text-headline-lg text-primary"><?= htmlspecialchars($stats['compliance_percentage']) ?>% Compliant</h3>
+<p class="font-body-md text-body-md text-on-surface-variant"><?= htmlspecialchars($stats['pending_reviews']) ?> Assessments pending review.</p>
 </div>
 <div class="relative w-24 h-24">
 <svg class="w-full h-full" viewbox="0 0 100 100">
 <circle class="text-surface-container stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="10"></circle>
-<circle class="text-primary stroke-current progress-ring__circle" cx="50" cy="50" fill="transparent" r="40" stroke-linecap="round" stroke-width="10" style="stroke-dasharray: 251.2; stroke-dashoffset: 40.192;"></circle>
+<circle class="text-primary stroke-current progress-ring__circle" cx="50" cy="50" fill="transparent" r="40" stroke-linecap="round" stroke-width="10" style="stroke-dasharray: 251.2; stroke-dashoffset: <?= 251.2 - (251.2 * ($stats['compliance_percentage'] / 100)) ?>;"></circle>
 </svg>
-<div class="absolute inset-0 flex items-center justify-center font-title-md text-primary">84%</div>
+<div class="absolute inset-0 flex items-center justify-center font-title-md text-primary"><?= htmlspecialchars($stats['compliance_percentage']) ?>%</div>
 </div>
 </div>
 <div class="col-span-12 md:col-span-4 bg-tertiary-container text-on-tertiary-container rounded-xl p-md flex flex-col justify-between shadow-sm">
@@ -182,93 +204,46 @@ requireLogin();
 </button>
 </div>
 <div class="space-y-stack-gap">
-<!-- Assessment Card 1 -->
+<?php foreach ($assessments as $assessment): 
+    $progress = $assessment['progress_percentage'];
+    $dashOffset = 251.2 - (251.2 * ($progress / 100));
+    $riskTheme = getRiskTheme($assessment['risk_level_name']);
+    $owner = $assessment['owner_name'] ?: 'Unassigned';
+    $dueDate = $assessment['due_date'] ? date('M d, Y', strtotime($assessment['due_date'])) : 'N/A';
+?>
+<!-- Assessment Card -->
 <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
 <div class="flex items-start justify-between mb-md">
 <div class="flex items-center gap-md">
 <div class="relative w-12 h-12">
 <svg class="w-full h-full" viewbox="0 0 100 100">
 <circle class="text-surface-container stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="8"></circle>
-<circle class="text-secondary stroke-current progress-ring__circle" cx="50" cy="50" fill="transparent" r="40" stroke-linecap="round" stroke-width="8" style="stroke-dasharray: 251.2; stroke-dashoffset: 75.36;"></circle>
+<circle class="text-secondary stroke-current progress-ring__circle" cx="50" cy="50" fill="transparent" r="40" stroke-linecap="round" stroke-width="8" style="stroke-dasharray: 251.2; stroke-dashoffset: <?= $dashOffset ?>;"></circle>
 </svg>
-<div class="absolute inset-0 flex items-center justify-center font-caption text-secondary">70%</div>
+<div class="absolute inset-0 flex items-center justify-center font-caption text-secondary"><?= $progress ?>%</div>
 </div>
 <div>
-<h4 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Q4 Marketing Audit</h4>
-<p class="font-body-md text-body-md text-outline">Customer Segmentation Engine</p>
+<h4 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors"><?= htmlspecialchars($assessment['title']) ?></h4>
+<p class="font-body-md text-body-md text-outline"><?= htmlspecialchars($assessment['activity_name']) ?></p>
 </div>
 </div>
-<span class="bg-error/10 text-error px-sm py-1 rounded-full font-label-md">High Risk</span>
+<span class="<?= $riskTheme['bg'] ?> <?= $riskTheme['text'] ?> px-sm py-1 rounded-full font-label-md"><?= htmlspecialchars($assessment['risk_level_name'] ?: 'Unassessed') ?></span>
 </div>
 <div class="grid grid-cols-2 gap-md pt-md border-t border-surface-container">
 <div class="flex items-center gap-sm">
 <span class="material-symbols-outlined text-outline text-lg" data-icon="person">person</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Sarah Jenkins</span>
+<span class="font-body-md text-body-md text-on-surface-variant"><?= htmlspecialchars($owner) ?></span>
 </div>
 <div class="flex items-center gap-sm justify-end">
 <span class="material-symbols-outlined text-outline text-lg" data-icon="calendar_today">calendar_today</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Oct 24, 2023</span>
+<span class="font-body-md text-body-md text-on-surface-variant"><?= htmlspecialchars($dueDate) ?></span>
 </div>
 </div>
 </div>
-<!-- Assessment Card 2 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-<div class="flex items-start justify-between mb-md">
-<div class="flex items-center gap-md">
-<div class="relative w-12 h-12">
-<svg class="w-full h-full" viewbox="0 0 100 100">
-<circle class="text-surface-container stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="8"></circle>
-<circle class="text-secondary stroke-current progress-ring__circle" cx="50" cy="50" fill="transparent" r="40" stroke-linecap="round" stroke-width="8" style="stroke-dasharray: 251.2; stroke-dashoffset: 188.4;"></circle>
-</svg>
-<div class="absolute inset-0 flex items-center justify-center font-caption text-secondary">25%</div>
-</div>
-<div>
-<h4 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Vendor Risk Review</h4>
-<p class="font-body-md text-body-md text-outline">CloudService Pro API</p>
-</div>
-</div>
-<span class="bg-secondary/10 text-secondary px-sm py-1 rounded-full font-label-md">Medium Risk</span>
-</div>
-<div class="grid grid-cols-2 gap-md pt-md border-t border-surface-container">
-<div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-outline text-lg" data-icon="person">person</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Marcus Thorne</span>
-</div>
-<div class="flex items-center gap-sm justify-end">
-<span class="material-symbols-outlined text-outline text-lg" data-icon="calendar_today">calendar_today</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Nov 02, 2023</span>
-</div>
-</div>
-</div>
-<!-- Assessment Card 3 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-<div class="flex items-start justify-between mb-md">
-<div class="flex items-center gap-md">
-<div class="relative w-12 h-12">
-<svg class="w-full h-full" viewbox="0 0 100 100">
-<circle class="text-surface-container stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="8"></circle>
-<circle class="text-secondary stroke-current progress-ring__circle" cx="50" cy="50" fill="transparent" r="40" stroke-linecap="round" stroke-width="8" style="stroke-dasharray: 251.2; stroke-dashoffset: 25.12;"></circle>
-</svg>
-<div class="absolute inset-0 flex items-center justify-center font-caption text-secondary">90%</div>
-</div>
-<div>
-<h4 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Internal Payroll Sync</h4>
-<p class="font-body-md text-body-md text-outline">HR Database Migration</p>
-</div>
-</div>
-<span class="bg-on-tertiary-fixed-variant/10 text-on-tertiary-fixed-variant px-sm py-1 rounded-full font-label-md">Low Risk</span>
-</div>
-<div class="grid grid-cols-2 gap-md pt-md border-t border-surface-container">
-<div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-outline text-lg" data-icon="person">person</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Elena Rodriguez</span>
-</div>
-<div class="flex items-center gap-sm justify-end">
-<span class="material-symbols-outlined text-outline text-lg" data-icon="calendar_today">calendar_today</span>
-<span class="font-body-md text-body-md text-on-surface-variant">Oct 30, 2023</span>
-</div>
-</div>
-</div>
+<?php endforeach; ?>
+<?php if (empty($assessments)): ?>
+<div class="text-center py-lg text-outline">No active assessments found.</div>
+<?php endif; ?>
 </div>
 </section>
 </main>

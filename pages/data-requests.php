@@ -1,6 +1,46 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../backend/services/RequestService.php';
 requireLogin();
+
+$service = new RequestService();
+
+// Fetch metrics
+$activeCount = $service->countRequests(['status' => 'open']);
+$activeCount += $service->countRequests(['status' => 'processing']);
+$activeCount += $service->countRequests(['status' => 'verifying']);
+
+$criticalCount = $service->countRequests(['priority' => RequestService::PRIORITY_URGENT]);
+$criticalCount += $service->countRequests(['priority' => RequestService::PRIORITY_HIGH]);
+
+// Get List
+$requests = $service->getRequests([], 1, 50, 'due_date', 'ASC');
+
+/**
+ * Helper to determine card color theme based on type/priority
+ */
+function getThemeByPriority($priority, $type) {
+    if ($priority === RequestService::PRIORITY_URGENT) return ['bg' => 'bg-error/10', 'text' => 'text-error', 'bar' => 'bg-error', 'btn' => 'bg-error', 'border' => 'border-error'];
+    if ($type === RequestService::TYPE_ERASURE) return ['bg' => 'bg-error/10', 'text' => 'text-error', 'bar' => 'bg-error', 'btn' => 'bg-error', 'border' => 'border-error'];
+    if ($type === RequestService::TYPE_PORTABILITY) return ['bg' => 'bg-secondary/10', 'text' => 'text-secondary', 'bar' => 'bg-tertiary', 'btn' => 'bg-secondary', 'border' => 'border-secondary'];
+    return ['bg' => 'bg-primary/10', 'text' => 'text-primary', 'bar' => 'bg-primary', 'btn' => 'bg-primary', 'border' => 'border-primary'];
+}
+
+/**
+ * Helper to calculate days left
+ */
+function getDaysLeft($dueDate) {
+    if (!$dueDate) return 'N/A';
+    $now = new DateTime();
+    $due = new DateTime($dueDate);
+    $diff = $now->diff($due);
+    if ($diff->invert && $diff->days > 0) {
+        return $diff->days . ' Days Overdue';
+    } elseif ($diff->days == 0) {
+        return 'Today';
+    }
+    return $diff->days . ' Days Left';
+}
 ?>
 <!DOCTYPE html>
 
@@ -167,11 +207,11 @@ requireLogin();
 <div class="flex gap-sm">
 <div class="bg-surface-container p-sm px-md rounded-lg flex items-center gap-sm">
 <span class="w-2 h-2 rounded-full bg-error"></span>
-<span class="font-label-md text-label-md">12 Critical</span>
+<span class="font-label-md text-label-md"><?= $criticalCount ?> Critical</span>
 </div>
 <div class="bg-surface-container p-sm px-md rounded-lg flex items-center gap-sm">
 <span class="w-2 h-2 rounded-full bg-primary"></span>
-<span class="font-label-md text-label-md">24 Active</span>
+<span class="font-label-md text-label-md"><?= $activeCount ?> Active</span>
 </div>
 </div>
 </div>
@@ -202,166 +242,72 @@ requireLogin();
 </div>
 <!-- Request List (Asymmetric Bento/Card Layout) -->
 <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-md mb-24">
-<!-- Card 1: Critical Deletion -->
-<div class="glass-card rounded-xl p-md flex flex-col shadow-sm border border-outline-variant hover:shadow-md transition-all">
-<div class="flex justify-between items-start mb-md">
-<div>
-<span class="inline-block font-label-md text-label-md bg-error/10 text-error px-sm py-0.5 rounded-full mb-xs">Deletion</span>
-<h3 class="font-title-md text-title-md text-on-surface">REQ-402</h3>
-<p class="font-body-md text-body-md text-on-surface-variant truncate">sarah.j@enterprise.com</p>
+<?php foreach ($requests as $req): 
+    $theme = getThemeByPriority($req['priority'], $req['request_type']);
+    $typeLabel = RequestService::getTypeLabel($req['request_type']);
+    $statusLabel = RequestService::getStatusLabel($req['status']);
+    $daysLeft = getDaysLeft($req['due_date']);
+    $dueStr = $req['due_date'] ? date('M d', strtotime($req['due_date'])) : 'N/A';
+    $assignee = $req['assigned_to_name'] ?: 'Unassigned';
+    $assigneeInitials = strtoupper(substr($assignee, 0, 2));
+    $progress = (int)$req['progress_percentage'];
+    
+    // Adjust layout for urgent
+    $colSpan = ($req['priority'] === RequestService::PRIORITY_URGENT) ? 'lg:col-span-1 xl:col-span-2' : '';
+?>
+<div class="glass-card rounded-xl p-md flex flex-col shadow-sm border border-outline-variant hover:shadow-md transition-all <?= $colSpan ?>">
+    
+    <div class="flex <?= $colSpan ? 'flex-col md:flex-row md:items-center' : '' ?> justify-between items-start gap-md mb-md">
+        <div>
+            <span class="inline-block font-label-md text-label-md <?= $theme['bg'] ?> <?= $theme['text'] ?> px-sm py-0.5 rounded-full mb-xs">
+                <?= $colSpan ? 'Priority: Urgent' : htmlspecialchars($typeLabel) ?>
+            </span>
+            <h3 class="font-title-md text-title-md text-on-surface"><?= htmlspecialchars($req['request_id_code']) ?></h3>
+            <p class="font-body-md text-body-md text-on-surface-variant truncate"><?= htmlspecialchars($req['user_email']) ?></p>
+        </div>
+        <div class="flex flex-col items-end">
+            <?php if ($req['status'] === RequestService::STATUS_COMPLETED): ?>
+                <span class="material-symbols-outlined text-tertiary" data-icon="check_circle">check_circle</span>
+                <span class="font-caption text-caption text-outline">Done</span>
+            <?php else: ?>
+                <span class="font-label-md text-label-md <?= ($req['priority'] == 'Urgent' || strpos($daysLeft, 'Overdue') !== false) ? 'text-error' : 'text-on-surface-variant' ?> font-bold"><?= $daysLeft ?></span>
+                <span class="font-caption text-caption text-outline">Due: <?= $dueStr ?></span>
+            <?php endif; ?>
+        </div>
+    </div>
+    
+    <div class="mt-auto space-y-sm">
+        <div class="flex justify-between items-center mb-xs">
+            <span class="font-label-md text-label-md text-on-surface-variant"><?= htmlspecialchars($statusLabel) ?></span>
+            <span class="font-label-md text-label-md font-bold"><?= $progress ?>%</span>
+        </div>
+        <div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+            <div class="<?= $theme['bar'] ?> h-full rounded-full transition-all duration-1000" style="width: <?= $progress ?>%"></div>
+        </div>
+    </div>
+    
+    <div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
+        <?php if ($colSpan): ?>
+            <div class="flex items-center gap-sm">
+                <span class="material-symbols-outlined text-error" data-icon="warning">warning</span>
+                <span class="font-caption text-caption text-error font-semibold">Immediate action required</span>
+            </div>
+            <button class="bg-error text-white px-lg py-1.5 rounded-lg font-label-md hover:opacity-90 transition-opacity">
+                Escalate
+            </button>
+        <?php else: ?>
+            <div class="flex -space-x-2">
+                <div class="w-6 h-6 rounded-full border-2 border-white bg-primary-container flex items-center justify-center text-[10px] font-bold text-white">
+                    <?= htmlspecialchars($assigneeInitials) ?>
+                </div>
+            </div>
+            <button class="text-primary font-label-md text-label-md flex items-center gap-xs">
+                Details <span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+            </button>
+        <?php endif; ?>
+    </div>
 </div>
-<div class="flex flex-col items-end">
-<span class="font-label-md text-label-md text-error font-bold">2 Days Left</span>
-<span class="font-caption text-caption text-outline">Due: Oct 24</span>
-</div>
-</div>
-<div class="mt-auto">
-<div class="flex justify-between items-center mb-xs">
-<span class="font-label-md text-label-md text-on-surface-variant">In Progress</span>
-<span class="font-label-md text-label-md font-bold">85%</span>
-</div>
-<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-<div class="bg-error h-full rounded-full transition-all duration-1000" style="width: 85%"></div>
-</div>
-</div>
-<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full border-2 border-white bg-secondary-container flex items-center justify-center text-[10px] font-bold">JD</div>
-<div class="w-6 h-6 rounded-full border-2 border-white bg-primary-fixed flex items-center justify-center text-[10px] font-bold text-primary">KL</div>
-</div>
-<button class="text-primary font-label-md text-label-md flex items-center gap-xs">
-                        Details <span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
-</button>
-</div>
-</div>
-<!-- Card 2: Medium Access -->
-<div class="glass-card rounded-xl p-md flex flex-col shadow-sm border border-outline-variant hover:shadow-md transition-all">
-<div class="flex justify-between items-start mb-md">
-<div>
-<span class="inline-block font-label-md text-label-md bg-primary/10 text-primary px-sm py-0.5 rounded-full mb-xs">Access</span>
-<h3 class="font-title-md text-title-md text-on-surface">REQ-405</h3>
-<p class="font-body-md text-body-md text-on-surface-variant truncate">marcus.k@global.io</p>
-</div>
-<div class="flex flex-col items-end">
-<span class="font-label-md text-label-md text-on-surface-variant">14 Days Left</span>
-<span class="font-caption text-caption text-outline">Due: Nov 05</span>
-</div>
-</div>
-<div class="mt-auto">
-<div class="flex justify-between items-center mb-xs">
-<span class="font-label-md text-label-md text-on-surface-variant">Pending</span>
-<span class="font-label-md text-label-md font-bold">12%</span>
-</div>
-<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-<div class="bg-primary h-full rounded-full transition-all duration-1000" style="width: 12%"></div>
-</div>
-</div>
-<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full border-2 border-white bg-tertiary-fixed flex items-center justify-center text-[10px] font-bold text-tertiary">AB</div>
-</div>
-<button class="text-primary font-label-md text-label-md flex items-center gap-xs">
-                        Details <span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
-</button>
-</div>
-</div>
-<!-- Card 3: Completed Portability -->
-<div class="glass-card rounded-xl p-md flex flex-col shadow-sm border border-outline-variant hover:shadow-md transition-all">
-<div class="flex justify-between items-start mb-md">
-<div>
-<span class="inline-block font-label-md text-label-md bg-secondary/10 text-secondary px-sm py-0.5 rounded-full mb-xs">Portability</span>
-<h3 class="font-title-md text-title-md text-on-surface">REQ-398</h3>
-<p class="font-body-md text-body-md text-on-surface-variant truncate">linda.v@corp.com</p>
-</div>
-<div class="flex flex-col items-end">
-<span class="material-symbols-outlined text-tertiary" data-icon="check_circle">check_circle</span>
-<span class="font-caption text-caption text-outline">Done Oct 20</span>
-</div>
-</div>
-<div class="mt-auto">
-<div class="flex justify-between items-center mb-xs">
-<span class="font-label-md text-label-md text-tertiary">Completed</span>
-<span class="font-label-md text-label-md font-bold">100%</span>
-</div>
-<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-<div class="bg-tertiary h-full rounded-full" style="width: 100%"></div>
-</div>
-</div>
-<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full border-2 border-white bg-on-tertiary-fixed-variant flex items-center justify-center text-[10px] font-bold text-white">SYS</div>
-</div>
-<button class="text-primary font-label-md text-label-md flex items-center gap-xs">
-                        Archive <span class="material-symbols-outlined text-[16px]" data-icon="archive">archive</span>
-</button>
-</div>
-</div>
-<!-- Card 4: Access -->
-<div class="glass-card rounded-xl p-md flex flex-col shadow-sm border border-outline-variant hover:shadow-md transition-all">
-<div class="flex justify-between items-start mb-md">
-<div>
-<span class="inline-block font-label-md text-label-md bg-primary/10 text-primary px-sm py-0.5 rounded-full mb-xs">Access</span>
-<h3 class="font-title-md text-title-md text-on-surface">REQ-410</h3>
-<p class="font-body-md text-body-md text-on-surface-variant truncate">robert.chen@tech.net</p>
-</div>
-<div class="flex flex-col items-end">
-<span class="font-label-md text-label-md text-on-surface-variant">28 Days Left</span>
-<span class="font-caption text-caption text-outline">Due: Nov 19</span>
-</div>
-</div>
-<div class="mt-auto">
-<div class="flex justify-between items-center mb-xs">
-<span class="font-label-md text-label-md text-on-surface-variant">Assigned</span>
-<span class="font-label-md text-label-md font-bold">5%</span>
-</div>
-<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-<div class="bg-primary h-full rounded-full transition-all duration-1000" style="width: 5%"></div>
-</div>
-</div>
-<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full border-2 border-white bg-primary-container flex items-center justify-center text-[10px] font-bold text-white">RC</div>
-</div>
-<button class="text-primary font-label-md text-label-md flex items-center gap-xs">
-                        Details <span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
-</button>
-</div>
-</div>
-<!-- Card 5: Critical Access -->
-<div class="glass-card rounded-xl p-md flex flex-col shadow-sm border border-outline-variant hover:shadow-md transition-all lg:col-span-1 xl:col-span-2">
-<div class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-md">
-<div>
-<span class="inline-block font-label-md text-label-md bg-error/10 text-error px-sm py-0.5 rounded-full mb-xs">Priority: Urgent</span>
-<h3 class="font-title-md text-title-md text-on-surface">REQ-395 (Regulatory escalation)</h3>
-<p class="font-body-md text-body-md text-on-surface-variant">legal-team@partner.com</p>
-</div>
-<div class="flex flex-col items-end">
-<span class="font-label-md text-label-md text-error font-bold">Today</span>
-<span class="font-caption text-caption text-outline text-right">Awaiting Legal Clearance</span>
-</div>
-</div>
-<div class="space-y-sm">
-<div class="flex justify-between items-center">
-<span class="font-label-md text-label-md text-on-surface-variant">Final Verification</span>
-<span class="font-label-md text-label-md font-bold">94%</span>
-</div>
-<div class="w-full bg-surface-container rounded-full h-3 overflow-hidden flex gap-1 p-0.5">
-<div class="bg-error h-full rounded-l-full" style="width: 30%"></div>
-<div class="bg-error h-full" style="width: 30%"></div>
-<div class="bg-error h-full" style="width: 30%"></div>
-<div class="bg-surface-variant h-full rounded-r-full" style="width: 10%"></div>
-</div>
-</div>
-<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
-<div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-error" data-icon="warning">warning</span>
-<span class="font-caption text-caption text-error font-semibold">Immediate action required</span>
-</div>
-<button class="bg-error text-white px-lg py-1.5 rounded-lg font-label-md hover:opacity-90 transition-opacity">
-                        Escalate
-                    </button>
-</div>
-</div>
+<?php endforeach; ?>
 </div>
 </main>
 <!-- Bottom Nav Bar (Mobile) -->

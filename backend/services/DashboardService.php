@@ -47,26 +47,11 @@ class DashboardService {
         ];
     }
 
-    /**
-     * Get overall compliance scores.
-     *
-     * @return array
-     */
     public function getComplianceOverview(): array {
-        // Privacy Score: We don't have completion_percentage in privacy_assessments. 
-        // We will mock this or return 100 based on completed assessments ratio.
-        $sql = "SELECT 
-                    COUNT(*) as total_assessments,
-                    SUM(CASE WHEN s.status_name = :approved THEN 1 ELSE 0 END) as approved_assessments
-                FROM privacy_assessments pa
-                JOIN assessment_statuses s ON pa.status_id = s.id";
-        
-        $result = $this->db->fetchOne($sql, ['approved' => self::ASSESSMENT_STATUS_APPROVED]);
-        
-        $total = (int)($result['total_assessments'] ?? 0);
-        $approved = (int)($result['approved_assessments'] ?? 0);
-        
-        $dpdpScore = $total > 0 ? round(($approved / $total) * 100, 1) : 100;
+        require_once __DIR__ . '/AssessmentService.php';
+        $assessmentService = new AssessmentService();
+        $stats = $assessmentService->getDashboardStats();
+        $dpdpScore = $stats['compliance_percentage'];
         
         // Let's use average vendor risk for Privacy Score inverted
         $vendorRes = $this->db->fetchOne("SELECT AVG(risk_score) as avg_risk FROM vendor_assessments");
@@ -119,13 +104,22 @@ class DashboardService {
      * @return array
      */
     public function getRecentAssessments(int $limit = 5): array {
-        $limit = max(1, $limit);
-        $sql = "SELECT pa.title, 'N/A' as risk_level, s.status_name as status, 100 as completion_percentage, pa.created_at 
-                FROM privacy_assessments pa
-                JOIN assessment_statuses s ON pa.status_id = s.id
-                ORDER BY pa.created_at DESC LIMIT $limit";
-        $result = $this->db->fetchAll($sql);
-        return $result ?: [];
+        require_once __DIR__ . '/AssessmentService.php';
+        $assessmentService = new AssessmentService();
+        $results = $assessmentService->getAssessments([], 1, $limit, 'created_at', 'DESC');
+        
+        // Map to what the dashboard expects
+        $mapped = [];
+        foreach ($results as $row) {
+            $mapped[] = [
+                'title' => $row['title'],
+                'risk_level' => $row['risk_level_name'] ?? 'N/A',
+                'status' => $row['status_name'],
+                'completion_percentage' => $row['progress_percentage'],
+                'created_at' => $row['created_at']
+            ];
+        }
+        return $mapped;
     }
 
     /**
