@@ -26,7 +26,209 @@ if (isset($conn) && !$conn->connect_error) {
             </button>
         </div>
     </div>
+<!-- ================= INCIDENT KPI DASHBOARD ================= -->
 
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-md">
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+        <p class="text-body-sm text-outline">Total Incidents</p>
+        <h2 class="text-display-small font-semibold text-primary mt-xs">
+            <?= count($incidents) ?>
+        </h2>
+        <p class="text-body-sm text-outline mt-xs">
+            Logged incidents
+        </p>
+    </div>
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+        <p class="text-body-sm text-outline">Open Incidents</p>
+        <h2 class="text-display-small font-semibold text-error mt-xs">
+            8
+        </h2>
+        <p class="text-body-sm text-outline mt-xs">
+            Awaiting resolution
+        </p>
+    </div>
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+        <p class="text-body-sm text-outline">Resolved</p>
+        <h2 class="text-display-small font-semibold text-secondary mt-xs">
+            27
+        </h2>
+        <p class="text-body-sm text-outline mt-xs">
+            Successfully closed
+        </p>
+    </div>
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+        <p class="text-body-sm text-outline">Critical Incidents</p>
+        <h2 class="text-display-small font-semibold text-error mt-xs">
+            3
+        </h2>
+        <p class="text-body-sm text-outline mt-xs">
+            Highest priority
+        </p>
+    </div>
+
+</div>
+
+<!-- ================= SEARCH & FILTER ================= -->
+
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+
+    <h2 class="text-title-medium font-semibold mb-md">
+        Search & Filter Incidents
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-md">
+
+        <input
+            type="text"
+            placeholder="Search Incident..."
+            class="rounded-lg border-outline-variant bg-surface text-on-surface">
+
+        <select class="rounded-lg border-outline-variant bg-surface">
+
+            <option>All Severity</option>
+            <option>Critical</option>
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+
+        </select>
+
+        <select class="rounded-lg border-outline-variant bg-surface">
+
+            <option>All Status</option>
+            <option>Open</option>
+            <option>Resolved</option>
+
+        </select>
+
+        <input
+            type="date"
+            class="rounded-lg border-outline-variant bg-surface">
+
+        <button
+            class="bg-primary text-on-primary rounded-lg hover:opacity-90">
+
+            Search
+
+        </button>
+
+    </div>
+
+</div>
+
+<!-- ================= INCIDENT ANALYTICS ================= -->
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-md">
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+
+        <h2 class="text-title-medium font-semibold mb-md">
+            Incident Distribution
+        </h2>
+
+        <div class="space-y-md">
+
+            <div>
+
+                <div class="flex justify-between text-body-sm mb-xs">
+                    <span>Critical</span>
+                    <span>22%</span>
+                </div>
+
+                <div class="w-full h-2 rounded-full bg-surface-container-high">
+                    <div class="h-2 rounded-full bg-error" style="width:22%"></div>
+                </div>
+
+            </div>
+
+            <div>
+
+                <div class="flex justify-between text-body-sm mb-xs">
+                    <span>High</span>
+                    <span>34%</span>
+                </div>
+
+                <div class="w-full h-2 rounded-full bg-surface-container-high">
+                    <div class="h-2 rounded-full bg-primary" style="width:34%"></div>
+                </div>
+
+            </div>
+
+            <div>
+
+                <div class="flex justify-between text-body-sm mb-xs">
+                    <span>Medium</span>
+                    <span>28%</span>
+                </div>
+
+                <div class="w-full h-2 rounded-full bg-surface-container-high">
+                    <div class="h-2 rounded-full bg-tertiary" style="width:28%"></div>
+                </div>
+
+            </div>
+
+            <div>
+
+                <div class="flex justify-between text-body-sm mb-xs">
+                    <span>Low</span>
+                    <span>16%</span>
+                </div>
+
+                <div class="w-full h-2 rounded-full bg-surface-container-high">
+                    <div class="h-2 rounded-full bg-secondary" style="width:16%"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+
+        <h2 class="text-title-medium font-semibold mb-md">
+            Response Performance
+        </h2>
+
+        <div class="grid grid-cols-2 gap-md">
+
+            <div class="bg-primary-container rounded-lg p-md">
+                <p class="text-body-sm">Avg Response</p>
+                <h3 class="text-headline-small font-semibold mt-xs">
+                    1.8 hrs
+                </h3>
+            </div>
+
+            <div class="bg-secondary-container rounded-lg p-md">
+                <p class="text-body-sm">Avg Resolution</p>
+                <h3 class="text-headline-small font-semibold mt-xs">
+                    2.4 Days
+                </h3>
+            </div>
+
+            <div class="bg-tertiary-container rounded-lg p-md">
+                <p class="text-body-sm">Escalated</p>
+                <h3 class="text-headline-small font-semibold mt-xs">
+                    6
+                </h3>
+            </div>
+
+            <div class="bg-error-container rounded-lg p-md">
+                <p class="text-body-sm">SLA Compliance</p>
+                <h3 class="text-headline-small font-semibold mt-xs">
+                    94%
+                </h3>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
     <!-- Data Table Card -->
     <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
@@ -99,6 +301,172 @@ if (isset($conn) && !$conn->connect_error) {
             </table>
         </div>
     </div>
+</div>
+<!-- ================= INCIDENT RESPONSE WORKFLOW ================= -->
+
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+
+    <h2 class="text-title-medium font-semibold mb-lg">
+        Incident Response Workflow
+    </h2>
+
+    <div class="flex flex-wrap justify-between items-center gap-md text-center">
+
+        <div class="flex-1 min-w-[110px]">
+            <div class="w-14 h-14 rounded-full bg-error-container text-on-error-container flex items-center justify-center font-semibold mx-auto">
+                1
+            </div>
+            <p class="mt-sm text-label-large">Reported</p>
+        </div>
+
+        <span class="text-outline text-xl">→</span>
+
+        <div class="flex-1 min-w-[110px]">
+            <div class="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-semibold mx-auto">
+                2
+            </div>
+            <p class="mt-sm text-label-large">Investigating</p>
+        </div>
+
+        <span class="text-outline text-xl">→</span>
+
+        <div class="flex-1 min-w-[110px]">
+            <div class="w-14 h-14 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center font-semibold mx-auto">
+                3
+            </div>
+            <p class="mt-sm text-label-large">Containment</p>
+        </div>
+
+        <span class="text-outline text-xl">→</span>
+
+        <div class="flex-1 min-w-[110px]">
+            <div class="w-14 h-14 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-semibold mx-auto">
+                4
+            </div>
+            <p class="mt-sm text-label-large">Recovery</p>
+        </div>
+
+        <span class="text-outline text-xl">→</span>
+
+        <div class="flex-1 min-w-[110px]">
+            <div class="w-14 h-14 rounded-full bg-primary text-on-primary flex items-center justify-center font-semibold mx-auto">
+                5
+            </div>
+            <p class="mt-sm text-label-large">Closed</p>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= COMPLIANCE SUMMARY ================= -->
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-md">
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+        <p class="text-body-sm text-outline">72-Hour GDPR SLA</p>
+        <h2 class="text-headline-medium text-primary mt-xs">96%</h2>
+    </div>
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+        <p class="text-body-sm text-outline">Authority Notifications</p>
+        <h2 class="text-headline-medium text-secondary mt-xs">48</h2>
+    </div>
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+        <p class="text-body-sm text-outline">Open Investigations</p>
+        <h2 class="text-headline-medium text-error mt-xs">8</h2>
+    </div>
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+        <p class="text-body-sm text-outline">Resolved Incidents</p>
+        <h2 class="text-headline-medium text-secondary mt-xs">71</h2>
+    </div>
+
+</div>
+
+<!-- ================= RECENT INCIDENT ACTIVITY ================= -->
+
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+
+    <h2 class="text-title-medium font-semibold mb-md">
+        Recent Incident Activity
+    </h2>
+
+    <div class="space-y-md">
+
+        <div class="flex justify-between items-center border-b border-outline-variant/20 pb-sm">
+            <div>
+                <p class="font-medium">Unauthorized access detected</p>
+                <small class="text-outline">Today • 09:15 AM</small>
+            </div>
+            <span class="px-sm py-[2px] rounded-full bg-error-container text-on-error-container text-caption">
+                Critical
+            </span>
+        </div>
+
+        <div class="flex justify-between items-center border-b border-outline-variant/20 pb-sm">
+            <div>
+                <p class="font-medium">Malware incident resolved</p>
+                <small class="text-outline">Today • 08:10 AM</small>
+            </div>
+            <span class="px-sm py-[2px] rounded-full bg-secondary-container text-on-secondary-container text-caption">
+                Resolved
+            </span>
+        </div>
+
+        <div class="flex justify-between items-center border-b border-outline-variant/20 pb-sm">
+            <div>
+                <p class="font-medium">Third-party vendor breach reported</p>
+                <small class="text-outline">Yesterday</small>
+            </div>
+            <span class="px-sm py-[2px] rounded-full bg-primary-container text-on-primary-container text-caption">
+                Investigating
+            </span>
+        </div>
+
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="font-medium">Database recovery completed</p>
+                <small class="text-outline">Yesterday</small>
+            </div>
+            <span class="px-sm py-[2px] rounded-full bg-secondary-container text-on-secondary-container text-caption">
+                Closed
+            </span>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= QUICK ACTIONS ================= -->
+
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
+
+    <h2 class="text-title-medium font-semibold mb-md">
+        Quick Actions
+    </h2>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-md">
+
+        <button class="bg-error text-on-error rounded-lg py-md font-medium hover:opacity-90">
+            + Log Incident
+        </button>
+
+        <button class="bg-primary text-on-primary rounded-lg py-md font-medium hover:opacity-90">
+            Export Report
+        </button>
+
+        <button class="bg-secondary text-on-secondary rounded-lg py-md font-medium hover:opacity-90">
+            Notify Authority
+        </button>
+
+        <button class="bg-tertiary text-on-tertiary rounded-lg py-md font-medium hover:opacity-90">
+            Generate RCA
+        </button>
+
+    </div>
+
 </div>
 
 <!-- Log Incident Tailwind Modal -->

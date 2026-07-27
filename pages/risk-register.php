@@ -81,7 +81,181 @@ try {
         <?php if ($message): ?>
             <div class="alert"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
+<!-- ================= RISK KPI DASHBOARD ================= -->
 
+<div class="card">
+
+    <h3 style="margin-bottom:20px;">Risk Dashboard</h3>
+
+    <div class="form-grid">
+
+        <div style="background:#eef4ff;padding:18px;border-radius:8px;">
+            <small style="color:#6b7280;">Total Risks</small>
+            <h2 style="margin:8px 0;color:#2563eb;"><?= count($risks) ?></h2>
+            <small style="color:#6b7280;">Registered risk items</small>
+        </div>
+
+        <div style="background:#fee2e2;padding:18px;border-radius:8px;">
+            <small style="color:#6b7280;">High Risk Items</small>
+            <h2 style="margin:8px 0;color:#dc2626;">8</h2>
+            <small style="color:#6b7280;">Require immediate action</small>
+        </div>
+
+        <div style="background:#fef3c7;padding:18px;border-radius:8px;">
+            <small style="color:#6b7280;">In Review</small>
+            <h2 style="margin:8px 0;color:#d97706;">14</h2>
+            <small style="color:#6b7280;">Under assessment</small>
+        </div>
+
+        <div style="background:#dcfce7;padding:18px;border-radius:8px;">
+            <small style="color:#6b7280;">Mitigated Risks</small>
+            <h2 style="margin:8px 0;color:#16a34a;">21</h2>
+            <small style="color:#6b7280;">Successfully resolved</small>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= SEARCH & FILTER ================= -->
+
+<div class="card">
+
+    <h3 style="margin-bottom:20px;">Search & Filter Risks</h3>
+
+    <div class="form-grid">
+
+        <div class="form-group">
+            <label>Risk Title</label>
+            <input type="text" placeholder="Search risk...">
+        </div>
+
+        <div class="form-group">
+            <label>Category</label>
+            <select>
+                <option>All Categories</option>
+                <option>Data Transfer</option>
+                <option>Access Control</option>
+                <option>Third-Party Vendor</option>
+                <option>Data Retention</option>
+                <option>Security Governance</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Likelihood</label>
+            <select>
+                <option>All</option>
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Status</label>
+            <select>
+                <option>All</option>
+                <option>Open</option>
+                <option>In Review</option>
+                <option>Mitigated</option>
+            </select>
+        </div>
+
+    </div>
+
+    <button class="btn">
+        Search Risks
+    </button>
+
+</div>
+
+<!-- ================= RISK DISTRIBUTION ================= -->
+
+<div class="card">
+
+    <h3 style="margin-bottom:20px;">Risk Distribution Overview</h3>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:30px;">
+
+        <div>
+
+            <p style="margin-bottom:8px;">Access Control (34%)</p>
+
+            <div style="height:8px;background:#e5e7eb;border-radius:5px;">
+                <div style="width:34%;height:8px;background:#dc2626;border-radius:5px;"></div>
+            </div>
+
+            <br>
+
+            <p style="margin-bottom:8px;">Data Transfer (25%)</p>
+
+            <div style="height:8px;background:#e5e7eb;border-radius:5px;">
+                <div style="width:25%;height:8px;background:#2563eb;border-radius:5px;"></div>
+            </div>
+
+            <br>
+
+            <p style="margin-bottom:8px;">Third-Party Vendor (18%)</p>
+
+            <div style="height:8px;background:#e5e7eb;border-radius:5px;">
+                <div style="width:18%;height:8px;background:#16a34a;border-radius:5px;"></div>
+            </div>
+
+            <br>
+
+            <p style="margin-bottom:8px;">Data Retention (13%)</p>
+
+            <div style="height:8px;background:#e5e7eb;border-radius:5px;">
+                <div style="width:13%;height:8px;background:#d97706;border-radius:5px;"></div>
+            </div>
+
+            <br>
+
+            <p style="margin-bottom:8px;">Security Governance (10%)</p>
+
+            <div style="height:8px;background:#e5e7eb;border-radius:5px;">
+                <div style="width:10%;height:8px;background:#7c3aed;border-radius:5px;"></div>
+            </div>
+
+        </div>
+
+        <div>
+
+            <table style="width:100%;border-collapse:collapse;">
+
+                <tr>
+                    <th style="text-align:left;padding:10px;border-bottom:1px solid #ddd;">Priority</th>
+                    <th style="text-align:right;padding:10px;border-bottom:1px solid #ddd;">Count</th>
+                </tr>
+
+                <tr>
+                    <td>High</td>
+                    <td style="text-align:right;color:#dc2626;font-weight:bold;">8</td>
+                </tr>
+
+                <tr>
+                    <td>Medium</td>
+                    <td style="text-align:right;color:#d97706;font-weight:bold;">19</td>
+                </tr>
+
+                <tr>
+                    <td>Low</td>
+                    <td style="text-align:right;color:#16a34a;font-weight:bold;">13</td>
+                </tr>
+
+                <tr>
+                    <td>Total Risks</td>
+                    <td style="text-align:right;font-weight:bold;"><?= count($risks) ?></td>
+                </tr>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
         <!-- Create Risk Entry Form -->
         <div class="card">
             <h3>Log New Risk Item</h3>
@@ -194,6 +368,151 @@ try {
                 </table>
             </div>
         </div>
+        <!-- ================= RISK HEAT MATRIX ================= -->
+
+<div class="card">
+
+    <h3 style="margin-bottom:20px;">Risk Heat Matrix</h3>
+
+    <div style="overflow-x:auto;">
+
+        <table style="text-align:center;">
+
+            <tr>
+                <th></th>
+                <th>Low Impact</th>
+                <th>Medium Impact</th>
+                <th>High Impact</th>
+            </tr>
+
+            <tr>
+                <th>High Likelihood</th>
+                <td style="background:#fde68a;">Monitor</td>
+                <td style="background:#fb923c;color:white;">High</td>
+                <td style="background:#dc2626;color:white;">Critical</td>
+            </tr>
+
+            <tr>
+                <th>Medium Likelihood</th>
+                <td style="background:#bbf7d0;">Low</td>
+                <td style="background:#fde68a;">Medium</td>
+                <td style="background:#fb923c;color:white;">High</td>
+            </tr>
+
+            <tr>
+                <th>Low Likelihood</th>
+                <td style="background:#dcfce7;">Minimal</td>
+                <td style="background:#bbf7d0;">Low</td>
+                <td style="background:#fde68a;">Medium</td>
+            </tr>
+
+        </table>
+
+    </div>
+
+</div>
+
+<!-- ================= COMPLIANCE SUMMARY ================= -->
+
+<div class="card">
+
+    <h3 style="margin-bottom:20px;">Compliance Summary</h3>
+
+    <div class="form-grid">
+
+        <div style="background:#eef4ff;padding:18px;border-radius:8px;">
+            <small>Controls Implemented</small>
+            <h2 style="margin-top:8px;color:#2563eb;">94%</h2>
+        </div>
+
+        <div style="background:#dcfce7;padding:18px;border-radius:8px;">
+            <small>Mitigation Success</small>
+            <h2 style="margin-top:8px;color:#16a34a;">89%</h2>
+        </div>
+
+        <div style="background:#fee2e2;padding:18px;border-radius:8px;">
+            <small>Critical Risks</small>
+            <h2 style="margin-top:8px;color:#dc2626;">3</h2>
+        </div>
+
+        <div style="background:#fef3c7;padding:18px;border-radius:8px;">
+            <small>Pending Reviews</small>
+            <h2 style="margin-top:8px;color:#d97706;">11</h2>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= RECENT RISK ACTIVITY ================= -->
+
+<div class="card">
+
+    <h3 style="margin-bottom:20px;">Recent Risk Activity</h3>
+
+    <table>
+
+        <tr>
+            <th>Risk Event</th>
+            <th>Status</th>
+            <th>Updated</th>
+        </tr>
+
+        <tr>
+            <td>Encryption policy updated</td>
+            <td style="color:#16a34a;font-weight:bold;">Mitigated</td>
+            <td>Today</td>
+        </tr>
+
+        <tr>
+            <td>Third-party vendor review</td>
+            <td style="color:#2563eb;font-weight:bold;">In Review</td>
+            <td>Today</td>
+        </tr>
+
+        <tr>
+            <td>Access control assessment</td>
+            <td style="color:#dc2626;font-weight:bold;">Open</td>
+            <td>Yesterday</td>
+        </tr>
+
+        <tr>
+            <td>Retention policy revised</td>
+            <td style="color:#16a34a;font-weight:bold;">Mitigated</td>
+            <td>Yesterday</td>
+        </tr>
+
+    </table>
+
+</div>
+
+<!-- ================= QUICK ACTIONS ================= -->
+
+<div class="card">
+
+    <h3 style="margin-bottom:20px;">Quick Actions</h3>
+
+    <div class="form-grid">
+
+        <button class="btn">
+            + Log Risk
+        </button>
+
+        <button class="btn" style="background:#2563eb;">
+            Export Register
+        </button>
+
+        <button class="btn" style="background:#16a34a;">
+            Generate Report
+        </button>
+
+        <button class="btn" style="background:#7c3aed;">
+            Review Controls
+        </button>
+
+    </div>
+
+</div>
     </div>
 </body>
 </html>

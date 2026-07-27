@@ -51,6 +51,183 @@ if ($conn && !$conn->connect_error) {
             <div class="mt-2 text-3xl font-bold text-emerald-600"><?= $completed_requests ?></div>
         </div>
     </div>
+    <!-- ================= ENHANCED KPI DASHBOARD ================= -->
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-6">
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <p class="text-sm text-gray-500">SLA Compliance</p>
+        <h2 class="text-3xl font-bold text-green-600 mt-2">96%</h2>
+        <p class="text-xs text-gray-400 mt-1">Requests completed within SLA</p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <p class="text-sm text-gray-500">Average Resolution</p>
+        <h2 class="text-3xl font-bold text-blue-600 mt-2">3.2 Days</h2>
+        <p class="text-xs text-gray-400 mt-1">Average completion time</p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <p class="text-sm text-gray-500">Open High Priority</p>
+        <h2 class="text-3xl font-bold text-red-600 mt-2">7</h2>
+        <p class="text-xs text-gray-400 mt-1">Require immediate attention</p>
+    </div>
+
+</div>
+
+<!-- ================= SEARCH & FILTER ================= -->
+
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
+
+    <h2 class="font-semibold text-gray-700 mb-5">
+        Search & Filter Requests
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+
+        <input
+            type="text"
+            placeholder="Search Subject Email..."
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+
+        <select
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+
+            <option>All Request Types</option>
+            <option>Access</option>
+            <option>Erasure</option>
+            <option>Export</option>
+            <option>Rectification</option>
+
+        </select>
+
+        <select
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+
+            <option>All Status</option>
+            <option>Pending</option>
+            <option>In Progress</option>
+            <option>Completed</option>
+            <option>Rejected</option>
+
+        </select>
+
+        <input
+            type="date"
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+
+        <button
+            class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition">
+
+            Search
+
+        </button>
+
+    </div>
+
+</div>
+
+<!-- ================= DSR ANALYTICS ================= -->
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+
+        <h2 class="font-semibold text-gray-700 mb-5">
+            Request Distribution
+        </h2>
+
+        <div class="space-y-5">
+
+            <div>
+
+                <div class="flex justify-between text-sm mb-1">
+                    <span>Access Requests</span>
+                    <span>41%</span>
+                </div>
+
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div class="bg-indigo-600 h-2 rounded-full" style="width:41%"></div>
+                </div>
+
+            </div>
+
+            <div>
+
+                <div class="flex justify-between text-sm mb-1">
+                    <span>Erasure Requests</span>
+                    <span>28%</span>
+                </div>
+
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div class="bg-red-500 h-2 rounded-full" style="width:28%"></div>
+                </div>
+
+            </div>
+
+            <div>
+
+                <div class="flex justify-between text-sm mb-1">
+                    <span>Export Requests</span>
+                    <span>19%</span>
+                </div>
+
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div class="bg-green-500 h-2 rounded-full" style="width:19%"></div>
+                </div>
+
+            </div>
+
+            <div>
+
+                <div class="flex justify-between text-sm mb-1">
+                    <span>Rectification</span>
+                    <span>12%</span>
+                </div>
+
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div class="bg-yellow-400 h-2 rounded-full" style="width:12%"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+
+        <h2 class="font-semibold text-gray-700 mb-5">
+            Processing Performance
+        </h2>
+
+        <div class="grid grid-cols-2 gap-4">
+
+            <div class="bg-indigo-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Verified</p>
+                <h3 class="text-2xl font-bold text-indigo-600 mt-2">92%</h3>
+            </div>
+
+            <div class="bg-green-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Completed</p>
+                <h3 class="text-2xl font-bold text-green-600 mt-2">81%</h3>
+            </div>
+
+            <div class="bg-yellow-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Pending</p>
+                <h3 class="text-2xl font-bold text-yellow-600 mt-2">14%</h3>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Escalated</p>
+                <h3 class="text-2xl font-bold text-red-600 mt-2">5%</h3>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 
     <!-- Requests Table -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -104,6 +281,157 @@ if ($conn && !$conn->connect_error) {
             </table>
         </div>
     </div>
+</div>
+<!-- ================= DSR PROCESSING TIMELINE ================= -->
+
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mt-6">
+
+    <h2 class="font-semibold text-gray-700 mb-6">
+        DSR Processing Workflow
+    </h2>
+
+    <div class="flex flex-wrap justify-between items-center gap-4 text-center">
+
+        <div class="flex-1 min-w-[120px]">
+            <div class="w-12 h-12 mx-auto rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                1
+            </div>
+            <p class="mt-3 text-sm font-medium">Request Received</p>
+        </div>
+
+        <div class="text-gray-400 text-2xl">➜</div>
+
+        <div class="flex-1 min-w-[120px]">
+            <div class="w-12 h-12 mx-auto rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-bold">
+                2
+            </div>
+            <p class="mt-3 text-sm font-medium">Identity Verified</p>
+        </div>
+
+        <div class="text-gray-400 text-2xl">➜</div>
+
+        <div class="flex-1 min-w-[120px]">
+            <div class="w-12 h-12 mx-auto rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                3
+            </div>
+            <p class="mt-3 text-sm font-medium">Processing</p>
+        </div>
+
+        <div class="text-gray-400 text-2xl">➜</div>
+
+        <div class="flex-1 min-w-[120px]">
+            <div class="w-12 h-12 mx-auto rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">
+                4
+            </div>
+            <p class="mt-3 text-sm font-medium">Completed</p>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= RECENT REQUEST ACTIVITY ================= -->
+
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mt-6">
+
+    <h2 class="font-semibold text-gray-700 mb-5">
+        Recent Activity
+    </h2>
+
+    <div class="space-y-4">
+
+        <div class="flex justify-between items-center border-b pb-3">
+            <div>
+                <p class="font-medium text-gray-700">
+                    Access Request submitted by john@example.com
+                </p>
+                <p class="text-xs text-gray-500">
+                    Today • 10:20 AM
+                </p>
+            </div>
+
+            <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs">
+                New
+            </span>
+        </div>
+
+        <div class="flex justify-between items-center border-b pb-3">
+            <div>
+                <p class="font-medium text-gray-700">
+                    Identity verified for sarah@example.com
+                </p>
+                <p class="text-xs text-gray-500">
+                    Today • 09:45 AM
+                </p>
+            </div>
+
+            <span class="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs">
+                Verified
+            </span>
+        </div>
+
+        <div class="flex justify-between items-center border-b pb-3">
+            <div>
+                <p class="font-medium text-gray-700">
+                    Export Request completed
+                </p>
+                <p class="text-xs text-gray-500">
+                    Yesterday
+                </p>
+            </div>
+
+            <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs">
+                Completed
+            </span>
+        </div>
+
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="font-medium text-gray-700">
+                    Erasure Request awaiting review
+                </p>
+                <p class="text-xs text-gray-500">
+                    Yesterday
+                </p>
+            </div>
+
+            <span class="px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs">
+                Pending
+            </span>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= QUICK ACTIONS ================= -->
+
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mt-6">
+
+    <h2 class="font-semibold text-gray-700 mb-5">
+        Quick Actions
+    </h2>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+        <button class="bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium transition">
+            + New Request
+        </button>
+
+        <button class="bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition">
+            Export CSV
+        </button>
+
+        <button class="bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition">
+            Generate Report
+        </button>
+
+        <button class="bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-medium transition">
+            Assign Officer
+        </button>
+
+    </div>
+
 </div>
 
 <!-- Modal: Log New Request -->

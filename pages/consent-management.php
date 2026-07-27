@@ -92,6 +92,159 @@ if (isset($conn) && $conn) {
     <?php if ($error): ?>
         <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200"><?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
+    <!-- ================= KPI CARDS ================= -->
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <p class="text-sm text-gray-500">Total Consents</p>
+        <h2 class="text-3xl font-bold text-blue-600 mt-2">1,248</h2>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <p class="text-sm text-gray-500">Granted</p>
+        <h2 class="text-3xl font-bold text-green-600 mt-2">926</h2>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <p class="text-sm text-gray-500">Revoked</p>
+        <h2 class="text-3xl font-bold text-red-600 mt-2">214</h2>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <p class="text-sm text-gray-500">Pending</p>
+        <h2 class="text-3xl font-bold text-amber-500 mt-2">108</h2>
+    </div>
+
+</div>
+
+<!-- ================= SEARCH & FILTER ================= -->
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+
+    <h2 class="text-md font-semibold text-gray-700 mb-5">
+        Search & Filter Consents
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+
+        <input
+            type="text"
+            placeholder="Search User..."
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+
+        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option>All Categories</option>
+            <option>Marketing Emails</option>
+            <option>Analytics Cookies</option>
+            <option>Third-party Sharing</option>
+            <option>Terms of Service</option>
+        </select>
+
+        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option>All Status</option>
+            <option>Granted</option>
+            <option>Pending</option>
+            <option>Revoked</option>
+        </select>
+
+        <input
+            type="date"
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+
+        <button
+            class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition">
+
+            Search
+
+        </button>
+
+    </div>
+
+</div>
+
+<!-- ================= CONSENT ANALYTICS ================= -->
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+
+        <h2 class="font-semibold text-gray-700 mb-5">
+            Consent Distribution
+        </h2>
+
+        <div class="space-y-5">
+
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span>Granted</span>
+                    <span>74%</span>
+                </div>
+
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div class="h-2 rounded-full bg-green-500 w-3/4"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span>Revoked</span>
+                    <span>18%</span>
+                </div>
+
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div class="h-2 rounded-full bg-red-500" style="width:18%"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span>Pending</span>
+                    <span>8%</span>
+                </div>
+
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div class="h-2 rounded-full bg-yellow-400" style="width:8%"></div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+
+        <h2 class="font-semibold text-gray-700 mb-5">
+            Consent Health
+        </h2>
+
+        <div class="grid grid-cols-2 gap-4">
+
+            <div class="bg-green-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Compliance Rate</p>
+                <h3 class="text-2xl font-bold text-green-600 mt-2">97%</h3>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Categories</p>
+                <h3 class="text-2xl font-bold text-blue-600 mt-2">4</h3>
+            </div>
+
+            <div class="bg-yellow-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Awaiting Review</p>
+                <h3 class="text-2xl font-bold text-yellow-600 mt-2">16</h3>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Revoked Today</p>
+                <h3 class="text-2xl font-bold text-red-600 mt-2">9</h3>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 
     <!-- Log User Consent Form -->
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -181,4 +334,161 @@ if (isset($conn) && $conn) {
             </table>
         </div>
     </div>
+    <!-- ================= CONSENT CATEGORIES ================= -->
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+
+    <h2 class="text-md font-semibold text-gray-700 mb-5">
+        Consent Categories Overview
+    </h2>
+
+    <div class="space-y-5">
+
+        <div>
+            <div class="flex justify-between text-sm mb-1">
+                <span>Marketing Emails</span>
+                <span>42%</span>
+            </div>
+            <div class="w-full h-2 bg-gray-200 rounded-full">
+                <div class="h-2 bg-blue-500 rounded-full" style="width:42%"></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="flex justify-between text-sm mb-1">
+                <span>Analytics Cookies</span>
+                <span>31%</span>
+            </div>
+            <div class="w-full h-2 bg-gray-200 rounded-full">
+                <div class="h-2 bg-green-500 rounded-full" style="width:31%"></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="flex justify-between text-sm mb-1">
+                <span>Third-party Sharing</span>
+                <span>17%</span>
+            </div>
+            <div class="w-full h-2 bg-gray-200 rounded-full">
+                <div class="h-2 bg-yellow-500 rounded-full" style="width:17%"></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="flex justify-between text-sm mb-1">
+                <span>Terms of Service</span>
+                <span>10%</span>
+            </div>
+            <div class="w-full h-2 bg-gray-200 rounded-full">
+                <div class="h-2 bg-purple-500 rounded-full" style="width:10%"></div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= RECENT CONSENT EVENTS ================= -->
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+
+    <h2 class="text-md font-semibold text-gray-700 mb-5">
+        Recent Consent Events
+    </h2>
+
+    <div class="space-y-4">
+
+        <div class="flex justify-between items-center border-b pb-3">
+            <div>
+                <p class="font-medium text-gray-700">
+                    John Miller granted Marketing Emails
+                </p>
+                <p class="text-xs text-gray-500">
+                    Today • 09:15 AM
+                </p>
+            </div>
+
+            <span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                Granted
+            </span>
+        </div>
+
+        <div class="flex justify-between items-center border-b pb-3">
+            <div>
+                <p class="font-medium text-gray-700">
+                    Sarah revoked Analytics Cookies
+                </p>
+                <p class="text-xs text-gray-500">
+                    Today • 08:42 AM
+                </p>
+            </div>
+
+            <span class="px-3 py-1 rounded-full text-xs bg-red-100 text-red-700">
+                Revoked
+            </span>
+        </div>
+
+        <div class="flex justify-between items-center border-b pb-3">
+            <div>
+                <p class="font-medium text-gray-700">
+                    Alex accepted Terms of Service
+                </p>
+                <p class="text-xs text-gray-500">
+                    Yesterday
+                </p>
+            </div>
+
+            <span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                Granted
+            </span>
+        </div>
+
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="font-medium text-gray-700">
+                    Emily pending Third-party Sharing
+                </p>
+                <p class="text-xs text-gray-500">
+                    Yesterday
+                </p>
+            </div>
+
+            <span class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
+                Pending
+            </span>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ================= QUICK ACTIONS ================= -->
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+
+    <h2 class="text-md font-semibold text-gray-700 mb-5">
+        Quick Actions
+    </h2>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+        <button class="bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-medium transition">
+            + Record Consent
+        </button>
+
+        <button class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition">
+            Export Log
+        </button>
+
+        <button class="bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition">
+            Generate Report
+        </button>
+
+        <button class="bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-medium transition">
+            Import CSV
+        </button>
+
+    </div>
+
+</div>
 </div>
