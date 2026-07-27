@@ -1,160 +1,76 @@
 <?php
-// governance/pages/audit-logs.php
-require_once __DIR__ . '/../includes/db.php';
-include_once __DIR__ . '/../includes/bottom-nav.php';
+// Active tab detection helper
+$currentPage = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
 
-/** @var PDO $pdo */
-
-// Handle Manual Log Entry (Optional / Testing)
-$message = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_log'])) {
-    $user_name = trim($_POST['user_name'] ?? '');
-    $action    = trim($_POST['action'] ?? '');
-    $module    = trim($_POST['module'] ?? '');
-    $severity  = trim($_POST['severity'] ?? 'Info');
-    $details   = trim($_POST['details'] ?? '');
-
-    if (!empty($user_name) && !empty($action)) {
-        if (isset($pdo)) {
-            $stmt = $pdo->prepare("INSERT INTO audit_logs (user_name, action, module, severity, details) VALUES (?, ?, ?, ?, ?)");
-            if ($stmt->execute([$user_name, $action, $module, $severity, $details])) {
-                $message = "Audit log recorded successfully!";
-            } else {
-                $message = "Failed to record audit log.";
-            }
-        } else {
-            $message = "Database connection error.";
-        }
-    }
-}
-
-// Fetch Existing Logs
-$logs = [];
-try {
-    if (isset($pdo)) {
-        $stmt = $pdo->query("SELECT * FROM audit_logs ORDER BY created_at DESC");
-        if ($stmt) {
-            $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
-    }
-} catch (Exception $e) {
-    // Fallback if table doesn't exist yet
-}
+// List of pages under the "More" dropdown to keep active state highlighted
+$morePages = [
+    'cookie-governance', 'data-discovery', 'incident-management', 
+    'vendor-risk', 'reports', 'settings', 'data-mapping', 
+    'risk-register', 'audit-logs', 'user-management'
+];
+$isMoreActive = in_array($currentPage, $morePages);
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audit Logs - PrivacyHQ</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <style>
-        .container { max-width: 1100px; margin: 20px auto; padding: 20px; font-family: system-ui, sans-serif; }
-        .card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
-        .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
-        .form-group input, .form-group select, .form-group textarea { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn { background: #4f46e5; color: white; padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
-        .btn:hover { background: #4338ca; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem; }
-        th { background-color: #f9fafb; font-weight: 600; }
-        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
-        .badge-info { background: #dbeafe; color: #1e40af; }
-        .badge-warning { background: #fef3c7; color: #92400e; }
-        .badge-critical { background: #fee2e2; color: #991b1b; }
-        .alert { padding: 10px 15px; background: #d1fae5; color: #065f46; border-radius: 4px; margin-bottom: 16px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Audit Logs & Security Trail</h2>
-        <p>Monitor system events, user actions, data modifications, and compliance activities in real-time.</p>
+<!-- Bootstrap Dropdown Support CSS Fix for Fixed-Bottom Nav -->
+<style>
+    .dropup .dropdown-menu {
+        bottom: 100% !important;
+        top: auto !important;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+</style>
 
-        <?php if ($message): ?>
-            <div class="alert"><?= htmlspecialchars($message) ?></div>
-        <?php endif; ?>
+<nav class="navbar fixed-bottom navbar-light bg-white border-top py-2">
+    <div class="container-fluid d-flex justify-content-around text-center">
+        
+        <!-- Dashboard -->
+        <a href="index.php?page=dashboard" class="nav-link p-0 <?= ($currentPage == 'dashboard') ? 'text-primary fw-bold' : 'text-muted' ?>">
+            <i class="bi bi-grid-fill d-block fs-5"></i>
+            <small style="font-size: 11px;">Dashboard</small>
+        </a>
 
-        <!-- Log Event Form -->
-        <div class="card">
-            <h3>Record Custom Audit Event</h3>
-            <form method="POST">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>User / Service</label>
-                        <input type="text" name="user_name" placeholder="e.g., admin@privacyhq.io" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Action Performed</label>
-                        <input type="text" name="action" placeholder="e.g., Exported ROPA Records" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Target Module</label>
-                        <input type="text" name="module" placeholder="e.g., ROPA / User Access">
-                    </div>
-                    <div class="form-group">
-                        <label>Severity Level</label>
-                        <select name="severity">
-                            <option value="Info">Info</option>
-                            <option value="Warning">Warning</option>
-                            <option value="Critical">Critical</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label>Event Details / Metadata</label>
-                    <textarea name="details" rows="2" placeholder="Provide extra details or metadata..."></textarea>
-                </div>
-                <button type="submit" name="add_log" class="btn">+ Log Event</button>
-            </form>
+        <!-- ROPA -->
+        <a href="index.php?page=ropa" class="nav-link p-0 <?= ($currentPage == 'ropa') ? 'text-primary fw-bold' : 'text-muted' ?>">
+            <i class="bi bi-journal-text d-block fs-5"></i>
+            <small style="font-size: 11px;">ROPA</small>
+        </a>
+
+        <!-- Requests -->
+        <a href="index.php?page=data-requests" class="nav-link p-0 <?= ($currentPage == 'data-requests') ? 'text-primary fw-bold' : 'text-muted' ?>">
+            <i class="bi bi-person-gear d-block fs-5"></i>
+            <small style="font-size: 11px;">Requests</small>
+        </a>
+
+        <!-- Assess -->
+        <a href="index.php?page=assessments" class="nav-link p-0 <?= ($currentPage == 'assessments') ? 'text-primary fw-bold' : 'text-muted' ?>">
+            <i class="bi bi-clipboard-data d-block fs-5"></i>
+            <small style="font-size: 11px;">Assess</small>
+        </a>
+
+        <!-- More Dropup Menu -->
+        <div class="dropup">
+            <a href="#" class="nav-link p-0 <?= $isMoreActive ? 'text-primary fw-bold' : 'text-muted' ?>" id="moreDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots d-block fs-5"></i>
+                <small style="font-size: 11px;">More</small>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="moreDropdown" style="min-width: 220px;">
+                <li><h6 class="dropdown-header">Governance & Mapping</h6></li>
+                <li><a class="dropdown-item py-1" href="index.php?page=data-mapping"><i class="bi bi-diagram-3 me-2"></i> Data Mapping</a></li>
+                <li><a class="dropdown-item py-1" href="index.php?page=risk-register"><i class="bi bi-exclamation-triangle me-2"></i> Risk Register</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Security & Admin</h6></li>
+                <li><a class="dropdown-item py-1" href="index.php?page=audit-logs"><i class="bi bi-shield-lock me-2"></i> Audit Logs</a></li>
+                <li><a class="dropdown-item py-1" href="index.php?page=user-management"><i class="bi bi-people me-2"></i> Users & Roles</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Other Modules</h6></li>
+                <li><a class="dropdown-item py-1" href="index.php?page=consent"><i class="bi bi-shield-check me-2"></i> Consent</a></li>
+                <li><a class="dropdown-item py-1" href="index.php?page=cookie-governance"><i class="bi bi-cookie me-2"></i> Cookie Governance</a></li>
+                <li><a class="dropdown-item py-1" href="index.php?page=vendor-risk"><i class="bi bi-building me-2"></i> Vendor Risk</a></li>
+                <li><a class="dropdown-item py-1" href="index.php?page=settings"><i class="bi bi-gear me-2"></i> Settings</a></li>
+            </ul>
         </div>
 
-        <!-- Audit Log Table -->
-        <div class="card">
-            <h3>System Activity Log</h3>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Timestamp</th>
-                            <th>User / Actor</th>
-                            <th>Action</th>
-                            <th>Module</th>
-                            <th>Severity</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($logs)): ?>
-                            <?php foreach ($logs as $log): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($log['created_at']) ?></td>
-                                    <td><strong><?= htmlspecialchars($log['user_name']) ?></strong></td>
-                                    <td><?= htmlspecialchars($log['action']) ?></td>
-                                    <td><?= htmlspecialchars($log['module']) ?></td>
-                                    <td>
-                                        <?php 
-                                            $sev = strtolower($log['severity'] ?? 'info');
-                                            $badge_class = 'badge-info';
-                                            if ($sev === 'warning') $badge_class = 'badge-warning';
-                                            if ($sev === 'critical') $badge_class = 'badge-critical';
-                                        ?>
-                                        <span class="badge <?= $badge_class ?>"><?= htmlspecialchars($log['severity']) ?></span>
-                                    </td>
-                                    <td><?= htmlspecialchars($log['details']) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="6" style="text-align: center; color: #6b7280;">No audit logs recorded yet.</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </div>
-</body>
-</html>
+</nav>

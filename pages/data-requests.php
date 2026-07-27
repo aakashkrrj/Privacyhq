@@ -1,450 +1,345 @@
-<!DOCTYPE html>
+<?php
+// pages/data-requests.php
 
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
-<title>PrivacyHQ - Data Requests</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "on-surface-variant": "#404752",
-                        "on-secondary-container": "#003f6d",
-                        "secondary-fixed": "#d1e4ff",
-                        "outline": "#717783",
-                        "surface-variant": "#e3e2e1",
-                        "on-secondary": "#ffffff",
-                        "surface-dim": "#dadad9",
-                        "on-tertiary-fixed-variant": "#004881",
-                        "error": "#ba1a1a",
-                        "tertiary-fixed": "#d3e4ff",
-                        "secondary": "#0061a3",
-                        "on-secondary-fixed-variant": "#00497d",
-                        "surface": "#faf9f8",
-                        "on-primary-container": "#ffffff",
-                        "on-secondary-fixed": "#001d36",
-                        "tertiary-container": "#2679c9",
-                        "on-surface": "#1a1c1c",
-                        "surface-container": "#efeeed",
-                        "surface-container-lowest": "#ffffff",
-                        "surface-container-high": "#e9e8e7",
-                        "secondary-fixed-dim": "#9ecaff",
-                        "surface-bright": "#faf9f8",
-                        "on-background": "#1a1c1c",
-                        "error-container": "#ffdad6",
-                        "on-tertiary": "#ffffff",
-                        "background": "#faf9f8",
-                        "on-primary": "#ffffff",
-                        "inverse-surface": "#2f3130",
-                        "tertiary": "#0060a9",
-                        "on-tertiary-fixed": "#001c38",
-                        "primary-container": "#0078d4",
-                        "tertiary-fixed-dim": "#a2c9ff",
-                        "primary-fixed": "#d3e3ff",
-                        "secondary-container": "#5badff",
-                        "surface-tint": "#0060ab",
-                        "on-tertiary-container": "#ffffff",
-                        "on-primary-fixed": "#001c39",
-                        "primary": "#005faa",
-                        "primary-fixed-dim": "#a3c9ff",
-                        "inverse-primary": "#a3c9ff",
-                        "on-error-container": "#93000a",
-                        "on-primary-fixed-variant": "#004883",
-                        "surface-container-low": "#f4f3f2",
-                        "surface-container-highest": "#e3e2e1",
-                        "inverse-on-surface": "#f1f0ef",
-                        "on-error": "#ffffff",
-                        "outline-variant": "#c0c7d4"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    "spacing": {
-                        "sm": "8px",
-                        "base": "4px",
-                        "stack-gap": "12px",
-                        "md": "16px",
-                        "xs": "4px",
-                        "container-padding": "16px",
-                        "lg": "24px",
-                        "xl": "32px"
-                    },
-                    "fontFamily": {
-                        "headline-lg-mobile": ["Inter"],
-                        "headline-lg": ["Inter"],
-                        "body-lg": ["Inter"],
-                        "display": ["Inter"],
-                        "title-md": ["Inter"],
-                        "body-md": ["Inter"],
-                        "caption": ["Inter"],
-                        "label-md": ["Inter"]
-                    },
-                    "fontSize": {
-                        "headline-lg-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                        "display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                        "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
-                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                        "caption": ["11px", {"lineHeight": "14px", "fontWeight": "400"}],
-                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}]
-                    }
-                },
-            },
-        }
-    </script>
-<style>
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
-        .material-symbols-outlined {
-    font-family: 'Material Symbols Outlined';
-    font-weight: normal;
-    font-style: normal;
-    font-size: 24px;
-    line-height: 1;
-    letter-spacing: normal;
-    text-transform: none;
-    display: inline-block;
-    white-space: nowrap;
-    word-wrap: normal;
-    direction: ltr;
-    -webkit-font-feature-settings: 'liga';
-    font-feature-settings: 'liga';
-    -webkit-font-smoothing: antialiased;
-
-    font-variation-settings:
-        'FILL' 0,
-        'wght' 400,
-        'GRAD' 0,
-        'opsz' 24;
-        }
-        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); border: 1px solid #EDEBE9; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #D2D0CE; border-radius: 10px; }
-    </style>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
+// 1. Database Connection Setup (MySQLi)
+if (!isset($conn) && !isset($pdo)) {
+    if (file_exists(__DIR__ . '/../includes/db.php')) {
+        require_once __DIR__ . '/../includes/db.php';
     }
-  </style>
-  </head>
-<body class="bg-background text-on-background min-h-screen pb-24 md:pb-0">
-<!-- Top App Bar -->
-<header class="fixed top-0 left-0 w-full md:w-[calc(100%-320px)] h-16 bg-surface z-50 flex justify-between items-center px-container-padding shadow-sm">
-<div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-primary" data-icon="security">security</span>
-<h1 class="font-display text-display text-primary text-xl">PrivacyHQ</h1>
-</div>
-<div class="flex items-center gap-md">
-<button class="p-base hover:bg-surface-container-low transition-colors rounded-full">
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
-</button>
-<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-xs">
-                AU
+}
+
+if (!isset($conn) && isset($pdo) && $pdo instanceof mysqli) {
+    $conn = $pdo;
+}
+
+$message = '';
+$error = '';
+
+// Auto-create table if not exists (Ensures seamless execution)
+if (isset($conn) && $conn) {
+    $table_check = "CREATE TABLE IF NOT EXISTS data_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        req_code VARCHAR(50) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        request_type VARCHAR(50) NOT NULL,
+        priority VARCHAR(20) DEFAULT 'Medium',
+        status VARCHAR(50) DEFAULT 'Pending',
+        progress INT DEFAULT 0,
+        due_date VARCHAR(50) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )";
+    $conn->query($table_check);
+}
+
+// 2. Handle New Request Creation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_request') {
+    $email = trim($_POST['email'] ?? '');
+    $request_type = trim($_POST['request_type'] ?? 'Access');
+    $priority = trim($_POST['priority'] ?? 'Medium');
+
+    if (!empty($email)) {
+        if (isset($conn) && $conn) {
+            $req_code = 'REQ-' . rand(100, 999);
+            $due_date = date('M d', strtotime('+30 days'));
+            $progress = 10;
+            $status = 'Pending';
+
+            $stmt = $conn->prepare("INSERT INTO data_requests (req_code, email, request_type, priority, status, progress, due_date) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("sssssis", $req_code, $email, $request_type, $priority, $status, $progress, $due_date);
+                if ($stmt->execute()) {
+                    $message = "New request $req_code created successfully!";
+                } else {
+                    $error = "Execution Error: " . $stmt->error;
+                }
+                $stmt->close();
+            } else {
+                $error = "Database Query Error: " . $conn->error;
+            }
+        }
+    } else {
+        $error = "Email address is required.";
+    }
+}
+
+// 3. Handle Status Updates (e.g. Escalate or Archive)
+if (isset($_GET['action_type']) && isset($_GET['req_id'])) {
+    $req_id = intval($_GET['req_id']);
+    $action_type = $_GET['action_type'];
+
+    if (isset($conn) && $conn) {
+        if ($action_type === 'escalate') {
+            $stmt = $conn->prepare("UPDATE data_requests SET priority = 'Urgent', status = 'Escalated' WHERE id = ?");
+            $stmt->bind_param("i", $req_id);
+            $stmt->execute();
+            $message = "Request escalated to urgent priority!";
+            $stmt->close();
+        } elseif ($action_type === 'archive') {
+            $stmt = $conn->prepare("UPDATE data_requests SET status = 'Completed', progress = 100 WHERE id = ?");
+            $stmt->bind_param("i", $req_id);
+            $stmt->execute();
+            $message = "Request completed and archived!";
+            $stmt->close();
+        }
+    }
+}
+
+// 4. Fetch Existing Requests
+$requests = [];
+if (isset($conn) && $conn) {
+    $result = $conn->query("SELECT * FROM data_requests ORDER BY id DESC");
+    if ($result) {
+        $requests = $result->fetch_all(MYSQLI_ASSOC);
+    }
+}
+
+// Fallback seed data if database table is completely empty
+if (empty($requests)) {
+    $requests = [
+        ['id' => 1, 'req_code' => 'REQ-402', 'email' => 'sarah.j@enterprise.com', 'request_type' => 'Deletion', 'priority' => 'High', 'status' => 'In Progress', 'progress' => 85, 'due_date' => 'Oct 24'],
+        ['id' => 2, 'req_code' => 'REQ-405', 'email' => 'marcus.k@global.io', 'request_type' => 'Access', 'priority' => 'Medium', 'status' => 'Pending', 'progress' => 12, 'due_date' => 'Nov 05'],
+        ['id' => 3, 'req_code' => 'REQ-398', 'email' => 'linda.v@corp.com', 'request_type' => 'Portability', 'priority' => 'Low', 'status' => 'Completed', 'progress' => 100, 'due_date' => 'Oct 20'],
+        ['id' => 4, 'req_code' => 'REQ-410', 'email' => 'robert.chen@tech.net', 'request_type' => 'Access', 'priority' => 'Medium', 'status' => 'Assigned', 'progress' => 5, 'due_date' => 'Nov 19'],
+        ['id' => 5, 'req_code' => 'REQ-395', 'email' => 'legal-team@partner.com', 'request_type' => 'Regulatory escalation', 'priority' => 'Urgent', 'status' => 'Final Verification', 'progress' => 94, 'due_date' => 'Today']
+    ];
+}
+
+$critical_count = count(array_filter($requests, fn($r) => strtolower($r['priority']) === 'urgent' || strtolower($r['priority']) === 'high'));
+$active_count = count(array_filter($requests, fn($r) => strtolower($r['status']) !== 'completed'));
+?>
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Data Requests</h1>
+            <p class="text-sm text-gray-500">Manage and respond to Subject Access Requests (DSAR)</p>
+        </div>
+        <div class="flex items-center gap-4 text-xs font-semibold">
+            <span class="flex items-center gap-1.5 text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-100">
+                <span class="w-2 h-2 rounded-full bg-red-500"></span> <?php echo $critical_count; ?> Critical
+            </span>
+            <span class="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span> <?php echo $active_count; ?> Active
+            </span>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    <?php if ($message): ?>
+        <div class="p-4 text-sm text-green-800 rounded-lg bg-green-50 border border-green-200"><?php echo htmlspecialchars($message); ?></div>
+    <?php endif; ?>
+    <?php if ($error): ?>
+        <div class="p-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200"><?php echo htmlspecialchars($error); ?></div>
+    <?php endif; ?>
+
+    <!-- Controls Row (Search, Filters, New Request) -->
+    <div class="flex flex-wrap gap-3 justify-between items-center">
+        <div class="flex items-center gap-3 flex-1 min-w-[280px]">
+            <div class="relative w-full max-w-md">
+                <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-lg">search</span>
+                <input type="text" id="searchInput" onkeyup="filterCards()" placeholder="Search by ID or email..." class="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500">
             </div>
-</div>
-</header>
-<!-- Main Content Canvas -->
-<main class="pt-20 px-container-padding max-w-7xl mx-auto">
-<!-- Header & Stats -->
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-lg mb-xl">
-<div>
-<h2 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface">Data Requests</h2>
-<p class="font-body-md text-body-md text-on-surface-variant">Manage and respond to Subject Access Requests (DSAR)</p>
-</div>
-<div class="flex gap-sm">
-<div class="bg-surface-container p-sm px-md rounded-lg flex items-center gap-sm">
-<span class="w-2 h-2 rounded-full bg-error"></span>
-<span class="font-label-md text-label-md">12 Critical</span>
-</div>
-<div class="bg-surface-container p-sm px-md rounded-lg flex items-center gap-sm">
-<span class="w-2 h-2 rounded-full bg-primary"></span>
-<span class="font-label-md text-label-md">24 Active</span>
-</div>
-</div>
-</div>
-<!-- Filters Section -->
-<div class="flex flex-col md:flex-row gap-md mb-lg">
-<div class="flex-1 relative">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
-<input class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary bg-white transition-all text-body-md" placeholder="Search by ID or email..." type="text"/>
-</div>
-<div class="flex gap-sm overflow-x-auto pb-sm md:pb-0">
-<select class="rounded-xl border-outline-variant bg-white text-body-md px-4 py-2.5 min-w-[140px] focus:ring-primary focus:border-primary">
-<option>Type: All</option>
-<option>Access</option>
-<option>Deletion</option>
-<option>Portability</option>
-</select>
-<select class="rounded-xl border-outline-variant bg-white text-body-md px-4 py-2.5 min-w-[140px] focus:ring-primary focus:border-primary">
-<option>Priority: All</option>
-<option>High</option>
-<option>Medium</option>
-<option>Low</option>
-</select>
-<button class="bg-primary text-white px-lg py-2.5 rounded-xl font-body-md flex items-center gap-sm hover:opacity-90 transition-opacity">
-<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
-                    New Request
-                </button>
-</div>
-</div>
-<!-- Request List (Asymmetric Bento/Card Layout) -->
-<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-md mb-24">
-<!-- Card 1: Critical Deletion -->
-<div class="glass-card rounded-xl p-md flex flex-col shadow-sm border border-outline-variant hover:shadow-md transition-all">
-<div class="flex justify-between items-start mb-md">
-<div>
-<span class="inline-block font-label-md text-label-md bg-error/10 text-error px-sm py-0.5 rounded-full mb-xs">Deletion</span>
-<h3 class="font-title-md text-title-md text-on-surface">REQ-402</h3>
-<p class="font-body-md text-body-md text-on-surface-variant truncate">sarah.j@enterprise.com</p>
-</div>
-<div class="flex flex-col items-end">
-<span class="font-label-md text-label-md text-error font-bold">2 Days Left</span>
-<span class="font-caption text-caption text-outline">Due: Oct 24</span>
-</div>
-</div>
-<div class="mt-auto">
-<div class="flex justify-between items-center mb-xs">
-<span class="font-label-md text-label-md text-on-surface-variant">In Progress</span>
-<span class="font-label-md text-label-md font-bold">85%</span>
-</div>
-<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-<div class="bg-error h-full rounded-full transition-all duration-1000" style="width: 85%"></div>
-</div>
-</div>
-<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full border-2 border-white bg-secondary-container flex items-center justify-center text-[10px] font-bold">JD</div>
-<div class="w-6 h-6 rounded-full border-2 border-white bg-primary-fixed flex items-center justify-center text-[10px] font-bold text-primary">KL</div>
-</div>
-<button class="text-primary font-label-md text-label-md flex items-center gap-xs">
-                        Details <span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
-</button>
-</div>
-</div>
-<!-- Card 2: Medium Access -->
-<div class="glass-card rounded-xl p-md flex flex-col shadow-sm border border-outline-variant hover:shadow-md transition-all">
-<div class="flex justify-between items-start mb-md">
-<div>
-<span class="inline-block font-label-md text-label-md bg-primary/10 text-primary px-sm py-0.5 rounded-full mb-xs">Access</span>
-<h3 class="font-title-md text-title-md text-on-surface">REQ-405</h3>
-<p class="font-body-md text-body-md text-on-surface-variant truncate">marcus.k@global.io</p>
-</div>
-<div class="flex flex-col items-end">
-<span class="font-label-md text-label-md text-on-surface-variant">14 Days Left</span>
-<span class="font-caption text-caption text-outline">Due: Nov 05</span>
-</div>
-</div>
-<div class="mt-auto">
-<div class="flex justify-between items-center mb-xs">
-<span class="font-label-md text-label-md text-on-surface-variant">Pending</span>
-<span class="font-label-md text-label-md font-bold">12%</span>
-</div>
-<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-<div class="bg-primary h-full rounded-full transition-all duration-1000" style="width: 12%"></div>
-</div>
-</div>
-<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full border-2 border-white bg-tertiary-fixed flex items-center justify-center text-[10px] font-bold text-tertiary">AB</div>
-</div>
-<button class="text-primary font-label-md text-label-md flex items-center gap-xs">
-                        Details <span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
-</button>
-</div>
-</div>
-<!-- Card 3: Completed Portability -->
-<div class="glass-card rounded-xl p-md flex flex-col shadow-sm border border-outline-variant hover:shadow-md transition-all">
-<div class="flex justify-between items-start mb-md">
-<div>
-<span class="inline-block font-label-md text-label-md bg-secondary/10 text-secondary px-sm py-0.5 rounded-full mb-xs">Portability</span>
-<h3 class="font-title-md text-title-md text-on-surface">REQ-398</h3>
-<p class="font-body-md text-body-md text-on-surface-variant truncate">linda.v@corp.com</p>
-</div>
-<div class="flex flex-col items-end">
-<span class="material-symbols-outlined text-tertiary" data-icon="check_circle">check_circle</span>
-<span class="font-caption text-caption text-outline">Done Oct 20</span>
-</div>
-</div>
-<div class="mt-auto">
-<div class="flex justify-between items-center mb-xs">
-<span class="font-label-md text-label-md text-tertiary">Completed</span>
-<span class="font-label-md text-label-md font-bold">100%</span>
-</div>
-<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-<div class="bg-tertiary h-full rounded-full" style="width: 100%"></div>
-</div>
-</div>
-<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full border-2 border-white bg-on-tertiary-fixed-variant flex items-center justify-center text-[10px] font-bold text-white">SYS</div>
-</div>
-<button class="text-primary font-label-md text-label-md flex items-center gap-xs">
-                        Archive <span class="material-symbols-outlined text-[16px]" data-icon="archive">archive</span>
-</button>
-</div>
-</div>
-<!-- Card 4: Access -->
-<div class="glass-card rounded-xl p-md flex flex-col shadow-sm border border-outline-variant hover:shadow-md transition-all">
-<div class="flex justify-between items-start mb-md">
-<div>
-<span class="inline-block font-label-md text-label-md bg-primary/10 text-primary px-sm py-0.5 rounded-full mb-xs">Access</span>
-<h3 class="font-title-md text-title-md text-on-surface">REQ-410</h3>
-<p class="font-body-md text-body-md text-on-surface-variant truncate">robert.chen@tech.net</p>
-</div>
-<div class="flex flex-col items-end">
-<span class="font-label-md text-label-md text-on-surface-variant">28 Days Left</span>
-<span class="font-caption text-caption text-outline">Due: Nov 19</span>
-</div>
-</div>
-<div class="mt-auto">
-<div class="flex justify-between items-center mb-xs">
-<span class="font-label-md text-label-md text-on-surface-variant">Assigned</span>
-<span class="font-label-md text-label-md font-bold">5%</span>
-</div>
-<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-<div class="bg-primary h-full rounded-full transition-all duration-1000" style="width: 5%"></div>
-</div>
-</div>
-<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full border-2 border-white bg-primary-container flex items-center justify-center text-[10px] font-bold text-white">RC</div>
-</div>
-<button class="text-primary font-label-md text-label-md flex items-center gap-xs">
-                        Details <span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
-</button>
-</div>
-</div>
-<!-- Card 5: Critical Access -->
-<div class="glass-card rounded-xl p-md flex flex-col shadow-sm border border-outline-variant hover:shadow-md transition-all lg:col-span-1 xl:col-span-2">
-<div class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-md">
-<div>
-<span class="inline-block font-label-md text-label-md bg-error/10 text-error px-sm py-0.5 rounded-full mb-xs">Priority: Urgent</span>
-<h3 class="font-title-md text-title-md text-on-surface">REQ-395 (Regulatory escalation)</h3>
-<p class="font-body-md text-body-md text-on-surface-variant">legal-team@partner.com</p>
-</div>
-<div class="flex flex-col items-end">
-<span class="font-label-md text-label-md text-error font-bold">Today</span>
-<span class="font-caption text-caption text-outline text-right">Awaiting Legal Clearance</span>
-</div>
-</div>
-<div class="space-y-sm">
-<div class="flex justify-between items-center">
-<span class="font-label-md text-label-md text-on-surface-variant">Final Verification</span>
-<span class="font-label-md text-label-md font-bold">94%</span>
-</div>
-<div class="w-full bg-surface-container rounded-full h-3 overflow-hidden flex gap-1 p-0.5">
-<div class="bg-error h-full rounded-l-full" style="width: 30%"></div>
-<div class="bg-error h-full" style="width: 30%"></div>
-<div class="bg-error h-full" style="width: 30%"></div>
-<div class="bg-surface-variant h-full rounded-r-full" style="width: 10%"></div>
-</div>
-</div>
-<div class="mt-md pt-md border-t border-surface-variant flex justify-between items-center">
-<div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-error" data-icon="warning">warning</span>
-<span class="font-caption text-caption text-error font-semibold">Immediate action required</span>
-</div>
-<button class="bg-error text-white px-lg py-1.5 rounded-lg font-label-md hover:opacity-90 transition-opacity">
-                        Escalate
-                    </button>
-</div>
-</div>
-</div>
-</main>
-<!-- Bottom Nav Bar (Mobile) -->
-<!-- Standard Bottom Navigation -->
-<nav class="fixed bottom-0 left-0 right-0 w-full z-50
-            bg-surface shadow-[0px_-2px_4px_rgba(0,0,0,0.04)]
-            flex justify-around items-center h-16 px-2">
 
-    <!-- Dashboard -->
-    <a href="../index.php"
-       class="nav-dashboard flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
+            <select id="typeFilter" onchange="filterCards()" class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-gray-600">
+                <option value="All">Type: All</option>
+                <option value="Access">Access</option>
+                <option value="Deletion">Deletion</option>
+                <option value="Portability">Portability</option>
+            </select>
 
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            dashboard
-        </span>
+            <select id="priorityFilter" onchange="filterCards()" class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-gray-600">
+                <option value="All">Priority: All</option>
+                <option value="Urgent">Urgent</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+        </div>
 
-        <span class="font-label-md text-label-md">Dashboard</span>
-    </a>
+        <button onclick="toggleModal(true)" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm flex items-center gap-1.5 shadow-sm transition-colors">
+            <span class="material-symbols-outlined text-sm">add</span> New Request
+        </button>
+    </div>
 
-    <!-- Consent -->
-    <a href="consent-management.php"
-       class="nav-consent flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
+    <!-- Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="cardsGrid">
+        <?php foreach ($requests as $r): 
+            $is_urgent = strtolower($r['priority']) === 'urgent';
+            $is_completed = strtolower($r['status']) === 'completed';
+        ?>
+            <div class="request-card bg-white p-5 rounded-xl border <?php echo $is_urgent ? 'border-red-200 shadow-sm md:col-span-2 bg-red-50/10' : 'border-gray-100 shadow-sm'; ?>"
+                 data-code="<?php echo strtolower($r['req_code']); ?>"
+                 data-email="<?php echo strtolower($r['email']); ?>"
+                 data-type="<?php echo $r['request_type']; ?>"
+                 data-priority="<?php echo $r['priority']; ?>">
+                
+                <?php if ($is_urgent): ?>
+                    <!-- Urgent Card Design -->
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                            Priority: Urgent
+                        </span>
+                        <div class="text-right">
+                            <span class="text-xs font-semibold text-red-600 block">Today</span>
+                            <span class="text-[10px] text-gray-400">Awaiting Legal Clearance</span>
+                        </div>
+                    </div>
 
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            verified_user
-        </span>
+                    <h3 class="text-base font-bold text-gray-800 mb-0.5"><?php echo htmlspecialchars($r['req_code']); ?> (<?php echo htmlspecialchars($r['request_type']); ?>)</h3>
+                    <p class="text-xs text-gray-500 mb-4"><?php echo htmlspecialchars($r['email']); ?></p>
 
-        <span class="font-label-md text-label-md">Consent</span>
-    </a>
+                    <div class="space-y-1.5 mb-4">
+                        <div class="flex justify-between text-xs font-medium text-gray-600">
+                            <span><?php echo htmlspecialchars($r['status']); ?></span>
+                            <span><?php echo $r['progress']; ?>%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden flex">
+                            <div class="bg-red-500 h-2 rounded-full" style="width: <?php echo $r['progress']; ?>%"></div>
+                        </div>
+                    </div>
 
-    <!-- Requests -->
-    <a href="data-requests.php"
-       class="nav-requests flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
+                    <div class="flex justify-between items-center pt-2 border-t border-gray-100">
+                        <div class="flex items-center gap-1 text-xs text-red-600 font-medium">
+                            <span class="material-symbols-outlined text-sm">warning</span>
+                            Immediate action required
+                        </div>
+                        <a href="index.php?page=data-requests&action_type=escalate&req_id=<?php echo $r['id']; ?>" class="bg-red-600 hover:bg-red-700 text-white font-medium text-xs px-4 py-2 rounded-lg transition-colors">
+                            Escalate
+                        </a>
+                    </div>
 
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            gavel
-        </span>
+                <?php else: ?>
+                    <!-- Regular Card Design -->
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700">
+                            <?php echo htmlspecialchars($r['request_type']); ?>
+                        </span>
+                        <?php if ($is_completed): ?>
+                            <span class="flex items-center gap-1 text-xs text-green-600 font-medium">
+                                <span class="material-symbols-outlined text-base">check_circle</span>
+                                Done <?php echo htmlspecialchars($r['due_date']); ?>
+                            </span>
+                        <?php else: ?>
+                            <div class="text-right">
+                                <span class="text-xs font-bold text-red-600 block"><?php echo htmlspecialchars($r['due_date']); ?> Left</span>
+                                <span class="text-[10px] text-gray-400">Due Date</span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
 
-        <span class="font-label-md text-label-md">Requests</span>
-    </a>
+                    <h3 class="text-base font-bold text-gray-800"><?php echo htmlspecialchars($r['req_code']); ?></h3>
+                    <p class="text-xs text-gray-500 mb-4"><?php echo htmlspecialchars($r['email']); ?></p>
 
-    <!-- Assess -->
-    <a href="assessments.php"
-       class="nav-assess flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
+                    <div class="space-y-1.5 mb-4">
+                        <div class="flex justify-between text-xs font-medium text-gray-600">
+                            <span><?php echo htmlspecialchars($r['status']); ?></span>
+                            <span><?php echo $r['progress']; ?>%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-1.5">
+                            <div class="<?php echo $is_completed ? 'bg-blue-600' : ($r['progress'] > 50 ? 'bg-red-500' : 'bg-blue-500'); ?> h-1.5 rounded-full" style="width: <?php echo $r['progress']; ?>%"></div>
+                        </div>
+                    </div>
 
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            assignment_turned_in
-        </span>
+                    <div class="flex justify-between items-center pt-2 border-t border-gray-100 text-xs">
+                        <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px]">
+                            <?php echo strtoupper(substr($r['email'], 0, 2)); ?>
+                        </span>
+                        <?php if ($is_completed): ?>
+                            <a href="index.php?page=data-requests&action_type=archive&req_id=<?php echo $r['id']; ?>" class="text-gray-500 hover:text-gray-700 flex items-center gap-1 font-medium">
+                                Archive <span class="material-symbols-outlined text-sm">archive</span>
+                            </a>
+                        <?php else: ?>
+                            <a href="javascript:void(0)" onclick="alert('Viewing details for <?php echo $r['req_code']; ?>')" class="text-blue-600 hover:underline flex items-center gap-0.5 font-medium">
+                                Details <span class="material-symbols-outlined text-sm">chevron_right</span>
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
 
-        <span class="font-label-md text-label-md">Assess</span>
-    </a>
+<!-- New Request Modal -->
+<div id="newRequestModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold text-gray-800">Submit New Request</h2>
+            <button onclick="toggleModal(false)" class="text-gray-400 hover:text-gray-600">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
 
-    <!-- More -->
-    <a href="more.php"
-       class="nav-more flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
+        <form method="POST" action="index.php?page=data-requests" class="space-y-4">
+            <input type="hidden" name="action" value="create_request">
 
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            menu
-        </span>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Subject Email Address</label>
+                <input type="email" name="email" required placeholder="user@domain.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+            </div>
 
-        <span class="font-label-md text-label-md">More</span>
-    </a>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Request Type</label>
+                <select name="request_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                    <option value="Access">Access (DSAR)</option>
+                    <option value="Deletion">Deletion (Right to be Forgotten)</option>
+                    <option value="Portability">Data Portability</option>
+                    <option value="Rectification">Rectification</option>
+                </select>
+            </div>
 
-</nav>
-<!-- Floating Action Button (Mobile) -->
-<button class="md:hidden fixed right-md bottom-20 w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform z-40">
-<span class="material-symbols-outlined" data-icon="add">add</span>
-</button>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Priority</label>
+                <select name="priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3">
+                <button type="button" onclick="toggleModal(false)" class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium shadow-sm">Submit Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-        // Micro-interaction for cards
-        document.querySelectorAll('.glass-card').forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                card.style.transform = 'translateY(-2px)';
-            });
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'translateY(0px)';
-            });
-        });
-    </script>
-</body></html>
+function toggleModal(show) {
+    const modal = document.getElementById('newRequestModal');
+    if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+function filterCards() {
+    const searchVal = document.getElementById('searchInput').value.toLowerCase();
+    const typeVal = document.getElementById('typeFilter').value;
+    const priorityVal = document.getElementById('priorityFilter').value;
+    const cards = document.querySelectorAll('.request-card');
+
+    cards.forEach(card => {
+        const code = card.getAttribute('data-code');
+        const email = card.getAttribute('data-email');
+        const type = card.getAttribute('data-type');
+        const priority = card.getAttribute('data-priority');
+
+        const matchesSearch = code.includes(searchVal) || email.includes(searchVal);
+        const matchesType = (typeVal === 'All') || (type === typeVal);
+        const matchesPriority = (priorityVal === 'All') || (priority === priorityVal);
+
+        if (matchesSearch && matchesType && matchesPriority) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+</script>

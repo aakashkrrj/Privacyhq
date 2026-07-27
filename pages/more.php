@@ -149,6 +149,13 @@
             <span class="material-symbols-outlined">menu</span>
             <span class="text-xs">More</span>
         </a>
+        <a href="index.php?page=vendor-management" class="...">
+    Vendor Management
+</a>
+
+<a href="index.php?page=user-management" class="...">
+    User Management
+</a>
 
     </nav>
 

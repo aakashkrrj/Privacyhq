@@ -61,23 +61,53 @@ try {
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem; }
         th { background-color: #f9fafb; font-weight: 600; }
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .bg-green-100 { background:#DCFCE7; }
+        .text-green-700 { color:#15803D; }
         .badge-active { background: #d1fae5; color: #065f46; }
+        .bg-gray-100 { background:#F3F4F6; }
+        .text-gray-700 { color:#374151; }
         .badge-inactive { background: #f3f4f6; color: #4b5563; }
         .badge-role { background: #e0e7ff; color: #3730a3; }
         .alert { padding: 10px 15px; background: #d1fae5; color: #065f46; border-radius: 4px; margin-bottom: 16px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>User Management & Access Controls (RBAC)</h2>
-        <p>Manage system access, assign roles, and grant permissions to platform users.</p>
+    <div class="max-w-screen-xl mt-6 mx-auto px-6 py-6">
+        <h2 class="text-3xl font-bold text-on-surface">
+    User Management & Access Control
+</h2>
+        <p class="text-on-surface-variant mt-1">
+    Manage system users, roles and access permissions.
+</p>
 
         <?php if ($message): ?>
             <div class="alert"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
 
+<div class="bg-surface-container-lowest rounded-xl border p-5">
+<h4 class="text-sm text-on-surface-variant">Total Users</h4>
+<p class="text-3xl font-bold"><?= count($users) ?></p>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl border p-5">
+<h4 class="text-sm text-on-surface-variant">Active</h4>
+<p class="text-3xl font-bold text-green-600">12</p>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl border p-5">
+<h4 class="text-sm text-on-surface-variant">Admins</h4>
+<p class="text-3xl font-bold text-blue-600">3</p>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl border p-5">
+<h4 class="text-sm text-on-surface-variant">Viewers</h4>
+<p class="text-3xl font-bold text-orange-500">9</p>
+</div>
+
+</div>
         <!-- Create User Form -->
-        <div class="card">
+        <div class="bg-surface-container-lowest rounded-xl border border-[#EDEBE9] p-6 shadow-sm mb-6">
             <h3>Add New System User</h3>
             <form method="POST">
                 <div class="form-grid">
@@ -106,15 +136,39 @@ try {
                         </select>
                     </div>
                 </div>
-                <button type="submit" name="add_user" class="btn">+ Create User Account</button>
+                <button
+type="submit"
+name="add_user"
+class="bg-primary text-on-primary px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition">+ Create User Account</button>
             </form>
         </div>
 
         <!-- User Registry Table -->
-        <div class="card">
+        <div class="bg-surface-container-lowest rounded-xl border border-[#EDEBE9] p-6 shadow-sm mb-6">
             <h3>Registered Team Members</h3>
             <div style="overflow-x: auto;">
-                <table>
+                <div class="flex gap-4 mb-5 flex-wrap">
+
+<input
+class="border rounded-xl px-4 py-3 flex-1"
+placeholder="Search User">
+
+<select class="border rounded-xl px-4 py-3">
+<option>All Roles</option>
+<option>Admin</option>
+<option>DPO</option>
+<option>Auditor</option>
+<option>Viewer</option>
+</select>
+
+<select class="border rounded-xl px-4 py-3">
+<option>All Status</option>
+<option>Active</option>
+<option>Inactive</option>
+</select>
+
+</div>
+                <table class="w-full border-collapse">
                     <thead>
                         <tr>
                             <th>User Name</th>
@@ -130,13 +184,13 @@ try {
                                 <tr>
                                     <td><strong><?= htmlspecialchars($user['full_name']) ?></strong></td>
                                     <td><?= htmlspecialchars($user['email']) ?></td>
-                                    <td><span class="badge badge-role"><?= htmlspecialchars($user['role']) ?></span></td>
+                                    <td><span class="inline-flex px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold"><?= htmlspecialchars($user['role']) ?></span></td>
                                     <td>
                                         <?php 
                                             $st = strtolower($user['status'] ?? 'active');
                                             $badge_class = ($st === 'active') ? 'badge-active' : 'badge-inactive';
                                         ?>
-                                        <span class="badge <?= $badge_class ?>"><?= htmlspecialchars($user['status']) ?></span>
+                                        <span class="inline-flex px-3 py-1 rounded-full text-sm font-semibold <?= $badge_class ?>"><?= htmlspecialchars($user['status']) ?></span>
                                     </td>
                                     <td><?= htmlspecialchars($user['created_at']) ?></td>
                                 </tr>

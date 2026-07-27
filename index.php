@@ -1,6 +1,34 @@
 <?php
 // governance/index.php
-$currentPage = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
+require_once __DIR__ . '/includes/db.php';
+
+$currentPage = isset($_GET['page']) ? trim($_GET['page']) : 'dashboard';
+
+// Route Mappings
+$routes = [
+    'dashboard'           => 'pages/dashboard-main.php',
+    'consent'             => 'pages/consent-management.php',
+    'data-requests'       => 'pages/data-requests.php',
+    'dsar'                => 'pages/dsar.php',
+    'dsr-management'      => 'pages/dsr-management.php',
+    'assessments'         => 'pages/assessments.php',
+    'cookie-governance'   => 'pages/cookie-governance.php',
+    'data-discovery'      => 'pages/data-discovery.php',
+    'data-mapping'        => 'pages/data-mapping.php',
+    'incident-management' => 'pages/incident-management.php',
+    'vendor-risk'         => 'pages/vendor-risk.php',
+    'vendor-management'   => 'pages/vendor-management.php',
+    'risk-register'       => 'pages/risk-register.php',
+    'ropa'                => 'pages/ropa.php',
+    'policies'            => 'pages/policies.php',
+    'reports'             => 'pages/reports.php',
+    'settings'            => 'pages/settings.php',
+    'user-management'     => 'pages/user-management.php',
+    'audit-logs'          => 'pages/audit-logs.php',
+    'more'                => 'pages/more.php'
+];
+
+$fileToInclude = isset($routes[$currentPage]) ? $routes[$currentPage] : 'pages/dashboard-main.php';
 ?>
 <!DOCTYPE html>
 <html class="light" lang="en">
@@ -141,77 +169,19 @@ $currentPage = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
     <!-- Main Dynamic Content Area -->
     <main class="pt-20 px-container-padding max-w-7xl mx-auto space-y-lg">
         <?php
-        switch ($currentPage) {
-            case 'consent':
-                include 'pages/consent-management.php';
-                break;
-            case 'data-requests':
-                include 'pages/data-requests.php';
-                break;
-            case 'assessments':
-                include 'pages/assessments.php';
-                break;
-            case 'cookie-governance':
-                include 'pages/cookie-governance.php';
-                break;
-            case 'data-discovery':
-                include 'pages/data-discovery.php';
-                break;
-            case 'incident-management':
-                include 'pages/incident-management.php';
-                break;
-            case 'vendor-risk':
-                include 'pages/vendor-risk.php';
-                break;
-            case 'reports':
-                include 'pages/reports.php';
-                break;
-            case 'settings':
-                include 'pages/settings.php';
-                break;
-            case 'more':
-                include 'pages/more.php';
-                break;
-            case 'dashboard':
-            default:
-                include 'pages/dashboard-main.php';
-                break;
+        if (file_exists(__DIR__ . '/' . $fileToInclude)) {
+            include __DIR__ . '/' . $fileToInclude;
+        } else {
+            echo '<div class="p-6 bg-error-container text-on-error-container rounded-xl shadow-sm my-8">
+                    <h3 class="font-title-md font-bold mb-2">Page Not Found</h3>
+                    <p class="font-body-md">Unable to locate the file: <code class="bg-surface px-2 py-1 rounded text-error">' . htmlspecialchars($fileToInclude) . '</code></p>
+                  </div>';
         }
         ?>
     </main>
 
     <!-- Bottom Navigation Bar -->
-    <nav class="fixed bottom-0 left-0 right-0 w-full z-50 bg-surface shadow-[0px_-2px_4px_rgba(0,0,0,0.04)] flex justify-around items-center h-16 px-2">
-        <!-- Dashboard -->
-        <a href="index.php?page=dashboard" class="flex flex-col items-center justify-center px-4 py-1 rounded-xl <?php echo ($currentPage == 'dashboard') ? 'text-primary bg-secondary-fixed' : 'text-on-surface-variant'; ?>">
-            <span class="material-symbols-outlined">dashboard</span>
-            <span class="font-label-md text-label-md">Dashboard</span>
-        </a>
-
-        <!-- Consent -->
-        <a href="index.php?page=consent" class="flex flex-col items-center justify-center px-4 py-1 rounded-xl <?php echo ($currentPage == 'consent') ? 'text-primary bg-secondary-fixed' : 'text-on-surface-variant'; ?>">
-            <span class="material-symbols-outlined">verified_user</span>
-            <span class="font-label-md text-label-md">Consent</span>
-        </a>
-
-        <!-- Requests -->
-        <a href="index.php?page=data-requests" class="flex flex-col items-center justify-center px-4 py-1 rounded-xl <?php echo ($currentPage == 'data-requests') ? 'text-primary bg-secondary-fixed' : 'text-on-surface-variant'; ?>">
-            <span class="material-symbols-outlined">gavel</span>
-            <span class="font-label-md text-label-md">Requests</span>
-        </a>
-
-        <!-- Assess -->
-        <a href="index.php?page=assessments" class="flex flex-col items-center justify-center px-4 py-1 rounded-xl <?php echo ($currentPage == 'assessments') ? 'text-primary bg-secondary-fixed' : 'text-on-surface-variant'; ?>">
-            <span class="material-symbols-outlined">assignment_turned_in</span>
-            <span class="font-label-md text-label-md">Assess</span>
-        </a>
-
-        <!-- More -->
-        <a href="index.php?page=more" class="flex flex-col items-center justify-center px-4 py-1 rounded-xl <?php echo ($currentPage == 'more' || in_array($currentPage, array('cookie-governance','data-discovery','incident-management','vendor-risk','reports','settings'))) ? 'text-primary bg-secondary-fixed' : 'text-on-surface-variant'; ?>">
-            <span class="material-symbols-outlined">menu</span>
-            <span class="font-label-md text-label-md">More</span>
-        </a>
-    </nav>
+    <?php include_once __DIR__ . '/includes/bottom-nav.php'; ?>
 
     <div class="fixed top-0 right-0 -z-10 w-1/3 h-1/2 bg-gradient-to-bl from-primary/5 to-transparent blur-3xl pointer-events-none"></div>
     <div class="fixed bottom-0 left-0 -z-10 w-1/3 h-1/2 bg-gradient-to-tr from-secondary-container/5 to-transparent blur-3xl pointer-events-none"></div>
