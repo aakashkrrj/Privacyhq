@@ -15,38 +15,50 @@ if (!isset($conn) && isset($pdo) && $pdo instanceof mysqli) {
 $message = '';
 $error = '';
 
-// Auto-create table if not exists (Ensures seamless execution)
-if (isset($conn) && $conn) {
-    $table_check = "CREATE TABLE IF NOT EXISTS data_requests (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        req_code VARCHAR(50) NOT NULL,
-        email VARCHAR(255) NOT NULL,
-        request_type VARCHAR(50) NOT NULL,
-        priority VARCHAR(20) DEFAULT 'Medium',
-        status VARCHAR(50) DEFAULT 'Pending',
-        progress INT DEFAULT 0,
-        due_date VARCHAR(50) NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )";
-    $conn->query($table_check);
-}
-
 // 2. Handle New Request Creation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_request') {
     $email = trim($_POST['email'] ?? '');
-    $request_type = trim($_POST['request_type'] ?? 'Access');
+    $request_type_ui = trim($_POST['request_type'] ?? 'Access');
     $priority = trim($_POST['priority'] ?? 'Medium');
 
     if (!empty($email)) {
         if (isset($conn) && $conn) {
-            $req_code = 'REQ-' . rand(100, 999);
-            $due_date = date('M d', strtotime('+30 days'));
-            $progress = 10;
-            $status = 'Pending';
+            $identifier_hash = md5($email);
+            
+            // Map UI request types to DB ENUMs ('access','erasure','rectification','portability','objection')
+            $request_type = match($request_type_ui) {
+                'Deletion' => 'erasure',
+                'Access' => 'access',
+                'Portability' => 'portability',
+                'Rectification' => 'rectification',
+                default => 'access'
+            };
+            
+            // Get or create data_subject
+            $subject_id = null;
+            $stmt_ds = $conn->prepare("SELECT id FROM data_subjects WHERE identifier_hash = ?");
+            $stmt_ds->bind_param("s", $identifier_hash);
+            $stmt_ds->execute();
+            $res_ds = $stmt_ds->get_result();
+            if ($row = $res_ds->fetch_assoc()) {
+                $subject_id = $row['id'];
+            } else {
+                $stmt_insert = $conn->prepare("INSERT INTO data_subjects (identifier_hash, type) VALUES (?, 'customer')");
+                $stmt_insert->bind_param("s", $identifier_hash);
+                $stmt_insert->execute();
+                $subject_id = $conn->insert_id;
+                $stmt_insert->close();
+            }
+            $stmt_ds->close();
 
-            $stmt = $conn->prepare("INSERT INTO data_requests (req_code, email, request_type, priority, status, progress, due_date) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $req_code = 'REQ-' . rand(100, 999);
+            $due_date = date('Y-m-d', strtotime('+30 days'));
+            $progress = 10;
+            $status = 'open'; // ENUM for 'Pending'
+
+            $stmt = $conn->prepare("INSERT INTO data_requests (request_id_code, data_subject_id, request_type, priority, status, progress_percentage, due_date) VALUES (?, ?, ?, ?, ?, ?, ?)");
             if ($stmt) {
-                $stmt->bind_param("sssssis", $req_code, $email, $request_type, $priority, $status, $progress, $due_date);
+                $stmt->bind_param("sississ", $req_code, $subject_id, $request_type, $priority, $status, $progress, $due_date);
                 if ($stmt->execute()) {
                     $message = "New request $req_code created successfully!";
                 } else {
@@ -69,13 +81,13 @@ if (isset($_GET['action_type']) && isset($_GET['req_id'])) {
 
     if (isset($conn) && $conn) {
         if ($action_type === 'escalate') {
-            $stmt = $conn->prepare("UPDATE data_requests SET priority = 'Urgent', status = 'Escalated' WHERE id = ?");
+            $stmt = $conn->prepare("UPDATE data_requests SET priority = 'Urgent', status = 'processing' WHERE id = ?");
             $stmt->bind_param("i", $req_id);
             $stmt->execute();
             $message = "Request escalated to urgent priority!";
             $stmt->close();
         } elseif ($action_type === 'archive') {
-            $stmt = $conn->prepare("UPDATE data_requests SET status = 'Completed', progress = 100 WHERE id = ?");
+            $stmt = $conn->prepare("UPDATE data_requests SET status = 'completed', progress_percentage = 100 WHERE id = ?");
             $stmt->bind_param("i", $req_id);
             $stmt->execute();
             $message = "Request completed and archived!";
@@ -87,9 +99,39 @@ if (isset($_GET['action_type']) && isset($_GET['req_id'])) {
 // 4. Fetch Existing Requests
 $requests = [];
 if (isset($conn) && $conn) {
-    $result = $conn->query("SELECT * FROM data_requests ORDER BY id DESC");
+    $query = "SELECT dr.id, dr.request_id_code AS req_code, ds.identifier_hash AS email, 
+                     dr.request_type AS db_type, dr.priority, dr.status AS db_status, 
+                     dr.progress_percentage AS progress, dr.due_date 
+              FROM data_requests dr 
+              JOIN data_subjects ds ON dr.data_subject_id = ds.id 
+              ORDER BY dr.created_at DESC";
+    $result = $conn->query($query);
     if ($result) {
-        $requests = $result->fetch_all(MYSQLI_ASSOC);
+        while ($row = $result->fetch_assoc()) {
+            // Map DB ENUMs back to UI Text
+            $row['request_type'] = match($row['db_type']) {
+                'erasure' => 'Deletion',
+                'access' => 'Access',
+                'portability' => 'Portability',
+                'rectification' => 'Rectification',
+                default => 'Access'
+            };
+            
+            $row['status'] = match($row['db_status']) {
+                'open' => 'Pending',
+                'verifying' => 'Final Verification',
+                'processing' => 'In Progress',
+                'completed' => 'Completed',
+                default => 'Pending'
+            };
+            
+            // Format due_date to UI expect format 'Oct 24'
+            if ($row['due_date']) {
+                $row['due_date'] = date('M d', strtotime($row['due_date']));
+            }
+            
+            $requests[] = $row;
+        }
     }
 }
 

@@ -51,7 +51,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
             <!-- Vendor Risk -->
-            <a href="/governance/pages/vendor-risk.php"
+            <a href="index.php?page=vendor-risk"
                class="bg-white border rounded-xl p-5 flex items-center gap-4
                       hover:shadow-md transition">
 
@@ -68,7 +68,7 @@
             </a>
 
             <!-- Reports -->
-            <a href="/governance/pages/reports.php"
+            <a href="index.php?page=reports"
                class="bg-white border rounded-xl p-5 flex items-center gap-4
                       hover:shadow-md transition">
 
@@ -85,7 +85,7 @@
             </a>
 
             <!-- Settings -->
-            <a href="/governance/pages/settings.php"
+            <a href="index.php?page=settings"
                class="bg-white border rounded-xl p-5 flex items-center gap-4
                       hover:shadow-md transition">
 
@@ -101,6 +101,40 @@
                 </div>
             </a>
 
+            <!-- ROPA -->
+            <a href="index.php?page=ropa"
+               class="bg-white border rounded-xl p-5 flex items-center gap-4
+                      hover:shadow-md transition">
+
+                <span class="material-symbols-outlined text-blue-700 text-3xl">
+                    fact_check
+                </span>
+
+                <div>
+                    <h3 class="font-semibold text-lg">ROPA</h3>
+                    <p class="text-sm text-gray-500">
+                        Records of Processing Activities.
+                    </p>
+                </div>
+            </a>
+
+            <!-- Risk Register -->
+            <a href="index.php?page=risk-register"
+               class="bg-white border rounded-xl p-5 flex items-center gap-4
+                      hover:shadow-md transition">
+
+                <span class="material-symbols-outlined text-blue-700 text-3xl">
+                    warning
+                </span>
+
+                <div>
+                    <h3 class="font-semibold text-lg">Risk Register</h3>
+                    <p class="text-sm text-gray-500">
+                        Log, assess, and manage privacy risks.
+                    </p>
+                </div>
+            </a>
+
         </div>
     </main>
 
@@ -110,7 +144,7 @@
                 flex justify-around items-center h-16 px-2">
 
         <!-- Dashboard -->
-        <a href="/governance/index.php"
+        <a href="index.php?page=dashboard"
            class="flex flex-col items-center justify-center text-gray-600 px-4 py-1">
 
             <span class="material-symbols-outlined">dashboard</span>
@@ -118,7 +152,7 @@
         </a>
 
         <!-- Consent -->
-        <a href="/governance/pages/consent-management.php"
+        <a href="index.php?page=consent-management"
            class="flex flex-col items-center justify-center text-gray-600 px-4 py-1">
 
             <span class="material-symbols-outlined">verified_user</span>
@@ -126,7 +160,7 @@
         </a>
 
         <!-- Requests -->
-        <a href="/governance/pages/data-requests.php"
+        <a href="index.php?page=data-requests"
            class="flex flex-col items-center justify-center text-gray-600 px-4 py-1">
 
             <span class="material-symbols-outlined">gavel</span>
@@ -134,7 +168,7 @@
         </a>
 
         <!-- Assess -->
-        <a href="/governance/pages/assessments.php"
+        <a href="index.php?page=assessments"
            class="flex flex-col items-center justify-center text-gray-600 px-4 py-1">
 
             <span class="material-symbols-outlined">assignment_turned_in</span>
@@ -142,7 +176,7 @@
         </a>
 
         <!-- More Active -->
-        <a href="/governance/pages/more.php"
+        <a href="index.php?page=more"
            class="flex flex-col items-center justify-center text-blue-700
                   bg-blue-100 rounded-xl px-4 py-1">
 

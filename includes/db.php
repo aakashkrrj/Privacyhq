@@ -1,11 +1,12 @@
 <?php
 // governance/includes/db.php
-$host = "localhost";
+$host = "127.0.0.1";
 $user = "root";
 $pass = "";
-$dbname = "privacy_governance";
+$dbname = "privacyhq";
+$port = 3306;
 
-$conn = new mysqli($host, $user, $pass, $dbname);
+$conn = new mysqli($host, $user, $pass, $dbname, $port);
 
 if ($conn->connect_error) {
     die(json_encode([

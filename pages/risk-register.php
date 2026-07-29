@@ -3,8 +3,6 @@
 require_once __DIR__ . '/../includes/db.php';
 include_once __DIR__ . '/../includes/bottom-nav.php';
 
-/** @var PDO $pdo */
-
 // Handle Risk Registration
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_risk'])) {
@@ -13,17 +11,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_risk'])) {
     $likelihood      = trim($_POST['likelihood'] ?? 'Medium');
     $impact          = trim($_POST['impact'] ?? 'Medium');
     $mitigation      = trim($_POST['mitigation'] ?? '');
-    $owner           = trim($_POST['owner'] ?? '');
-    $status          = trim($_POST['status'] ?? 'Open');
+    $status_ui       = trim($_POST['status'] ?? 'Open');
+    
+    // Map UI Status to DB ENUM ('open','mitigated','accepted')
+    $st = strtolower($status_ui);
+    $status_db = 'open';
+    if ($st === 'mitigated') $status_db = 'mitigated';
+    else if ($st === 'in review') $status_db = 'open';
 
     if (!empty($title) && !empty($category)) {
-        if (isset($pdo)) {
-            $stmt = $pdo->prepare("INSERT INTO risk_register (title, category, likelihood, impact, mitigation, owner, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            if ($stmt->execute([$title, $category, $likelihood, $impact, $mitigation, $owner, $status])) {
+        if (isset($conn) && !$conn->connect_error) {
+            
+            // 1. Get Assessment ID (Reuse first valid assessment)
+            $assessment_id = 1;
+            $res = $conn->query("SELECT id FROM privacy_assessments LIMIT 1");
+            if ($res && $res->num_rows > 0) {
+                $assessment_id = $res->fetch_assoc()['id'];
+            }
+
+            // 2. Get User ID (First valid user)
+            $created_by = 1;
+            $res = $conn->query("SELECT id FROM users LIMIT 1");
+            if ($res && $res->num_rows > 0) {
+                $created_by = $res->fetch_assoc()['id'];
+            }
+
+            // 3. Get or Create Category
+            $category_id = null;
+            $stmt = $conn->prepare("SELECT id FROM risk_categories WHERE category_name = ? LIMIT 1");
+            $stmt->bind_param("s", $category);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && $res->num_rows > 0) {
+                $category_id = $res->fetch_assoc()['id'];
+            } else {
+                $stmt_insert = $conn->prepare("INSERT INTO risk_categories (category_name) VALUES (?)");
+                $stmt_insert->bind_param("s", $category);
+                $stmt_insert->execute();
+                $category_id = $stmt_insert->insert_id;
+                $stmt_insert->close();
+            }
+            $stmt->close();
+
+            // 4. Get or Create Risk Matrix
+            $matrix_id = null;
+            $likelihood_level = ($likelihood === 'High') ? 3 : (($likelihood === 'Medium') ? 2 : 1);
+            $impact_level = ($impact === 'High') ? 3 : (($impact === 'Medium') ? 2 : 1);
+
+            $stmt = $conn->prepare("SELECT id FROM risk_matrix WHERE likelihood_level = ? AND impact_level = ? LIMIT 1");
+            $stmt->bind_param("ii", $likelihood_level, $impact_level);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && $res->num_rows > 0) {
+                $matrix_id = $res->fetch_assoc()['id'];
+            }
+            $stmt->close();
+            
+            if (!$matrix_id) {
+                $risk_score = $likelihood_level * $impact_level;
+                $risk_level_name = ($risk_score >= 6) ? 'High' : (($risk_score >= 3) ? 'Medium' : 'Low');
+                
+                $stmt_insert = $conn->prepare("INSERT INTO risk_matrix (impact_level, likelihood_level, impact_name, likelihood_name, risk_score, risk_level_name) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt_insert->bind_param("iissis", $impact_level, $likelihood_level, $impact, $likelihood, $risk_score, $risk_level_name);
+                $stmt_insert->execute();
+                $matrix_id = $stmt_insert->insert_id;
+                $stmt_insert->close();
+            }
+
+            // 5. Insert Risk
+            $stmt = $conn->prepare("INSERT INTO assessment_risks (assessment_id, risk_category_id, description, inherent_risk_matrix_id, status, created_by) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("iisisi", $assessment_id, $category_id, $title, $matrix_id, $status_db, $created_by);
+            if ($stmt->execute()) {
+                $risk_id = $stmt->insert_id;
+                
+                // 6. Insert Mitigation
+                if (!empty($mitigation)) {
+                    $stmt_mit = $conn->prepare("INSERT INTO risk_mitigations (risk_id, implementation_details) VALUES (?, ?)");
+                    $stmt_mit->bind_param("is", $risk_id, $mitigation);
+                    $stmt_mit->execute();
+                    $stmt_mit->close();
+                }
+
                 $message = "Risk item registered successfully!";
             } else {
-                $message = "Failed to register risk item.";
+                $message = "Failed to register risk item: " . $stmt->error;
             }
+            $stmt->close();
         } else {
             $message = "Database connection error.";
         }
@@ -32,15 +105,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_risk'])) {
 
 // Fetch Existing Risks
 $risks = [];
-try {
-    if (isset($pdo)) {
-        $stmt = $pdo->query("SELECT * FROM risk_register ORDER BY id DESC");
-        if ($stmt) {
-            $risks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+if (isset($conn) && !$conn->connect_error) {
+    $query = "
+        SELECT 
+            ar.id,
+            ar.description as title,
+            rc.category_name as category,
+            rm.likelihood_name as likelihood,
+            rm.impact_name as impact,
+            rm.risk_level_name as risk_level,
+            ar.status as status_db,
+            rmit.implementation_details as mitigation
+        FROM assessment_risks ar
+        LEFT JOIN risk_categories rc ON ar.risk_category_id = rc.id
+        LEFT JOIN risk_matrix rm ON ar.inherent_risk_matrix_id = rm.id
+        LEFT JOIN risk_mitigations rmit ON ar.id = rmit.risk_id
+        ORDER BY ar.id DESC
+    ";
+    $result = $conn->query($query);
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            // Map DB back to UI
+            $st = $row['status_db'];
+            $status_ui = 'Open';
+            if ($st === 'mitigated') $status_ui = 'Mitigated';
+            else if ($st === 'accepted') $status_ui = 'In Review'; // arbitrary mapping for accepted
+
+            $row['status'] = $status_ui;
+            $row['owner'] = 'Admin User'; // Fallback for UI
+            $risks[] = $row;
         }
     }
-} catch (Exception $e) {
-    // Graceful fallback
 }
 ?>
 
@@ -86,30 +181,37 @@ try {
 <div class="card">
 
     <h3 style="margin-bottom:20px;">Risk Dashboard</h3>
+    
+    <?php
+        $total_risks = count($risks);
+        $high_risks = count(array_filter($risks, fn($r) => strtolower($r['risk_level'] ?? '') === 'high'));
+        $in_review_risks = count(array_filter($risks, fn($r) => strtolower($r['status'] ?? '') === 'in review'));
+        $mitigated_risks = count(array_filter($risks, fn($r) => strtolower($r['status'] ?? '') === 'mitigated'));
+    ?>
 
     <div class="form-grid">
 
         <div style="background:#eef4ff;padding:18px;border-radius:8px;">
             <small style="color:#6b7280;">Total Risks</small>
-            <h2 style="margin:8px 0;color:#2563eb;"><?= count($risks) ?></h2>
+            <h2 style="margin:8px 0;color:#2563eb;"><?= $total_risks ?></h2>
             <small style="color:#6b7280;">Registered risk items</small>
         </div>
 
         <div style="background:#fee2e2;padding:18px;border-radius:8px;">
             <small style="color:#6b7280;">High Risk Items</small>
-            <h2 style="margin:8px 0;color:#dc2626;">8</h2>
+            <h2 style="margin:8px 0;color:#dc2626;"><?= $high_risks ?></h2>
             <small style="color:#6b7280;">Require immediate action</small>
         </div>
 
         <div style="background:#fef3c7;padding:18px;border-radius:8px;">
             <small style="color:#6b7280;">In Review</small>
-            <h2 style="margin:8px 0;color:#d97706;">14</h2>
+            <h2 style="margin:8px 0;color:#d97706;"><?= $in_review_risks ?></h2>
             <small style="color:#6b7280;">Under assessment</small>
         </div>
 
         <div style="background:#dcfce7;padding:18px;border-radius:8px;">
             <small style="color:#6b7280;">Mitigated Risks</small>
-            <h2 style="margin:8px 0;color:#16a34a;">21</h2>
+            <h2 style="margin:8px 0;color:#16a34a;"><?= $mitigated_risks ?></h2>
             <small style="color:#6b7280;">Successfully resolved</small>
         </div>
 
@@ -175,49 +277,41 @@ try {
 <div class="card">
 
     <h3 style="margin-bottom:20px;">Risk Distribution Overview</h3>
+    
+    <?php
+        $category_counts = [];
+        $total_for_pct = $total_risks > 0 ? $total_risks : 1; // avoid division by zero
+        foreach ($risks as $r) {
+            $cat = trim($r['category'] ?? 'Uncategorized');
+            if (!isset($category_counts[$cat])) $category_counts[$cat] = 0;
+            $category_counts[$cat]++;
+        }
+        arsort($category_counts);
+        $top_categories = array_slice($category_counts, 0, 5, true);
+        $colors = ['#dc2626', '#2563eb', '#16a34a', '#d97706', '#7c3aed'];
+
+        $priority_high = count(array_filter($risks, fn($r) => strtolower($r['risk_level'] ?? '') === 'high'));
+        $priority_med = count(array_filter($risks, fn($r) => strtolower($r['risk_level'] ?? '') === 'medium'));
+        $priority_low = count(array_filter($risks, fn($r) => strtolower($r['risk_level'] ?? '') === 'low'));
+    ?>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:30px;">
 
         <div>
-
-            <p style="margin-bottom:8px;">Access Control (34%)</p>
-
-            <div style="height:8px;background:#e5e7eb;border-radius:5px;">
-                <div style="width:34%;height:8px;background:#dc2626;border-radius:5px;"></div>
-            </div>
-
-            <br>
-
-            <p style="margin-bottom:8px;">Data Transfer (25%)</p>
-
-            <div style="height:8px;background:#e5e7eb;border-radius:5px;">
-                <div style="width:25%;height:8px;background:#2563eb;border-radius:5px;"></div>
-            </div>
-
-            <br>
-
-            <p style="margin-bottom:8px;">Third-Party Vendor (18%)</p>
-
-            <div style="height:8px;background:#e5e7eb;border-radius:5px;">
-                <div style="width:18%;height:8px;background:#16a34a;border-radius:5px;"></div>
-            </div>
-
-            <br>
-
-            <p style="margin-bottom:8px;">Data Retention (13%)</p>
-
-            <div style="height:8px;background:#e5e7eb;border-radius:5px;">
-                <div style="width:13%;height:8px;background:#d97706;border-radius:5px;"></div>
-            </div>
-
-            <br>
-
-            <p style="margin-bottom:8px;">Security Governance (10%)</p>
-
-            <div style="height:8px;background:#e5e7eb;border-radius:5px;">
-                <div style="width:10%;height:8px;background:#7c3aed;border-radius:5px;"></div>
-            </div>
-
+            <?php if (empty($top_categories)): ?>
+                <p style="color:#6b7280; font-size:0.9rem;">No data available.</p>
+            <?php else: ?>
+                <?php $cIdx = 0; foreach ($top_categories as $cat => $cCount): 
+                    $pct = round(($cCount / $total_for_pct) * 100);
+                    $color = $colors[$cIdx % count($colors)];
+                ?>
+                    <p style="margin-bottom:8px;"><?= htmlspecialchars($cat) ?> (<?= $pct ?>%)</p>
+                    <div style="height:8px;background:#e5e7eb;border-radius:5px;">
+                        <div style="width:<?= $pct ?>%;height:8px;background:<?= $color ?>;border-radius:5px;"></div>
+                    </div>
+                    <br>
+                <?php $cIdx++; endforeach; ?>
+            <?php endif; ?>
         </div>
 
         <div>
@@ -231,22 +325,22 @@ try {
 
                 <tr>
                     <td>High</td>
-                    <td style="text-align:right;color:#dc2626;font-weight:bold;">8</td>
+                    <td style="text-align:right;color:#dc2626;font-weight:bold;"><?= $priority_high ?></td>
                 </tr>
 
                 <tr>
                     <td>Medium</td>
-                    <td style="text-align:right;color:#d97706;font-weight:bold;">19</td>
+                    <td style="text-align:right;color:#d97706;font-weight:bold;"><?= $priority_med ?></td>
                 </tr>
 
                 <tr>
                     <td>Low</td>
-                    <td style="text-align:right;color:#16a34a;font-weight:bold;">13</td>
+                    <td style="text-align:right;color:#16a34a;font-weight:bold;"><?= $priority_low ?></td>
                 </tr>
 
                 <tr>
                     <td>Total Risks</td>
-                    <td style="text-align:right;font-weight:bold;"><?= count($risks) ?></td>
+                    <td style="text-align:right;font-weight:bold;"><?= $total_risks ?></td>
                 </tr>
 
             </table>

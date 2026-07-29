@@ -30,10 +30,17 @@ if (isset($conn) && !$conn->connect_error) {
 
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-md">
 
+    <?php
+        $total_incidents = count($incidents);
+        $open_incidents = count(array_filter($incidents, fn($i) => $i['status'] === 'Open'));
+        $resolved_incidents = count(array_filter($incidents, fn($i) => $i['status'] === 'Resolved'));
+        $critical_incidents = count(array_filter($incidents, fn($i) => $i['severity'] === 'Critical'));
+    ?>
+
     <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
         <p class="text-body-sm text-outline">Total Incidents</p>
         <h2 class="text-display-small font-semibold text-primary mt-xs">
-            <?= count($incidents) ?>
+            <?= $total_incidents ?>
         </h2>
         <p class="text-body-sm text-outline mt-xs">
             Logged incidents
@@ -43,7 +50,7 @@ if (isset($conn) && !$conn->connect_error) {
     <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
         <p class="text-body-sm text-outline">Open Incidents</p>
         <h2 class="text-display-small font-semibold text-error mt-xs">
-            8
+            <?= $open_incidents ?>
         </h2>
         <p class="text-body-sm text-outline mt-xs">
             Awaiting resolution
@@ -53,7 +60,7 @@ if (isset($conn) && !$conn->connect_error) {
     <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
         <p class="text-body-sm text-outline">Resolved</p>
         <h2 class="text-display-small font-semibold text-secondary mt-xs">
-            27
+            <?= $resolved_incidents ?>
         </h2>
         <p class="text-body-sm text-outline mt-xs">
             Successfully closed
@@ -63,7 +70,7 @@ if (isset($conn) && !$conn->connect_error) {
     <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-md shadow-sm">
         <p class="text-body-sm text-outline">Critical Incidents</p>
         <h2 class="text-display-small font-semibold text-error mt-xs">
-            3
+            <?= $critical_incidents ?>
         </h2>
         <p class="text-body-sm text-outline mt-xs">
             Highest priority
@@ -131,16 +138,27 @@ if (isset($conn) && !$conn->connect_error) {
         </h2>
 
         <div class="space-y-md">
+            <?php
+                $critical_count = $critical_incidents;
+                $high_count = count(array_filter($incidents, fn($i) => $i['severity'] === 'High'));
+                $medium_count = count(array_filter($incidents, fn($i) => $i['severity'] === 'Medium'));
+                $low_count = count(array_filter($incidents, fn($i) => $i['severity'] === 'Low'));
+
+                $crit_pct = $total_incidents > 0 ? round(($critical_count / $total_incidents) * 100) : 0;
+                $high_pct = $total_incidents > 0 ? round(($high_count / $total_incidents) * 100) : 0;
+                $med_pct = $total_incidents > 0 ? round(($medium_count / $total_incidents) * 100) : 0;
+                $low_pct = $total_incidents > 0 ? round(($low_count / $total_incidents) * 100) : 0;
+            ?>
 
             <div>
 
                 <div class="flex justify-between text-body-sm mb-xs">
                     <span>Critical</span>
-                    <span>22%</span>
+                    <span><?= $crit_pct ?>%</span>
                 </div>
 
                 <div class="w-full h-2 rounded-full bg-surface-container-high">
-                    <div class="h-2 rounded-full bg-error" style="width:22%"></div>
+                    <div class="h-2 rounded-full bg-error" style="width:<?= $crit_pct ?>%"></div>
                 </div>
 
             </div>
@@ -149,11 +167,11 @@ if (isset($conn) && !$conn->connect_error) {
 
                 <div class="flex justify-between text-body-sm mb-xs">
                     <span>High</span>
-                    <span>34%</span>
+                    <span><?= $high_pct ?>%</span>
                 </div>
 
                 <div class="w-full h-2 rounded-full bg-surface-container-high">
-                    <div class="h-2 rounded-full bg-primary" style="width:34%"></div>
+                    <div class="h-2 rounded-full bg-primary" style="width:<?= $high_pct ?>%"></div>
                 </div>
 
             </div>
@@ -162,11 +180,11 @@ if (isset($conn) && !$conn->connect_error) {
 
                 <div class="flex justify-between text-body-sm mb-xs">
                     <span>Medium</span>
-                    <span>28%</span>
+                    <span><?= $med_pct ?>%</span>
                 </div>
 
                 <div class="w-full h-2 rounded-full bg-surface-container-high">
-                    <div class="h-2 rounded-full bg-tertiary" style="width:28%"></div>
+                    <div class="h-2 rounded-full bg-tertiary" style="width:<?= $med_pct ?>%"></div>
                 </div>
 
             </div>
@@ -175,11 +193,11 @@ if (isset($conn) && !$conn->connect_error) {
 
                 <div class="flex justify-between text-body-sm mb-xs">
                     <span>Low</span>
-                    <span>16%</span>
+                    <span><?= $low_pct ?>%</span>
                 </div>
 
                 <div class="w-full h-2 rounded-full bg-surface-container-high">
-                    <div class="h-2 rounded-full bg-secondary" style="width:16%"></div>
+                    <div class="h-2 rounded-full bg-secondary" style="width:<?= $low_pct ?>%"></div>
                 </div>
 
             </div>
@@ -508,6 +526,14 @@ if (isset($conn) && !$conn->connect_error) {
 
 <!-- Script to handle Modal & AJAX Form Submission -->
 <script>
+function openIncidentModal() {
+    document.getElementById('incidentModal').classList.remove('hidden');
+}
+
+function closeIncidentModal() {
+    document.getElementById('incidentModal').classList.add('hidden');
+}
+
 document.getElementById('incidentForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
     

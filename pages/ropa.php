@@ -6,41 +6,45 @@ include_once __DIR__ . '/../includes/bottom-nav.php';
 // Handle Form Submission
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ropa'])) {
-    $process_name     = trim($_POST['process_name'] ?? '');
+    $activity_name    = trim($_POST['process_name'] ?? '');
     $data_controller  = trim($_POST['data_controller'] ?? '');
     $purpose          = trim($_POST['purpose'] ?? '');
     $data_categories  = trim($_POST['data_categories'] ?? '');
     $data_subjects    = trim($_POST['data_subjects'] ?? '');
-    $recipients       = trim($_POST['recipients'] ?? '');
+    $recipients       = trim($_POST['data_recipients'] ?? ''); // Map correct form field
     $retention_period = trim($_POST['retention_period'] ?? '');
 
-    if (!empty($process_name) && !empty($purpose)) {
-        if (isset($pdo)) {
-            $stmt = $pdo->prepare("INSERT INTO ropa_records (process_name, data_controller, purpose, data_categories, data_subjects, recipients, retention_period) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            if ($stmt->execute([$process_name, $data_controller, $purpose, $data_categories, $data_subjects, $recipients, $retention_period])) {
-                $message = "ROPA Record added successfully!";
+    if (!empty($activity_name) && !empty($purpose)) {
+        if (isset($conn) && !$conn->connect_error) {
+            $stmt = $conn->prepare("INSERT INTO processing_activities (activity_name, purpose, data_controller, data_categories, data_subjects, recipients, retention_period) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("sssssss", $activity_name, $purpose, $data_controller, $data_categories, $data_subjects, $recipients, $retention_period);
+                if ($stmt->execute()) {
+                    $message = "ROPA Record added successfully!";
+                } else {
+                    $message = "Failed to record ROPA entry: " . $stmt->error;
+                }
+                $stmt->close();
             } else {
-                $message = "Failed to record ROPA entry.";
+                $message = "Database prepare error: " . $conn->error;
             }
         } else {
             $message = "Database connection error.";
         }
+    } else {
+        $message = "Activity Name and Purpose are required.";
     }
 }
 
 // Fetch Existing Records
-// Fetch Existing Records
 $records = [];
-try {
-    if (isset($pdo)) {
-        /** @var PDO $pdo */
-        $stmt = $pdo->query("SELECT * FROM ropa_records ORDER BY id DESC");
-        if ($stmt) {
-            $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+if (isset($conn) && !$conn->connect_error) {
+    $result = $conn->query("SELECT * FROM processing_activities ORDER BY id DESC");
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $records[] = $row;
         }
     }
-} catch (Exception $e) {
-    // Graceful fallback if table doesn't exist yet
 }
 ?>
 
@@ -79,31 +83,46 @@ try {
 <div class="card">
 
     <h3 style="margin-bottom:20px;">ROPA Dashboard</h3>
+    
+    <?php
+        $total_activities = count($records);
+        
+        $controllers = array_unique(array_filter(array_map(fn($r) => trim($r['data_controller'] ?? ''), $records)));
+        $total_controllers = count($controllers);
+        
+        $active_activities = count(array_filter($records, fn($r) => ($r['status'] ?? 'active') === 'active'));
+        
+        $avg_retention = "N/A";
+        // To accurately calculate average retention would require parsing the retention string, 
+        // but since it's a varchar (e.g. "7 years post-termination"), we'll leave it as a static string or simplified metric
+        // For dynamic display, we could count how many have retention set
+        $retention_set = count(array_filter($records, fn($r) => !empty(trim($r['retention_period'] ?? ''))));
+    ?>
 
     <div class="form-grid">
 
         <div style="background:#eef4ff;padding:18px;border-radius:8px;">
             <small style="color:#6b7280;">Total Processing Activities</small>
-            <h2 style="margin:8px 0;color:#2563eb;"><?= count($records) ?></h2>
+            <h2 style="margin:8px 0;color:#2563eb;"><?= $total_activities ?></h2>
             <small style="color:#6b7280;">Registered activities</small>
         </div>
 
         <div style="background:#ecfdf5;padding:18px;border-radius:8px;">
             <small style="color:#6b7280;">Data Controllers</small>
-            <h2 style="margin:8px 0;color:#059669;">12</h2>
+            <h2 style="margin:8px 0;color:#059669;"><?= $total_controllers ?></h2>
             <small style="color:#6b7280;">Across departments</small>
         </div>
 
         <div style="background:#fff7ed;padding:18px;border-radius:8px;">
             <small style="color:#6b7280;">Active Activities</small>
-            <h2 style="margin:8px 0;color:#ea580c;">24</h2>
+            <h2 style="margin:8px 0;color:#ea580c;"><?= $active_activities ?></h2>
             <small style="color:#6b7280;">Currently monitored</small>
         </div>
 
         <div style="background:#f3f4f6;padding:18px;border-radius:8px;">
-            <small style="color:#6b7280;">Avg. Retention</small>
-            <h2 style="margin:8px 0;color:#374151;">7 Years</h2>
-            <small style="color:#6b7280;">Average record retention</small>
+            <small style="color:#6b7280;">Retention Documented</small>
+            <h2 style="margin:8px 0;color:#374151;"><?= $retention_set ?></h2>
+            <small style="color:#6b7280;">Activities with retention period</small>
         </div>
 
     </div>
@@ -301,7 +320,7 @@ try {
                             <?php foreach ($records as $row): ?>
                                 <tr>
                                     <td>#<?= htmlspecialchars($row['id']) ?></td>
-                                    <td><strong><?= htmlspecialchars($row['process_name']) ?></strong></td>
+                                    <td><strong><?= htmlspecialchars($row['activity_name'] ?? '') ?></strong></td>
                                     <td><?= htmlspecialchars($row['data_controller'] ?? 'N/A') ?></td>
                                     <td><?= htmlspecialchars($row['purpose']) ?></td>
                                     <td><?= htmlspecialchars($row['data_categories']) ?></td>

@@ -2,12 +2,7 @@
 header('Content-Type: application/json');
 
 // Database Connection
-$host = 'localhost';
-$user = 'root';
-$pass = ''; // Default XAMPP password is empty
-$db   = 'privacy_governance';
-
-$conn = new mysqli($host, $user, $pass, $db);
+require_once "../includes/db.php";
 
 if ($conn->connect_error) {
     echo json_encode([
@@ -22,7 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $vendor_name  = trim($_POST['vendor_name'] ?? '');
     $service_type = trim($_POST['service_type'] ?? '');
     $data_shared  = trim($_POST['data_shared'] ?? '');
-    $status       = 'Compliant'; // Default initial status
+    $status       = 'Under Audit'; // Default initial status for vendor_assessments
+    $risk_score   = 15; // Default risk score
 
     if (empty($vendor_name) || empty($service_type) || empty($data_shared)) {
         echo json_encode([
@@ -32,28 +28,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // Prepare & Bind Insert Statement
-    $stmt = $conn->prepare("INSERT INTO vendors (vendor_name, service_type, data_shared, status) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $vendor_name, $service_type, $data_shared, $status);
+    // Prepare & Bind Insert Statement for vendors
+    $stmt = $conn->prepare("INSERT INTO vendors (name, service_type) VALUES (?, ?)");
+    $stmt->bind_param("ss", $vendor_name, $service_type);
 
     if ($stmt->execute()) {
-        echo json_encode([
-            'status' => 'success',
-            'message' => 'Vendor onboarded successfully!'
-        ]);
+        $vendor_id = $stmt->insert_id;
+        $stmt->close();
+
+        // Insert into vendor_assessments
+        $stmt_va = $conn->prepare("INSERT INTO vendor_assessments (vendor_id, risk_score, status) VALUES (?, ?, ?)");
+        $stmt_va->bind_param("iis", $vendor_id, $risk_score, $status);
+        if ($stmt_va->execute()) {
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Vendor onboarded successfully!'
+            ]);
+        } else {
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Assessment Insert Error: ' . $stmt_va->error
+            ]);
+        }
+        $stmt_va->close();
+
     } else {
         echo json_encode([
             'status' => 'error',
             'message' => 'Database Insert Error: ' . $stmt->error
         ]);
+        $stmt->close();
     }
-
-    $stmt->close();
 } else {
     echo json_encode([
         'status' => 'error',
         'message' => 'Invalid Request Method.'
     ]);
 }
-
-$conn->close();

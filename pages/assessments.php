@@ -9,7 +9,14 @@ $high_risk_count = 0;
 $under_review_count = 0;
 
 if ($conn && !$conn->connect_error) {
-    $result = $conn->query("SELECT * FROM assessments ORDER BY id DESC");
+    $query = "SELECT pa.id, pa.title, u.email AS assessor, rm.risk_level_name AS risk_level, ast.status_name AS status
+              FROM privacy_assessments pa
+              LEFT JOIN assessment_statuses ast ON pa.status_id = ast.id
+              LEFT JOIN users u ON pa.assigned_to = u.id
+              LEFT JOIN assessment_risks ar ON ar.assessment_id = pa.id
+              LEFT JOIN risk_matrix rm ON ar.inherent_risk_matrix_id = rm.id
+              ORDER BY pa.id DESC";
+    $result = $conn->query($query);
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $assessment_list[] = $row;

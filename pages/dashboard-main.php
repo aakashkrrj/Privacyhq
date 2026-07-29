@@ -21,7 +21,7 @@ if (isset($conn) && !$conn->connect_error) {
     }
 
     // 3. Get total assessments
-    $res = $conn->query("SELECT COUNT(*) AS total FROM assessments");
+    $res = $conn->query("SELECT COUNT(*) AS total FROM privacy_assessments");
     if ($res) {
         $assessment_count = $res->fetch_assoc()['total'];
     }
