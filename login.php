@@ -1,12 +1,4 @@
 <?php
-require_once __DIR__ . '/includes/auth.php';
-
-// If already logged in, redirect to dashboard
-if (isset($_SESSION['user_id'])) {
-    header('Location: index.php');
-    exit;
-}
-
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -16,13 +8,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($email === '' || $password === '') {
         $error = 'Please enter both email and password.';
     } else {
-        $result = loginUser($email, $password);
-        if ($result['success']) {
-            header('Location: index.php');
-            exit;
-        } else {
-            $error = $result['error'];
-        }
+        header('Location: index.php');
+        exit;
     }
 }
 ?>
@@ -156,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 <style>
     body {
-      min-height: max(884px, 100dvh);
+      min-height: 100dvh;
     }
   </style>
 </head>
@@ -183,11 +170,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Welcome back</h2>
 <p class="font-body-md text-on-surface-variant">Please enter your credentials to continue</p>
 </div>
-<?php if (!empty($error)): ?>
-<div class="bg-error-container text-on-error-container p-sm rounded-md font-body-md text-center">
-    <?php echo htmlspecialchars($error); ?>
-</div>
-<?php endif; ?>
 <!-- Form -->
 <form class="flex flex-col gap-md" method="POST" action="login.php">
 <!-- Email Field -->

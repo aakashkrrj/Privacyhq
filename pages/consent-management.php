@@ -1,315 +1,321 @@
 <?php
-require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../backend/services/ConsentService.php';
-requireLogin();
+// pages/consent-management.php
+// Pure Frontend View - NO SQL LOGIC
+include_once __DIR__ . '/../includes/bottom-nav.php';
 
-$consentService = new ConsentService();
-$activeCount = $consentService->countActiveConsents();
-$expiredCount = $consentService->countExpiredConsents();
-$consentsResponse = $consentService->getConsents([], 1, 5); // Just 5 for UI display
-$recentConsents = $consentsResponse['data'];
+// Session variables for JS
+$csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
 ?>
-<!DOCTYPE html>
 
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
-<title>Consent Management | PrivacyHQ</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<style>
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .glass-effect { backdrop-filter: blur(8px); background-color: rgba(250, 249, 248, 0.8); }
-        .consent-card-shadow { box-shadow: 0px 2px 4px rgba(0,0,0,0.04); }
-        .fab-shadow { box-shadow: 0px 8px 16px rgba(0,0,0,0.08); }
-    </style>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "on-surface-variant": "#404752",
-                        "on-secondary-container": "#003f6d",
-                        "secondary-fixed": "#d1e4ff",
-                        "outline": "#717783",
-                        "surface-variant": "#e3e2e1",
-                        "on-secondary": "#ffffff",
-                        "surface-dim": "#dadad9",
-                        "on-tertiary-fixed-variant": "#004881",
-                        "error": "#ba1a1a",
-                        "tertiary-fixed": "#d3e4ff",
-                        "secondary": "#0061a3",
-                        "on-secondary-fixed-variant": "#00497d",
-                        "surface": "#faf9f8",
-                        "on-primary-container": "#ffffff",
-                        "on-secondary-fixed": "#001d36",
-                        "tertiary-container": "#2679c9",
-                        "on-surface": "#1a1c1c",
-                        "surface-container": "#efeeed",
-                        "surface-container-lowest": "#ffffff",
-                        "surface-container-high": "#e9e8e7",
-                        "secondary-fixed-dim": "#9ecaff",
-                        "surface-bright": "#faf9f8",
-                        "on-background": "#1a1c1c",
-                        "error-container": "#ffdad6",
-                        "on-tertiary": "#ffffff",
-                        "background": "#faf9f8",
-                        "on-primary": "#ffffff",
-                        "inverse-surface": "#2f3130",
-                        "tertiary": "#0060a9",
-                        "on-tertiary-fixed": "#001c38",
-                        "primary-container": "#0078d4",
-                        "tertiary-fixed-dim": "#a2c9ff",
-                        "primary-fixed": "#d3e3ff",
-                        "secondary-container": "#5badff",
-                        "surface-tint": "#0060ab",
-                        "on-tertiary-container": "#ffffff",
-                        "on-primary-fixed": "#001c39",
-                        "primary": "#005faa",
-                        "primary-fixed-dim": "#a3c9ff",
-                        "inverse-primary": "#a3c9ff",
-                        "on-error-container": "#93000a",
-                        "on-primary-fixed-variant": "#004883",
-                        "surface-container-low": "#f4f3f2",
-                        "surface-container-highest": "#e3e2e1",
-                        "inverse-on-surface": "#f1f0ef",
-                        "on-error": "#ffffff",
-                        "outline-variant": "#c0c7d4"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    "spacing": {
-                        "sm": "8px",
-                        "base": "4px",
-                        "stack-gap": "12px",
-                        "md": "16px",
-                        "xs": "4px",
-                        "container-padding": "16px",
-                        "lg": "24px",
-                        "xl": "32px"
-                    },
-                    "fontFamily": {
-                        "headline-lg-mobile": ["Inter"],
-                        "headline-lg": ["Inter"],
-                        "body-lg": ["Inter"],
-                        "display": ["Inter"],
-                        "title-md": ["Inter"],
-                        "body-md": ["Inter"],
-                        "caption": ["Inter"],
-                        "label-md": ["Inter"]
-                    },
-                    "fontSize": {
-                        "headline-lg-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                        "display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                        "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
-                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                        "caption": ["11px", {"lineHeight": "14px", "fontWeight": "400"}],
-                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}]
-                    }
-                },
-            },
-        }
-    </script>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
-    }
-  </style>
-  </head>
-<body class="bg-background text-on-surface min-h-screen pb-24">
-<!-- TopAppBar -->
-<header class="fixed top-0 left-0 w-full bg-surface shadow-sm flex justify-between items-center px-container-padding h-16 z-50">
-<div class="flex items-center gap-md">
-<span class="material-symbols-outlined text-primary" data-icon="security">security</span>
-<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">PrivacyHQ</h1>
-</div>
-<div class="flex items-center gap-sm">
-<button class="p-base hover:bg-surface-container-low transition-colors rounded-full">
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
-</button>
-<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
-<img class="w-full h-full object-cover" data-alt="A professional headshot of a corporate compliance officer in a modern, bright office setting. The person is smiling warmly, wearing a professional blazer. High-key lighting and a soft-focus office background with glass partitions and indoor plants emphasize a modern, professional corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcMdT2lQnFq-JCKRdd5mxwEjutv4-tH9QQ0qjS3YtjJ45S-Kdz22_M_7OvhmQ4BM7oUk4A2bASCvrfsMp6UoiKKwKbxKhaKGtEBrB10T8CbSx63JaSO7cKRrsCoiZHRc3EMj5gc_tXJGQjKFi9qHdHQahe4ZrdE5kysDMAqvRkSQ4q321UcmXTb4_UAnFxNz7nEZ6LziCxGpj1bvDegiCYkkdAB9-JjF8coSz81qJqHQbWOng3rQbRz5nizi4opOsg83ClV8okoQTg"/>
-</div>
-</div>
-</header>
-<!-- Main Canvas -->
-<main class="pt-20 px-container-padding flex flex-col gap-lg max-w-2xl mx-auto">
-<!-- Search & Branding Section -->
-<section class="flex flex-col gap-md">
-<div class="relative w-full">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
-<input class="w-full pl-12 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-body-md text-body-md" placeholder="Search consent records..." type="text"/>
-</div>
-</section>
-<!-- Tab Filters -->
-<nav class="flex overflow-x-auto gap-sm pb-2 no-scrollbar">
-<button class="px-md py-2 rounded-full bg-primary text-on-primary font-label-md text-label-md whitespace-nowrap">All</button>
-<button class="px-md py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors font-label-md text-label-md whitespace-nowrap">Active</button>
-<button class="px-md py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors font-label-md text-label-md whitespace-nowrap">Expired</button>
-<button class="px-md py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest transition-colors font-label-md text-label-md whitespace-nowrap">Withdrawn</button>
-</nav>
-<!-- Stats Overview (Bento Hint) -->
-<div class="grid grid-cols-2 gap-md">
-<div class="bg-surface-container-lowest p-md rounded-xl border border-surface-variant consent-card-shadow">
-<p class="font-label-md text-label-md text-outline uppercase tracking-wider">Total Active</p>
-<p class="font-display text-display text-primary mt-base"><?= number_format($activeCount) ?></p>
-</div>
-<div class="bg-surface-container-lowest p-md rounded-xl border border-surface-variant consent-card-shadow">
-<p class="font-label-md text-label-md text-outline uppercase tracking-wider">Total Expired</p>
-<p class="font-display text-display text-secondary mt-base"><?= number_format($expiredCount) ?></p>
-</div>
-</div>
-<!-- Consent Records List -->
-<section class="flex flex-col gap-stack-gap">
-<h2 class="font-title-md text-title-md text-on-surface px-base">Recent Records</h2>
+<div class="space-y-6 max-w-7xl mx-auto p-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                <span class="material-symbols-outlined text-green-600">check_circle</span>
+                Consent Management
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">Capture, audit, and revoke user consent preferences across digital properties.</p>
+        </div>
+        <button onclick="openConsentModal()" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+            + Log New Consent
+        </button>
+    </div>
 
-<?php if (empty($recentConsents)): ?>
-    <div class="p-md text-center text-outline">No consent records found.</div>
-<?php else: ?>
-    <?php foreach ($recentConsents as $c): ?>
-        <?php
-            $bg = 'bg-surface-variant';
-            $icon = 'history';
-            $badgeBg = 'bg-outline-variant/30 text-outline';
-            if ($c['status'] === 'Active') {
-                $bg = 'bg-primary-fixed';
-                $icon = 'person';
-                $badgeBg = 'bg-green-500/10 text-green-700';
-            } elseif ($c['status'] === 'Withdrawn') {
-                $bg = 'bg-secondary-fixed';
-                $icon = 'analytics';
-                $badgeBg = 'bg-red-500/10 text-red-700';
-            }
-        ?>
-        <div class="bg-surface-container-lowest p-md rounded-xl border border-surface-variant consent-card-shadow flex items-center justify-between hover:border-primary-fixed-dim transition-all cursor-pointer <?= $c['status'] === 'Expired' ? 'opacity-70' : '' ?>">
-            <div class="flex items-center gap-md">
-                <div class="w-10 h-10 rounded-full <?= $bg ?> flex items-center justify-center">
-                    <span class="material-symbols-outlined <?= str_replace('-fixed', '-on-fixed', str_replace('bg-', 'text-on-', $bg)) ?>" data-icon="<?= $icon ?>"><?= $icon ?></span>
-                </div>
-                <div>
-                    <p class="font-title-md text-body-md font-semibold text-on-surface"><?= htmlspecialchars($c['first_name'] . ' ' . $c['last_name']) ?></p>
-                    <p class="font-caption text-caption text-outline"><?= htmlspecialchars($c['purpose_name']) ?></p>
-                </div>
+    <!-- KPI CARDS -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <p class="text-sm text-gray-500">Total Consents</p>
+            <h2 class="text-3xl font-bold text-blue-600 mt-2" id="kpi-total">...</h2>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <p class="text-sm text-gray-500">Active / Granted</p>
+            <h2 class="text-3xl font-bold text-green-600 mt-2" id="kpi-active">...</h2>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <p class="text-sm text-gray-500">Revoked</p>
+            <h2 class="text-3xl font-bold text-red-600 mt-2" id="kpi-revoked">...</h2>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <p class="text-sm text-gray-500">Opt-In Rate</p>
+            <h2 class="text-3xl font-bold text-emerald-500 mt-2" id="kpi-optin">...</h2>
+        </div>
+    </div>
+
+    <!-- SEARCH & FILTER -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="text-md font-semibold text-gray-700 mb-5">Search & Filter Consents</h2>
+        <form id="searchForm">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <input type="text" id="filter-search" placeholder="Search Identifier / Email..." class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                <select id="filter-category" class="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    <option value="">All Categories</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Analytics">Analytics</option>
+                    <option value="Essential">Essential</option>
+                    <option value="Third-Party Sharing">Third-Party Sharing</option>
+                </select>
+                <select id="filter-status" class="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    <option value="">All Statuses</option>
+                    <option value="opt_in">Granted</option>
+                    <option value="opt_out">Pending</option>
+                    <option value="withdrawn">Revoked</option>
+                </select>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition col-span-1 md:col-span-2">
+                    Search
+                </button>
             </div>
-            <div class="flex flex-col items-end gap-xs">
-                <span class="px-2 py-0.5 rounded-full <?= $badgeBg ?> text-[10px] font-bold uppercase tracking-tighter"><?= htmlspecialchars($c['status']) ?></span>
-                <p class="font-caption text-caption text-outline"><?= date('M d, Y', strtotime($c['created_at'])) ?></p>
+        </form>
+    </div>
+
+    <!-- CONSENTS TABLE -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-12">
+        <div class="p-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="font-semibold text-gray-700">Consent Ledger</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-200">
+                        <th class="p-4">User Identifier</th>
+                        <th class="p-4">Category</th>
+                        <th class="p-4">Source</th>
+                        <th class="p-4">Status</th>
+                        <th class="p-4">Captured At</th>
+                        <th class="p-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="consentTableBody">
+                    <tr><td colspan="6" class="text-center py-8 text-gray-500">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination Controls -->
+        <div id="paginationControls" class="flex justify-between items-center p-4 border-t hidden">
+            <span class="text-sm text-gray-600" id="pageInfo"></span>
+            <div class="flex gap-2">
+                <button id="btnPrev" class="px-3 py-1 border rounded bg-white text-gray-700 hover:bg-gray-50">Previous</button>
+                <button id="btnNext" class="px-3 py-1 border rounded bg-white text-gray-700 hover:bg-gray-50">Next</button>
             </div>
         </div>
-    <?php endforeach; ?>
-<?php endif; ?>
+    </div>
+</div>
 
-</section>
-</main>
-<!-- FAB: Add Consent -->
-<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary-container text-on-primary-container rounded-2xl fab-shadow flex items-center justify-center active:scale-95 transition-transform z-40">
-<span class="material-symbols-outlined" data-icon="add" style="font-variation-settings: 'FILL' 0, 'wght' 600;">add</span>
-</button>
-<!-- BottomNavBar -->
-<!-- Standard Bottom Navigation -->
-<nav class="fixed bottom-0 left-0 right-0 w-full z-50
-            bg-surface shadow-[0px_-2px_4px_rgba(0,0,0,0.04)]
-            flex justify-around items-center h-16 px-2">
+<!-- Modal: Log New Consent -->
+<div id="consentModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl relative">
+        <button onclick="closeConsentModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Log Manual Consent</h3>
+        
+        <form id="addConsentForm" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">User Identifier (Email / ID)</label>
+                <input type="text" name="user_identifier" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Consent Category</label>
+                <select name="category" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    <option value="Marketing">Marketing</option>
+                    <option value="Analytics">Analytics</option>
+                    <option value="Essential">Essential</option>
+                    <option value="Third-Party Sharing">Third-Party Sharing</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select name="status" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    <option value="Granted">Granted</option>
+                    <option value="Pending">Pending / Opt-Out</option>
+                    <option value="Revoked">Revoked</option>
+                </select>
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="closeConsentModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Save Consent</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    <!-- Dashboard -->
-    <a href="/governance/index.php"
-   class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 rounded-xl">
+<!-- Modal: Revoke Consent -->
+<div id="revokeModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl relative">
+        <button onclick="closeRevokeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Revoke Consent</h3>
+        <p class="text-sm text-gray-500 mb-4">Are you sure you want to withdraw this consent? This action is logged.</p>
+        
+        <form id="revokeConsentForm" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            <input type="hidden" name="revoke_id" id="revoke_consent_id">
+            <div class="pt-2 flex justify-end gap-3">
+                <button type="button" onclick="closeRevokeModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Revoke Consent</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    <span class="material-symbols-outlined"
-          style="font-variation-settings:'FILL' 0;">
-        dashboard
-    </span>
-
-    <span class="font-label-md text-label-md">
-        Dashboard
-    </span>
-
-</a>
-
-    <!-- Consent -->
-    <a href="/governance/pages/consent-management.php"
-       class="nav-consent flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
-
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            verified_user
-        </span>
-
-        <span class="font-label-md text-label-md">Consent</span>
-    </a>
-
-    <!-- Requests -->
-    <a href="/governance/pages/data-requests.php"
-       class="nav-requests flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
-
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            gavel
-        </span>
-
-        <span class="font-label-md text-label-md">Requests</span>
-    </a>
-
-    <!-- Assess -->
-    <a href="/governance/pages/assessments.php"
-       class="nav-assess flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
-
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            assignment_turned_in
-        </span>
-
-        <span class="font-label-md text-label-md">Assess</span>
-    </a>
-
-    <!-- More -->
-    <a href="/governance/pages/more.php"
-       class="nav-more flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
-
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            menu
-        </span>
-
-        <span class="font-label-md text-label-md">More</span>
-    </a>
-
-</nav>
 <script>
-        // Micro-interaction for tabs
-        const tabs = document.querySelectorAll('nav.no-scrollbar button');
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => {
-                    t.classList.remove('bg-primary', 'text-on-primary');
-                    t.classList.add('bg-surface-container-high', 'text-on-surface-variant');
-                });
-                tab.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
-                tab.classList.add('bg-primary', 'text-on-primary');
-            });
-        });
+let currentPage = 1;
 
-        // Simple input interaction effect
-        const searchInput = document.querySelector('input');
-        searchInput.addEventListener('focus', () => {
-            searchInput.parentElement.classList.add('scale-[1.02]');
-        });
-        searchInput.addEventListener('blur', () => {
-            searchInput.parentElement.classList.remove('scale-[1.02]');
-        });
-    </script>
-</body></html>
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+async function loadDashboard() {
+    try {
+        const res = await fetch('backend/api/consent/dashboard.php');
+        const data = await res.json();
+        if (data.status === 'success' && data.data) {
+            document.getElementById('kpi-total').innerText = data.data.total;
+            document.getElementById('kpi-active').innerText = data.data.active_consents;
+            document.getElementById('kpi-revoked').innerText = data.data.revoked_consents;
+            document.getElementById('kpi-optin').innerText = data.data.opt_in_rate;
+        }
+    } catch (e) {
+        console.error('Failed to load dashboard metrics', e);
+    }
+}
+
+async function loadConsents() {
+    const search = document.getElementById('filter-search').value;
+    const category = document.getElementById('filter-category').value;
+    const status = document.getElementById('filter-status').value;
+
+    const url = `backend/api/consent/list.php?p=${currentPage}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`;
+    
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const tbody = document.getElementById('consentTableBody');
+        
+        if (data.status === 'success') {
+            tbody.innerHTML = '';
+            const items = data.data.items;
+            const total = data.data.total;
+            
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No consents found.</td></tr>';
+            } else {
+                items.forEach(c => {
+                    let statusLabel = 'Granted';
+                    let statusClass = 'bg-green-100 text-green-800';
+                    if (c.status === 'withdrawn') {
+                        statusLabel = 'Revoked';
+                        statusClass = 'bg-red-100 text-red-800';
+                    } else if (c.status === 'opt_out') {
+                        statusLabel = 'Pending';
+                        statusClass = 'bg-yellow-100 text-yellow-800';
+                    }
+
+                    const row = `
+                        <tr class="hover:bg-gray-50 border-b border-gray-100">
+                            <td class="p-4 font-medium text-gray-900">${escapeHtml(c.subject_email)}</td>
+                            <td class="p-4 text-gray-600">${escapeHtml(c.category)}</td>
+                            <td class="p-4 text-gray-500 text-sm">${escapeHtml(c.source)}</td>
+                            <td class="p-4">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full ${statusClass}">
+                                    ${escapeHtml(statusLabel)}
+                                </span>
+                            </td>
+                            <td class="p-4 text-gray-500 text-sm">${escapeHtml(c.created_at)}</td>
+                            <td class="p-4 text-right">
+                                ${c.status !== 'withdrawn' ? `<button onclick="openRevokeModal(${c.id})" class="text-red-600 hover:text-red-900 font-medium text-sm">Revoke</button>` : `<span class="text-gray-400 text-sm">Revoked</span>`}
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            }
+
+            // Pagination
+            const totalPages = Math.ceil(total / 10);
+            const controls = document.getElementById('paginationControls');
+            if (totalPages > 1) {
+                controls.classList.remove('hidden');
+                document.getElementById('pageInfo').innerText = `Showing page ${currentPage} of ${totalPages}`;
+                document.getElementById('btnPrev').style.display = currentPage > 1 ? 'block' : 'none';
+                document.getElementById('btnNext').style.display = currentPage < totalPages ? 'block' : 'none';
+            } else {
+                controls.classList.add('hidden');
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load consents', e);
+    }
+}
+
+document.getElementById('searchForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    currentPage = 1;
+    loadConsents();
+});
+
+document.getElementById('btnPrev').addEventListener('click', () => {
+    if (currentPage > 1) {
+        currentPage--;
+        loadConsents();
+    }
+});
+
+document.getElementById('btnNext').addEventListener('click', () => {
+    currentPage++;
+    loadConsents();
+});
+
+async function submitApi(formId, endpoint, modalCallback) {
+    const form = document.getElementById(formId);
+    const formData = new FormData(form);
+    try {
+        const res = await fetch(endpoint, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.status === 'success') {
+            loadConsents();
+            loadDashboard();
+            form.reset();
+            modalCallback();
+        } else {
+            alert(data.message || 'Error occurred');
+        }
+    } catch (e) {
+        alert('Request failed');
+    }
+}
+
+document.getElementById('addConsentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitApi('addConsentForm', 'backend/api/consent/create.php', closeConsentModal);
+});
+
+document.getElementById('revokeConsentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitApi('revokeConsentForm', 'backend/api/consent/revoke.php', closeRevokeModal);
+});
+
+function openConsentModal() {
+    document.getElementById('consentModal').classList.remove('hidden');
+}
+
+function closeConsentModal() {
+    document.getElementById('consentModal').classList.add('hidden');
+}
+
+function openRevokeModal(id) {
+    document.getElementById('revoke_consent_id').value = id;
+    document.getElementById('revokeModal').classList.remove('hidden');
+}
+
+function closeRevokeModal() {
+    document.getElementById('revokeModal').classList.add('hidden');
+}
+
+// Initial load
+document.addEventListener('DOMContentLoaded', () => {
+    loadDashboard();
+    loadConsents();
+});
+</script>

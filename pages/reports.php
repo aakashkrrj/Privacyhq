@@ -1,7 +1,3 @@
-<?php
-require_once __DIR__ . '/../includes/auth.php';
-requireLogin();
-?>
 <!DOCTYPE html>
 
 <html class="light" lang="en"><head>
@@ -127,7 +123,7 @@ requireLogin();
     </style>
 <style>
     body {
-      min-height: max(884px, 100dvh);
+      min-height: 100dvh;
     }
   </style>
   </head>
@@ -165,14 +161,14 @@ requireLogin();
 <section class="grid grid-cols-2 md:grid-cols-4 gap-md">
 <div class="fluent-card p-md rounded-xl flex flex-col gap-xs">
 <span class="text-on-surface-variant font-label-md text-label-md">Active Audits</span>
-<span class="text-display font-display text-primary">12</span>
+<span class="text-display font-display text-primary" id="kpi-active-audits">...</span>
 <span class="text-caption font-caption text-error flex items-center gap-1">
 <span class="material-symbols-outlined !text-[12px]" data-icon="trending_up">trending_up</span> 2% vs prev. month
                 </span>
 </div>
 <div class="fluent-card p-md rounded-xl flex flex-col gap-xs">
 <span class="text-on-surface-variant font-label-md text-label-md">DSAR Completion</span>
-<span class="text-display font-display text-primary">98<span class="text-headline-lg">%</span></span>
+<span class="text-display font-display text-primary"><span id="kpi-dsar-completion">...</span><span class="text-headline-lg">%</span></span>
 <span class="text-caption font-caption text-green-600 flex items-center gap-1">
 <span class="material-symbols-outlined !text-[12px]" data-icon="check_circle">check_circle</span> Target reached
                 </span>
@@ -215,10 +211,10 @@ requireLogin();
 <div class="w-2 bg-primary h-6 rounded-t-sm"></div>
 </div>
 <div class="flex items-center gap-base">
-<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download PDF">
+<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download PDF" onclick="alert('Coming Soon: Feature under development.');">
 <span class="material-symbols-outlined" data-icon="picture_as_pdf">picture_as_pdf</span>
 </button>
-<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download CSV">
+<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download CSV" onclick="alert('Coming Soon: Feature under development.');">
 <span class="material-symbols-outlined" data-icon="csv">csv</span>
 </button>
 <button class="p-2 hover:bg-surface-container rounded-lg text-outline transition-colors">
@@ -247,10 +243,10 @@ requireLogin();
 <div class="w-2 bg-primary/20 h-4 rounded-t-sm"></div>
 </div>
 <div class="flex items-center gap-base">
-<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download PDF">
+<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download PDF" onclick="alert('Coming Soon: Feature under development.');">
 <span class="material-symbols-outlined" data-icon="picture_as_pdf">picture_as_pdf</span>
 </button>
-<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download CSV">
+<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download CSV" onclick="alert('Coming Soon: Feature under development.');">
 <span class="material-symbols-outlined" data-icon="csv">csv</span>
 </button>
 <button class="p-2 hover:bg-surface-container rounded-lg text-outline transition-colors">
@@ -279,10 +275,10 @@ requireLogin();
 <div class="w-2 bg-primary h-8 rounded-t-sm"></div>
 </div>
 <div class="flex items-center gap-base">
-<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download PDF">
+<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download PDF" onclick="alert('Coming Soon: Feature under development.');">
 <span class="material-symbols-outlined" data-icon="picture_as_pdf">picture_as_pdf</span>
 </button>
-<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download CSV">
+<button class="p-2 hover:bg-surface-container rounded-lg text-on-surface-variant transition-colors" title="Download CSV" onclick="alert('Coming Soon: Feature under development.');">
 <span class="material-symbols-outlined" data-icon="csv">csv</span>
 </button>
 <button class="p-2 hover:bg-surface-container rounded-lg text-outline transition-colors">
@@ -320,9 +316,9 @@ requireLogin();
 <div class="relative w-24 h-24 flex items-center justify-center">
 <svg class="w-full h-full -rotate-90">
 <circle class="text-surface-container-high" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-width="8"></circle>
-<circle class="text-primary transition-all duration-1000" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="62.8" stroke-width="8"></circle>
+<circle id="kpi-risk-circle" class="text-primary transition-all duration-1000" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-width="8"></circle>
 </svg>
-<span class="absolute text-title-md font-display">75%</span>
+<span class="absolute text-title-md font-display" id="kpi-risk-text">...%</span>
 </div>
 <div>
 <h4 class="font-title-md text-on-surface">Risk Mitigation</h4>
@@ -366,7 +362,7 @@ requireLogin();
     </a>
 
     <!-- Requests -->
-    <a href="/governance/pages/data-requests.php"
+    <a href="index.php?page=data-requests"
        class="nav-requests flex flex-col items-center justify-center
               text-on-surface-variant px-4 py-1 rounded-xl">
 
@@ -417,7 +413,29 @@ requireLogin();
             });
         });
 
-        // Simple mock search or filter behavior if needed
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('backend/api/reports/summary.php');
+                const result = await response.json();
+                if (result.success && result.data) {
+                    const data = result.data;
+                    document.getElementById('kpi-active-audits').textContent = data.active_audits;
+                    document.getElementById('kpi-dsar-completion').textContent = data.dsar_completion;
+                    
+                    // Risk mitigation circle calculations
+                    const pct = data.risk_mitigation;
+                    document.getElementById('kpi-risk-text').textContent = pct + '%';
+                    const circle = document.getElementById('kpi-risk-circle');
+                    const strokeDasharray = 251.2;
+                    const offset = strokeDasharray - (strokeDasharray * pct) / 100;
+                    circle.style.strokeDashoffset = offset;
+                }
+            } catch (error) {
+                console.error("Failed to load reports metrics", error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchMetrics);
         console.log("PrivacyHQ Analytics Engine Initialized");
     </script>
 </body></html>

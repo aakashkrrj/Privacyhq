@@ -1,511 +1,1437 @@
-<?php
-require_once __DIR__ . '/../includes/auth.php';
-requireLogin();
-?>
-<!DOCTYPE html>
+<!-- ===========================================================
+    VENDOR RISK MANAGEMENT
+    PART 1 : PAGE HEADER + EXECUTIVE DASHBOARD
+=========================================================== -->
 
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
-<title>Vendor Risk Management | PrivacyHQ</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            "colors": {
-                    "on-surface-variant": "#404752",
-                    "on-secondary-container": "#003f6d",
-                    "secondary-fixed": "#d1e4ff",
-                    "outline": "#717783",
-                    "surface-variant": "#e3e2e1",
-                    "on-secondary": "#ffffff",
-                    "surface-dim": "#dadad9",
-                    "on-tertiary-fixed-variant": "#004881",
-                    "error": "#ba1a1a",
-                    "tertiary-fixed": "#d3e4ff",
-                    "secondary": "#0061a3",
-                    "on-secondary-fixed-variant": "#00497d",
-                    "surface": "#faf9f8",
-                    "on-primary-container": "#ffffff",
-                    "on-secondary-fixed": "#001d36",
-                    "tertiary-container": "#2679c9",
-                    "on-surface": "#1a1c1c",
-                    "surface-container": "#efeeed",
-                    "surface-container-lowest": "#ffffff",
-                    "surface-container-high": "#e9e8e7",
-                    "secondary-fixed-dim": "#9ecaff",
-                    "surface-bright": "#faf9f8",
-                    "on-background": "#1a1c1c",
-                    "error-container": "#ffdad6",
-                    "on-tertiary": "#ffffff",
-                    "background": "#faf9f8",
-                    "on-primary": "#ffffff",
-                    "inverse-surface": "#2f3130",
-                    "tertiary": "#0060a9",
-                    "on-tertiary-fixed": "#001c38",
-                    "primary-container": "#0078d4",
-                    "tertiary-fixed-dim": "#a2c9ff",
-                    "primary-fixed": "#d3e3ff",
-                    "secondary-container": "#5badff",
-                    "surface-tint": "#0060ab",
-                    "on-tertiary-container": "#ffffff",
-                    "on-primary-fixed": "#001c39",
-                    "primary": "#005faa",
-                    "primary-fixed-dim": "#a3c9ff",
-                    "inverse-primary": "#a3c9ff",
-                    "on-error-container": "#93000a",
-                    "on-primary-fixed-variant": "#004883",
-                    "surface-container-low": "#f4f3f2",
-                    "surface-container-highest": "#e3e2e1",
-                    "inverse-on-surface": "#f1f0ef",
-                    "on-error": "#ffffff",
-                    "outline-variant": "#c0c7d4"
-            },
-            "borderRadius": {
-                    "DEFAULT": "0.25rem",
-                    "lg": "0.5rem",
-                    "xl": "0.75rem",
-                    "full": "9999px"
-            },
-            "spacing": {
-                    "sm": "8px",
-                    "base": "4px",
-                    "stack-gap": "12px",
-                    "md": "16px",
-                    "xs": "4px",
-                    "container-padding": "16px",
-                    "lg": "24px",
-                    "xl": "32px"
-            },
-            "fontFamily": {
-                    "headline-lg-mobile": ["Inter"],
-                    "headline-lg": ["Inter"],
-                    "body-lg": ["Inter"],
-                    "display": ["Inter"],
-                    "title-md": ["Inter"],
-                    "body-md": ["Inter"],
-                    "caption": ["Inter"],
-                    "label-md": ["Inter"]
-            },
-            "fontSize": {
-                    "headline-lg-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                    "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                    "display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                    "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
-                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                    "caption": ["11px", {"lineHeight": "14px", "fontWeight": "400"}],
-                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}]
-            }
-          },
-        },
-      }
-    </script>
-<style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #F3F2F1;
-        }
-        .fluent-card {
-            background-color: #ffffff;
-            border: 1px solid #EDEBE9;
-            box-shadow: 0px 2px 4px rgba(0,0,0,0.04);
-            transition: box-shadow 0.2s ease, transform 0.2s ease;
-        }
-        .fluent-card:hover {
-            box-shadow: 0px 4px 8px rgba(0,0,0,0.06);
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            vertical-align: middle;
-        }
-        .risk-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-        /* Custom Heatmap Grid */
-        .heatmap-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 4px;
-        }
-        .heatmap-cell {
-            aspect-ratio: 1;
-            border-radius: 4px;
-        }
-    </style>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
-    }
-  </style>
-  </head>
-<body class="bg-surface text-on-surface antialiased pb-24 md:pb-0 md:pt-16">
-<!-- TopAppBar (Desktop/Mobile Header) -->
-<header class="fixed top-0 left-0 w-full bg-surface shadow-sm h-16 flex justify-between items-center px-container-padding z-50 transition-colors duration-200 ease-in-out">
-<div class="flex items-center gap-sm">
-<span class="material-symbols-outlined text-primary text-[24px]" data-icon="security">security</span>
-<h1 class="font-display text-headline-lg-mobile md:text-headline-lg text-primary">PrivacyHQ</h1>
-</div>
-<div class="flex items-center gap-md">
-<button class="p-2 hover:bg-surface-container-low rounded-full transition-colors">
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="search">search</span>
-</button>
-<button class="p-2 hover:bg-surface-container-low rounded-full transition-colors relative">
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
-<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
-</button>
-</div>
-</header>
-<div class="flex max-w-7xl mx-auto min-h-screen">
-<!-- NavigationDrawer (Desktop Only) -->
-<aside class="hidden md:flex flex-col py-lg px-md gap-stack-gap h-full w-80 bg-surface shadow-lg rounded-r-xl sticky top-16">
-<div class="flex flex-col gap-sm mb-lg px-2">
-<div class="flex items-center gap-md">
-<img class="w-12 h-12 rounded-full object-cover" data-alt="Professional headshot of a female compliance officer in a modern office, soft bokeh background, high-key lighting, corporate professional aesthetic with blue and white tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYpczt8Cuc5T1Wylg_FGNYtqvZIjb1pL2aAaMcdw3Ot3dnkhL368VfuWo7hzgJhU-B5N5RZLJ8cu9xSqahW-sPms43PCjnx3XVUNY59sxuvjDVtqSSQ9j5PB7JMjYNYL7H8psSli5xBQfu5AoCGRUuj8Wuf6TwlvItCA8tPeE--9COi9AS7__V0nFXIS-pcAaLp8UQtPxof4iV2FIE4HIQ0SFxmVrhicOGaKyq26WcKa62skbLnfBlC0xuXHgE66iA69Dj2JFTqtFU"/>
-<div class="flex flex-col">
-<span class="font-title-md text-on-surface">Admin User</span>
-<span class="font-label-md text-outline">Data Protection Officer</span>
-</div>
-</div>
-</div>
-<nav class="flex flex-col gap-1">
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-primary font-bold bg-secondary-fixed transition-all duration-200" href="#">
-<span class="material-symbols-outlined" data-icon="business_center">business_center</span>
-<span class="font-body-md">Vendor Risk</span>
-</a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all duration-200" href="#">
-<span class="material-symbols-outlined" data-icon="search_insights">search_insights</span>
-<span class="font-body-md">Data Discovery</span>
-</a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all duration-200" href="#">
-<span class="material-symbols-outlined" data-icon="emergency_home">emergency_home</span>
-<span class="font-body-md">Incidents</span>
-</a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all duration-200" href="#">
-<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
-<span class="font-body-md">Reports</span>
-</a>
-<hr class="my-2 border-surface-variant"/>
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all duration-200" href="#">
-<span class="material-symbols-outlined" data-icon="settings">settings</span>
-<span class="font-body-md">Settings</span>
-</a>
-</nav>
-</aside>
-<!-- Main Content Canvas -->
-<main class="flex-1 p-container-padding md:p-lg overflow-x-hidden">
-<!-- Bento Dashboard Header -->
-<div class="grid grid-cols-1 md:grid-cols-12 gap-md md:gap-lg mb-lg">
-<!-- Total Vendors Summary -->
-<div class="md:col-span-4 fluent-card rounded-xl p-md flex flex-col justify-between">
-<div>
-<div class="flex items-center justify-between mb-sm">
-<span class="font-label-md text-outline">TOTAL VENDORS</span>
-<span class="material-symbols-outlined text-primary" data-icon="corporate_fare">corporate_fare</span>
-</div>
-<div class="text-[48px] font-bold text-on-surface tracking-tight leading-none">142</div>
-</div>
-<div class="mt-md flex items-center gap-xs">
-<span class="text-green-600 flex items-center font-label-md">
-<span class="material-symbols-outlined text-[16px]" data-icon="arrow_upward">arrow_upward</span>
-                            12%
-                        </span>
-<span class="font-label-md text-outline">vs last quarter</span>
-</div>
-</div>
-<!-- Risk Heatmap (Mini) -->
-<div class="md:col-span-8 fluent-card rounded-xl p-md grid grid-cols-1 md:grid-cols-2 gap-md">
-<div>
-<h3 class="font-title-md text-on-surface mb-sm">Risk Distribution</h3>
-<div class="heatmap-grid">
-<div class="heatmap-cell bg-error/10"></div>
-<div class="heatmap-cell bg-error/40"></div>
-<div class="heatmap-cell bg-error"></div>
-<div class="heatmap-cell bg-secondary-container/20"></div>
-<div class="heatmap-cell bg-secondary-container/60"></div>
-<div class="heatmap-cell bg-error/30"></div>
-<div class="heatmap-cell bg-green-500/10"></div>
-<div class="heatmap-cell bg-green-500/30"></div>
-<div class="heatmap-cell bg-green-500/60"></div>
-</div>
-</div>
-<div class="flex flex-col justify-center gap-sm">
-<div class="flex items-center justify-between">
-<span class="font-body-md text-on-surface-variant flex items-center gap-sm">
-<span class="w-3 h-3 rounded-full bg-error"></span> High Risk
+<section class="space-y-lg">
+
+    <!-- Page Header -->
+
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-md">
+
+        <div>
+
+            <div class="flex items-center gap-sm">
+
+                <span class="material-symbols-outlined text-primary text-[34px]">
+                    business_center
+                </span>
+
+                <h1 class="font-headline-lg-mobile md:font-headline-lg text-on-surface">
+                    Vendor Risk Management
+                </h1>
+
+            </div>
+
+            <p class="font-body-md text-on-surface-variant mt-xs">
+                Monitor vendor compliance, security posture and third-party risks across PrivacyHQ.
+            </p>
+
+        </div>
+
+        <div class="flex flex-wrap gap-sm">
+
+            <button
+                id="openVendorModal"
+                class="flex items-center gap-sm bg-primary text-on-primary px-lg py-md rounded-xl shadow-sm hover:brightness-95 transition">
+
+                <span class="material-symbols-outlined">
+                    add
+                </span>
+
+                Onboard Vendor
+
+            </button>
+
+            <button
+                class="flex items-center gap-sm border border-outline-variant bg-surface-container-lowest px-lg py-md rounded-xl hover:bg-surface-container">
+
+                <span class="material-symbols-outlined">
+                    download
+                </span>
+
+                Export Report
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Executive Overview -->
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-md">
+
+        <!-- Total Vendors -->
+
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm">
+
+            <div class="flex justify-between items-start">
+
+                <div>
+
+                    <p class="font-caption text-outline">
+                        Total Vendors
+                    </p>
+
+                    <h2 class="text-[42px] font-bold mt-sm text-on-surface">
+                        <?php
+                        $vendorCount = $conn->query("SELECT COUNT(*) AS total FROM vendors");
+                        echo ($vendorCount) ? $vendorCount->fetch_assoc()['total'] : 0;
+                        ?>
+                    </h2>
+
+                </div>
+
+                <span class="material-symbols-outlined text-primary text-[34px]">
+                    apartment
+                </span>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Compliant -->
+
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm">
+
+            <div class="flex justify-between">
+
+                <div>
+
+                    <p class="font-caption text-outline">
+                        Compliant
+                    </p>
+
+                    <h2 class="text-[42px] font-bold mt-sm text-[#107C10]">
+                        118
+                    </h2>
+
+                </div>
+
+                <span class="material-symbols-outlined text-[#107C10] text-[34px]">
+                    verified
+                </span>
+
+            </div>
+
+            <p class="font-caption text-[#107C10] mt-sm">
+                ▲ 8% this month
+            </p>
+
+        </div>
+
+
+
+        <!-- High Risk -->
+
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm">
+
+            <div class="flex justify-between">
+
+                <div>
+
+                    <p class="font-caption text-outline">
+                        High Risk Vendors
+                    </p>
+
+                    <h2 class="text-[42px] font-bold mt-sm text-error">
+                        12
+                    </h2>
+
+                </div>
+
+                <span class="material-symbols-outlined text-error text-[34px]">
+                    warning
+                </span>
+
+            </div>
+
+            <p class="font-caption text-error mt-sm">
+                Immediate review required
+            </p>
+
+        </div>
+
+
+
+        <!-- Average Score -->
+
+        <div class="bg-primary rounded-xl p-lg text-white shadow-lg">
+
+            <div class="flex justify-between items-center">
+
+                <div>
+
+                    <p class="opacity-90">
+                        Average Risk Score
+                    </p>
+
+                    <h2 class="text-[42px] font-bold mt-sm">
+                        91%
+                    </h2>
+
+                </div>
+
+                <span class="material-symbols-outlined text-[38px]">
+                    shield
+                </span>
+
+            </div>
+
+            <div class="w-full bg-white/20 rounded-full h-2 mt-lg">
+
+                <div class="bg-white rounded-full h-2 w-[91%]"></div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Executive Insights -->
+
+    <div class="grid lg:grid-cols-3 gap-md">
+
+        <!-- Compliance Health -->
+
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm">
+
+            <div class="flex justify-between">
+
+                <div>
+
+                    <h3 class="font-title-md">
+                        Compliance Health
+                    </h3>
+
+                    <p class="font-caption text-outline">
+                        Overall Vendor Compliance
+                    </p>
+
+                </div>
+
+                <span class="material-symbols-outlined text-[#107C10]">
+                    health_and_safety
+                </span>
+
+            </div>
+
+            <div class="mt-lg">
+
+                <span class="text-[34px] font-bold text-[#107C10]">
+                    Excellent
+                </span>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Reviews -->
+
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm">
+
+            <div class="flex justify-between">
+
+                <div>
+
+                    <h3 class="font-title-md">
+                        Pending Reviews
+                    </h3>
+
+                    <p class="font-caption text-outline">
+                        Due this week
+                    </p>
+
+                </div>
+
+                <span class="material-symbols-outlined text-primary">
+                    assignment
+                </span>
+
+            </div>
+
+            <div class="mt-lg">
+
+                <span class="text-[34px] font-bold">
+                    14
+                </span>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Security -->
+
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm">
+
+            <div class="flex justify-between">
+
+                <div>
+
+                    <h3 class="font-title-md">
+                        Security Rating
+                    </h3>
+
+                    <p class="font-caption text-outline">
+                        Third-party Security
+                    </p>
+
+                </div>
+
+                <span class="material-symbols-outlined text-primary">
+                    security
+                </span>
+
+            </div>
+
+            <div class="mt-lg">
+
+                <span class="text-[34px] font-bold text-primary">
+                    A+
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- ===========================================================
+    PART 2 : ANALYTICS & RISK OVERVIEW
+=========================================================== -->
+
+<section class="mt-lg space-y-lg">
+
+    <!-- Analytics Row -->
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-md">
+
+        <!-- Risk Distribution -->
+
+        <div class="xl:col-span-2 bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+
+            <div class="flex justify-between items-center">
+
+                <div>
+
+                    <h3 class="font-title-md">
+                        Vendor Risk Distribution
+                    </h3>
+
+                    <p class="font-body-md text-on-surface-variant">
+                        Overall vendor portfolio classification
+                    </p>
+
+                </div>
+
+                <span class="material-symbols-outlined text-primary">
+                    analytics
+                </span>
+
+            </div>
+
+            <div class="grid grid-cols-4 gap-md mt-lg">
+
+                <div class="rounded-xl p-lg bg-[#E8F5E9] text-center">
+                    <div class="text-4xl font-bold text-[#107C10]">74</div>
+                    <div class="mt-sm text-sm">Low Risk</div>
+                </div>
+
+                <div class="rounded-xl p-lg bg-[#FFF8E1] text-center">
+                    <div class="text-4xl font-bold text-[#FFB900]">36</div>
+                    <div class="mt-sm text-sm">Medium</div>
+                </div>
+
+                <div class="rounded-xl p-lg bg-[#FFE7D6] text-center">
+                    <div class="text-4xl font-bold text-[#D83B01]">20</div>
+                    <div class="mt-sm text-sm">High</div>
+                </div>
+
+                <div class="rounded-xl p-lg bg-[#FDE7E9] text-center">
+                    <div class="text-4xl font-bold text-[#C50F1F]">12</div>
+                    <div class="mt-sm text-sm">Critical</div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Risk Score -->
+
+        <div class="bg-primary rounded-xl text-white p-lg shadow-lg">
+
+            <div class="flex justify-between">
+
+                <div>
+
+                    <p class="opacity-90">
+                        Overall Vendor Score
+                    </p>
+
+                    <h2 class="text-[60px] font-bold mt-lg">
+                        91
+                    </h2>
+
+                    <p class="opacity-90">
+                        Excellent
+                    </p>
+
+                </div>
+
+                <span class="material-symbols-outlined text-[42px]">
+                    shield
+                </span>
+
+            </div>
+
+            <div class="w-full bg-white/20 rounded-full h-3 mt-xl">
+                <div class="bg-white h-3 rounded-full w-[91%]"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+
+
+    <!-- Heatmap -->
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+
+        <div class="flex justify-between items-center">
+
+            <div>
+
+                <h3 class="font-title-md">
+
+                    Risk Heatmap
+
+                </h3>
+
+                <p class="font-body-md text-on-surface-variant">
+
+                    Vendor exposure by department
+
+                </p>
+
+            </div>
+
+            <span class="material-symbols-outlined text-primary">
+
+                grid_view
+
+            </span>
+
+        </div>
+
+        <div class="grid grid-cols-5 gap-sm mt-lg">
+
+            <div class="aspect-square rounded-lg bg-green-200"></div>
+            <div class="aspect-square rounded-lg bg-green-300"></div>
+            <div class="aspect-square rounded-lg bg-yellow-300"></div>
+            <div class="aspect-square rounded-lg bg-orange-300"></div>
+            <div class="aspect-square rounded-lg bg-red-500"></div>
+
+            <div class="aspect-square rounded-lg bg-green-100"></div>
+            <div class="aspect-square rounded-lg bg-green-300"></div>
+            <div class="aspect-square rounded-lg bg-yellow-400"></div>
+            <div class="aspect-square rounded-lg bg-orange-400"></div>
+            <div class="aspect-square rounded-lg bg-red-400"></div>
+
+            <div class="aspect-square rounded-lg bg-green-300"></div>
+            <div class="aspect-square rounded-lg bg-yellow-300"></div>
+            <div class="aspect-square rounded-lg bg-yellow-400"></div>
+            <div class="aspect-square rounded-lg bg-orange-500"></div>
+            <div class="aspect-square rounded-lg bg-red-600"></div>
+
+        </div>
+
+    </div>
+
+
+
+
+
+    <!-- Bottom Row -->
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-md">
+
+        <!-- Categories -->
+
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+
+            <div class="flex justify-between">
+
+                <div>
+
+                    <h3 class="font-title-md">
+
+                        Vendor Categories
+
+                    </h3>
+
+                    <p class="font-body-md text-on-surface-variant">
+
+                        Distribution by business type
+
+                    </p>
+
+                </div>
+
+                <span class="material-symbols-outlined text-primary">
+
+                    category
+
+                </span>
+
+            </div>
+
+            <div class="space-y-md mt-lg">
+
+                <div class="flex justify-between">
+                    <span>Cloud Services</span>
+                    <strong>42</strong>
+                </div>
+
+                <div class="flex justify-between">
+                    <span>Payroll</span>
+                    <strong>16</strong>
+                </div>
+
+                <div class="flex justify-between">
+                    <span>Finance</span>
+                    <strong>18</strong>
+                </div>
+
+                <div class="flex justify-between">
+                    <span>Marketing</span>
+                    <strong>23</strong>
+                </div>
+
+                <div class="flex justify-between">
+                    <span>IT Support</span>
+                    <strong>43</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <!-- Review Timeline -->
+
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+
+            <div class="flex justify-between">
+
+                <div>
+
+                    <h3 class="font-title-md">
+
+                        Upcoming Reviews
+
+                    </h3>
+
+                    <p class="font-body-md text-on-surface-variant">
+
+                        Scheduled vendor assessments
+
+                    </p>
+
+                </div>
+
+                <span class="material-symbols-outlined text-primary">
+
+                    event
+
+                </span>
+
+            </div>
+
+            <div class="space-y-lg mt-lg">
+
+                <div class="flex justify-between">
+
+                    <div>
+
+                        <strong>Microsoft Azure</strong>
+
+                        <p class="text-sm text-outline">
+                            Security Review
+                        </p>
+
+                    </div>
+
+                    <span class="text-primary">
+                        02 Aug
+                    </span>
+
+                </div>
+
+                <div class="flex justify-between">
+
+                    <div>
+
+                        <strong>AWS</strong>
+
+                        <p class="text-sm text-outline">
+                            Compliance Audit
+                        </p>
+
+                    </div>
+
+                    <span class="text-primary">
+                        06 Aug
+                    </span>
+
+                </div>
+
+                <div class="flex justify-between">
+
+                    <div>
+
+                        <strong>Razorpay</strong>
+
+                        <p class="text-sm text-outline">
+                            Annual Assessment
+                        </p>
+
+                    </div>
+
+                    <span class="text-primary">
+                        14 Aug
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- ===========================================================
+    PART 3 : SEARCH + VENDOR REGISTRY
+=========================================================== -->
+
+<section class="mt-lg space-y-lg">
+
+    <!-- Search & Filters -->
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+
+        <div class="flex flex-col xl:flex-row gap-md justify-between">
+
+            <div class="relative flex-1">
+
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">
+                    search
+                </span>
+
+                <input
+                    type="text"
+                    placeholder="Search vendor, category or service..."
+                    class="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant focus:ring-2 focus:ring-primary outline-none">
+
+            </div>
+
+            <div class="flex flex-wrap gap-sm">
+
+                <select class="rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3">
+
+                    <option>All Risks</option>
+                    <option>Low</option>
+                    <option>Medium</option>
+                    <option>High</option>
+                    <option>Critical</option>
+
+                </select>
+
+                <select class="rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3">
+
+                    <option>All Status</option>
+                    <option>Compliant</option>
+                    <option>Pending</option>
+                    <option>Review</option>
+
+                </select>
+
+                <button class="bg-primary text-white rounded-xl px-lg py-md hover:brightness-95">
+
+                    Apply Filters
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+
+
+    <!-- Vendor Registry -->
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+
+        <div class="flex justify-between items-center p-lg border-b border-outline-variant">
+
+            <div>
+
+                <h3 class="font-title-md">
+
+                    Vendor Registry
+
+                </h3>
+
+                <p class="font-body-md text-on-surface-variant">
+
+                    Third-party vendors and their latest risk assessments.
+
+                </p>
+
+            </div>
+
+            <button class="flex items-center gap-sm px-lg py-md rounded-xl bg-primary text-white hover:brightness-95">
+
+                <span class="material-symbols-outlined">
+
+                    download
+
+                </span>
+
+                Export
+
+            </button>
+
+        </div>
+
+
+
+
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full">
+
+                <thead class="bg-surface-container-low">
+
+                    <tr>
+
+                        <th class="text-left px-lg py-md">Vendor</th>
+
+                        <th class="text-left px-lg py-md">Category</th>
+
+                        <th class="text-left px-lg py-md">Risk Score</th>
+
+                        <th class="text-left px-lg py-md">Risk Level</th>
+
+                        <th class="text-left px-lg py-md">Compliance</th>
+
+                        <th class="text-left px-lg py-md">Review</th>
+
+                        <th class="text-center px-lg py-md">Actions</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y divide-outline-variant">
+
+                    <tr class="hover:bg-surface-container-low">
+
+                        <td class="px-lg py-md">
+
+                            <div>
+
+                                <div class="font-semibold">
+
+                                    Microsoft Azure
+
+                                </div>
+
+                                <div class="text-sm text-outline">
+
+                                    Cloud Infrastructure
+
+                                </div>
+
+                            </div>
+
+                        </td>
+
+                        <td class="px-lg py-md">
+
+                            Cloud
+
+                        </td>
+
+                        <td class="px-lg py-md font-bold text-green-600">
+
+                            96%
+
+                        </td>
+
+                        <td class="px-lg py-md">
+
+                            <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm">
+
+                                Low
+
                             </span>
-<span class="font-label-md font-bold">14</span>
-</div>
-<div class="flex items-center justify-between">
-<span class="font-body-md text-on-surface-variant flex items-center gap-sm">
-<span class="w-3 h-3 rounded-full bg-secondary-container"></span> Medium Risk
+
+                        </td>
+
+                        <td class="px-lg py-md">
+
+                            <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm">
+
+                                Compliant
+
                             </span>
-<span class="font-label-md font-bold">48</span>
-</div>
-<div class="flex items-center justify-between">
-<span class="font-body-md text-on-surface-variant flex items-center gap-sm">
-<span class="w-3 h-3 rounded-full bg-green-500"></span> Low Risk
+
+                        </td>
+
+                        <td class="px-lg py-md">
+
+                            02 Aug 2026
+
+                        </td>
+
+                        <td class="px-lg py-md text-center">
+
+                            <button class="text-primary">
+
+                                <span class="material-symbols-outlined">
+
+                                    visibility
+
+                                </span>
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+
+
+
+
+                    <tr class="hover:bg-surface-container-low">
+
+                        <td class="px-lg py-md">
+
+                            <div>
+
+                                <div class="font-semibold">
+
+                                    AWS
+
+                                </div>
+
+                                <div class="text-sm text-outline">
+
+                                    Cloud Platform
+
+                                </div>
+
+                            </div>
+
+                        </td>
+
+                        <td class="px-lg py-md">
+
+                            Cloud
+
+                        </td>
+
+                        <td class="px-lg py-md font-bold text-yellow-600">
+
+                            82%
+
+                        </td>
+
+                        <td class="px-lg py-md">
+
+                            <span class="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm">
+
+                                Medium
+
                             </span>
-<span class="font-label-md font-bold">80</span>
-</div>
-</div>
-</div>
-</div>
-<!-- Search and Actions Bar -->
-<div class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-lg">
-<div class="relative flex-1 max-w-md">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
-<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-body-md transition-all" placeholder="Search vendors, products, or scores..." type="text"/>
-</div>
-<div class="flex items-center gap-sm">
-<button class="flex items-center gap-sm px-md py-2 border border-outline-variant rounded-lg font-label-md text-primary hover:bg-surface-container-high transition-colors">
-<span class="material-symbols-outlined text-[18px]" data-icon="filter_list">filter_list</span>
-                        Filters
-                    </button>
-<button class="flex items-center gap-sm px-md py-2 bg-primary text-white rounded-lg font-label-md shadow-sm hover:brightness-110 transition-all">
-<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
-                        Onboard Vendor
-                    </button>
-</div>
-</div>
-<!-- Vendor List (Table Style in Card) -->
-<div class="fluent-card rounded-xl overflow-hidden mb-xl">
-<div class="overflow-x-auto">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="bg-surface-container-low border-b border-outline-variant">
-<th class="px-md py-lg font-label-md text-outline uppercase tracking-wider">Vendor &amp; Service</th>
-<th class="px-md py-lg font-label-md text-outline uppercase tracking-wider">Risk Score</th>
-<th class="px-md py-lg font-label-md text-outline uppercase tracking-wider">Status</th>
-<th class="px-md py-lg font-label-md text-outline uppercase tracking-wider">Last Assessment</th>
-<th class="px-md py-lg font-label-md text-outline uppercase tracking-wider text-right">Actions</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-surface-variant">
-<!-- Vendor Item 1 -->
-<tr class="hover:bg-surface-container-lowest transition-colors group">
-<td class="px-md py-md">
-<div class="flex items-center gap-md">
-<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center overflow-hidden">
-<img class="w-full h-full object-cover" data-alt="Minimalist vector logo for a cloud data warehouse company, featuring abstract geometric blue shapes on a clean white background, modern corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNS5eNfh6JrvTzP3C7ScMjmuq6f7MHkmMc1C516R42NKY--nAXi9U0_rtrlsgcWZy0EXtRhXx5zaVzSsh0l9nDK7_noC783T9W36nFxF28QfxZMKfC7NYDx1EHYD0r1Je4GSKBVZd5FsXWkBDW-7aX1gy2DB1nfY0h4kIAKgnLeU18VIdGP-Xkq2ptMTt1swDMhW10KGwRHrpE3UOZoa05XoP7lM1OF7HvYiWmk1pRQ7xROjdh0iKhePYhtBP9y2MclBkycXvzDuoY"/>
-</div>
-<div>
-<div class="font-title-md text-on-surface">Snowflake Inc.</div>
-<div class="font-caption text-outline">Cloud Data Warehouse</div>
-</div>
-</div>
-</td>
-<td class="px-md py-md">
-<div class="flex items-center gap-sm">
-<div class="w-16 h-2 bg-surface-container rounded-full overflow-hidden">
-<div class="h-full bg-green-500 w-[15%]"></div>
-</div>
-<span class="font-label-md font-bold text-on-surface">15</span>
-</div>
-</td>
-<td class="px-md py-md">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        Compliant
-                                    </span>
-</td>
-<td class="px-md py-md text-body-md text-on-surface-variant">
-                                    Oct 24, 2023
-                                </td>
-<td class="px-md py-md text-right">
-<button class="p-2 text-outline hover:text-primary transition-colors">
-<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
-</button>
-</td>
-</tr>
-<!-- Vendor Item 2 -->
-<tr class="hover:bg-surface-container-lowest transition-colors group">
-<td class="px-md py-md">
-<div class="flex items-center gap-md">
-<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center overflow-hidden">
-<img class="w-full h-full object-cover" data-alt="Logotype for a global technology infrastructure company, bold sans-serif lettering, high contrast professional design, corporate blue and charcoal color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4QzyPL93WBSvXJVYzi8679LNJwzuhkmEeKIqvxIac1G4TMWJPm0u4YpA1nm58EQ5n-Dr7X6lkfj1jC9Lrxnwz8TpsPNHyKCLJx738PnK29eaTqcO8_no2dd5TrEZ899B9cJt0Dyhw5tDjitKVEnAew0B2yo25n4Zehs_yYl8K2Qkc5QAl0yrnQ5ePPUQUGfP8VJO4H86-fGOGlc4ygMev0b-g6KtBeK96dMiadwpoYbSD94yQaVMwvWmgFNLpGD3mL00JaDo7awvG"/>
-</div>
-<div>
-<div class="font-title-md text-on-surface">GlobalLink CRM</div>
-<div class="font-caption text-outline">Marketing Platforms</div>
-</div>
-</div>
-</td>
-<td class="px-md py-md">
-<div class="flex items-center gap-sm">
-<div class="w-16 h-2 bg-surface-container rounded-full overflow-hidden">
-<div class="h-full bg-error w-[72%]"></div>
-</div>
-<span class="font-label-md font-bold text-on-surface">72</span>
-</div>
-</td>
-<td class="px-md py-md">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        Critical Review
-                                    </span>
-</td>
-<td class="px-md py-md text-body-md text-on-surface-variant">
-                                    Jan 12, 2024
-                                </td>
-<td class="px-md py-md text-right">
-<button class="p-2 text-outline hover:text-primary transition-colors">
-<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
-</button>
-</td>
-</tr>
-<!-- Vendor Item 3 -->
-<tr class="hover:bg-surface-container-lowest transition-colors group">
-<td class="px-md py-md">
-<div class="flex items-center gap-md">
-<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center overflow-hidden">
-<img class="w-full h-full object-cover" data-alt="Iconic logo for a major tech conglomerate, minimalist modern design, vibrant primary colors, professional and high-trust aesthetic for a global technology leader." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGEXLnW_sqL4y8zQcJ5BLOujZASIMUVY9Q6zTrP7AI7GKwqa1wgtuz9-lbqaINn-k627f0zXR2PJFMneEMNb2ykbR9ZwGzg8r95W2ufwwOioK4bkNiW8IjG93d52UkA10bxDczq1KH08MIOa_n3BzdZgp3VOw8EXgCsS8KZHF6TSQ8TTbU3qKvpQHop7iA8WLBe7tIFhe-DrsbG2-bmc3XZzNPSjQh8h-uyfJCb2ioY1Vk0_hWI0WxrEWfSdVqenJZ0VaGpIXVFZo3"/>
-</div>
-<div>
-<div class="font-title-md text-on-surface">Zenith AI</div>
-<div class="font-caption text-outline">ML Operations</div>
-</div>
-</div>
-</td>
-<td class="px-md py-md">
-<div class="flex items-center gap-sm">
-<div class="w-16 h-2 bg-surface-container rounded-full overflow-hidden">
-<div class="h-full bg-secondary-container w-[45%]"></div>
-</div>
-<span class="font-label-md font-bold text-on-surface">45</span>
-</div>
-</td>
-<td class="px-md py-md">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        Under Audit
-                                    </span>
-</td>
-<td class="px-md py-md text-body-md text-on-surface-variant">
-                                    Feb 02, 2024
-                                </td>
-<td class="px-md py-md text-right">
-<button class="p-2 text-outline hover:text-primary transition-colors">
-<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
-</button>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-<!-- Pagination -->
-<div class="bg-surface-container-low px-md py-sm flex items-center justify-between">
-<span class="font-label-md text-outline">Showing 1-10 of 142 vendors</span>
-<div class="flex items-center gap-xs">
-<button class="p-2 rounded-lg hover:bg-surface-container-high disabled:opacity-50" disabled="">
-<span class="material-symbols-outlined" data-icon="navigate_before">navigate_before</span>
-</button>
-<button class="p-2 rounded-lg hover:bg-surface-container-high">
-<span class="material-symbols-outlined" data-icon="navigate_next">navigate_next</span>
-</button>
-</div>
-</div>
-</div>
-</main>
-</div>
-<!-- BottomNavBar (Mobile Only) -->
-<!-- Standard Bottom Navigation -->
-<nav class="fixed bottom-0 left-0 right-0 w-full z-50
-            bg-surface shadow-[0px_-2px_4px_rgba(0,0,0,0.04)]
-            flex justify-around items-center h-16 px-2">
 
-    <!-- Dashboard -->
-    <a href="/governance/index.php"
-   class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 rounded-xl">
+                        </td>
 
-    <span class="material-symbols-outlined"
-          style="font-variation-settings:'FILL' 0;">
-        dashboard
-    </span>
+                        <td class="px-lg py-md">
 
-    <span class="font-label-md text-label-md">
-        Dashboard
-    </span>
+                            <span class="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm">
 
-</a>
+                                Under Review
 
-    <!-- Consent -->
-    <a href="/governance/pages/consent-management.php"
-       class="nav-consent flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
+                            </span>
 
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            verified_user
-        </span>
+                        </td>
 
-        <span class="font-label-md text-label-md">Consent</span>
-    </a>
+                        <td class="px-lg py-md">
 
-    <!-- Requests -->
-    <a href="/governance/pages/data-requests.php"
-       class="nav-requests flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
+                            08 Aug 2026
 
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            gavel
-        </span>
+                        </td>
 
-        <span class="font-label-md text-label-md">Requests</span>
-    </a>
+                        <td class="px-lg py-md text-center">
 
-    <!-- Assess -->
-    <a href="/governance/pages/assessments.php"
-       class="nav-assess flex flex-col items-center justify-center
-              text-on-surface-variant px-4 py-1 rounded-xl">
+                            <button class="text-primary">
 
-        <span class="material-symbols-outlined"
-              style="font-variation-settings:'FILL' 0;">
-            assignment_turned_in
-        </span>
+                                <span class="material-symbols-outlined">
 
-        <span class="font-label-md text-label-md">Assess</span>
-    </a>
+                                    edit
 
-    <!-- More -->
-    <a href="/governance/pages/more.php"
-   class="flex flex-col items-center justify-center
-          text-primary bg-secondary-fixed
-          rounded-xl px-4 py-1">
-<span class="material-symbols-outlined"
-      style="font-variation-settings:'FILL' 0;">
-    menu
+                                </span>
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+
+
+
+
+                    <tr class="hover:bg-surface-container-low">
+
+                        <td class="px-lg py-md">
+
+                            <div>
+
+                                <div class="font-semibold">
+
+                                    Razorpay
+
+                                </div>
+
+                                <div class="text-sm text-outline">
+
+                                    Payment Gateway
+
+                                </div>
+
+                            </div>
+
+                        </td>
+
+                        <td class="px-lg py-md">
+
+                            Finance
+
+                        </td>
+
+                        <td class="px-lg py-md font-bold text-red-600">
+
+                            61%
+
+                        </td>
+
+                        <td class="px-lg py-md">
+
+                            <span class="px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm">
+
+                                High
+
+                            </span>
+
+                        </td>
+
+                        <td class="px-lg py-md">
+
+                            <span class="px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm">
+
+                                Review Required
+
+                            </span>
+
+                        </td>
+
+                        <td class="px-lg py-md">
+
+                            15 Aug 2026
+
+                        </td>
+
+                        <td class="px-lg py-md text-center">
+
+                            <button class="text-primary">
+
+                                <span class="material-symbols-outlined">
+
+                                    assignment
+
+                                </span>
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+
+
+
+        <!-- Pagination -->
+
+        <div class="flex flex-col md:flex-row justify-between items-center p-lg border-t border-outline-variant gap-md">
+
+            <div class="text-sm text-outline">
+
+                Showing <strong>1–10</strong> of <strong>142</strong> Vendors
+
+            </div>
+
+            <div class="flex items-center gap-sm">
+
+                <button class="px-4 py-2 rounded-lg border border-outline-variant">
+
+                    Previous
+
+                </button>
+
+                <button class="w-10 h-10 rounded-lg bg-primary text-white">
+
+                    1
+
+                </button>
+
+                <button class="w-10 h-10 rounded-lg border border-outline-variant">
+
+                    2
+
+                </button>
+
+                <button class="w-10 h-10 rounded-lg border border-outline-variant">
+
+                    3
+
+                </button>
+
+                <button class="px-4 py-2 rounded-lg border border-outline-variant">
+
+                    Next
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- ===========================================================
+    PART 4 : AI INSIGHTS + QUICK ACTIONS + MODAL
+=========================================================== -->
+
+<section class="mt-lg space-y-lg">
+
+    <!-- AI Insights & Risk Alerts -->
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-md">
+
+        <!-- AI Recommendations -->
+
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+
+            <div class="flex justify-between items-center mb-lg">
+
+                <div>
+                    <h3 class="font-title-md">
+                        AI Risk Recommendations
+                    </h3>
+
+                    <p class="text-sm text-outline">
+                        Smart recommendations based on current vendor posture.
+                    </p>
+
+                </div>
+
+                <span class="material-symbols-outlined text-primary text-3xl">
+                    auto_awesome
+                </span>
+
+            </div>
+
+            <div class="space-y-md">
+
+                <div class="flex gap-md">
+
+                    <span class="material-symbols-outlined text-error">
+                        warning
+                    </span>
+
+                    <div>
+
+                        <strong>Review Razorpay</strong>
+
+                        <p class="text-sm text-outline">
+                            Risk score dropped below acceptable threshold.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="flex gap-md">
+
+                    <span class="material-symbols-outlined text-primary">
+                        security
+                    </span>
+
+                    <div>
+
+                        <strong>Azure is fully compliant</strong>
+
+                        <p class="text-sm text-outline">
+                            No action required.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="flex gap-md">
+
+                    <span class="material-symbols-outlined text-[#FFB900]">
+                        schedule
+                    </span>
+
+                    <div>
+
+                        <strong>14 Reviews Pending</strong>
+
+                        <p class="text-sm text-outline">
+                            Schedule vendor assessments this week.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <!-- Executive Summary -->
+
+        <div class="bg-primary rounded-xl text-white p-lg shadow-lg">
+
+            <h3 class="text-xl font-bold mb-lg">
+
+                Executive Summary
+
+            </h3>
+
+            <div class="space-y-md">
+
+                <div class="flex justify-between">
+
+                    <span>Total Vendors</span>
+
+                    <strong>142</strong>
+
+                </div>
+
+                <div class="flex justify-between">
+
+                    <span>Compliant Vendors</span>
+
+                    <strong>118</strong>
+
+                </div>
+
+                <div class="flex justify-between">
+
+                    <span>High Risk</span>
+
+                    <strong>12</strong>
+
+                </div>
+
+                <div class="flex justify-between">
+
+                    <span>Average Score</span>
+
+                    <strong>91%</strong>
+
+                </div>
+
+            </div>
+
+            <div class="mt-xl border-t border-white/20 pt-lg">
+
+                Overall vendor ecosystem is healthy.
+                Continue reviewing high-risk vendors to maintain compliance.
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+
+
+    <!-- Quick Actions -->
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
+
+        <h3 class="font-title-md mb-lg">
+
+            Quick Actions
+
+        </h3>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-md">
+
+            <button id="openVendorModal" class="rounded-xl bg-primary text-white p-lg hover:brightness-95 transition">
+
+                <span class="material-symbols-outlined text-3xl block mb-sm">
+                    add_business
+                </span>
+
+                Add Vendor
+
+            </button>
+
+            <button onclick="window.location='index.php?page=assessments'" class="rounded-xl bg-surface-container-low border border-outline-variant p-lg">
+
+                <span class="material-symbols-outlined text-primary text-3xl block mb-sm">
+                    fact_check
+                </span>
+
+                Start Assessment
+
+            </button>
+
+            <button onclick="alert('Coming Soon: Feature under development.');" class="rounded-xl bg-surface-container-low border border-outline-variant p-lg">
+
+                <span class="material-symbols-outlined text-primary text-3xl block mb-sm">
+                    download
+                </span>
+
+                Download Report
+
+            </button>
+
+            <button onclick="alert('Coming Soon: Feature under development.');" class="rounded-xl bg-surface-container-low border border-outline-variant p-lg">
+
+                <span class="material-symbols-outlined text-primary text-3xl block mb-sm">
+                    flag
+                </span>
+
+                Review Flags
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+
+
+    <!-- Footer -->
+
+    <div class="text-center text-outline text-sm py-lg">
+
+        Last Vendor Risk Assessment :
+        <strong>28 July 2026</strong>
+
+        •
+
+        Next Scheduled Review :
+        <strong>02 August 2026</strong>
+
+    </div>
+
+</section>
+
+
+
+
+
+<!-- ===========================================================
+    ONBOARD VENDOR MODAL
+=========================================================== -->
+
+<div id="vendorModal"
+class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100]">
+
+<div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl">
+
+<div class="flex justify-between items-center p-6 border-b">
+
+<h2 class="text-xl font-bold">
+
+Onboard New Vendor
+
+</h2>
+
+<button id="closeVendorModal">
+
+<span class="material-symbols-outlined">
+
+close
+
 </span>
 
-<span class="font-label-md text-label-md">More</span>
-    </a>
+</button>
 
-</nav>
+</div>
+
+<form id="vendorForm" class="p-6 space-y-4">
+
+<input
+type="text"
+name="vendor_name"
+placeholder="Vendor Name"
+required
+class="w-full border rounded-xl px-4 py-3">
+
+<input
+type="text"
+name="service_type"
+placeholder="Service Category"
+required
+class="w-full border rounded-xl px-4 py-3">
+
+<input
+type="text"
+name="data_shared"
+placeholder="Data Shared"
+required
+class="w-full border rounded-xl px-4 py-3">
+
+<div class="flex justify-end gap-md pt-lg">
+
+<button
+type="button"
+id="cancelVendorModal"
+class="px-lg py-md rounded-xl border">
+
+Cancel
+
+</button>
+
+<button
+type="submit"
+class="bg-primary text-white rounded-xl px-lg py-md">
+
+Save Vendor
+
+</button>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
 <script>
-        // Simple Interaction logic
-        document.querySelectorAll('tr').forEach(row => {
-            row.addEventListener('click', () => {
-                // In a real app, this would navigate to the vendor detail page
-                console.log('Navigate to vendor detail');
-            });
-        });
 
-        // Add active states to navigation items
-        const navItems = document.querySelectorAll('nav a');
-        navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                navItems.forEach(i => {
-                    i.classList.remove('bg-secondary-fixed', 'text-primary');
-                    i.classList.add('text-on-surface-variant');
-                });
-                item.classList.add('bg-secondary-fixed', 'text-primary');
-                item.classList.remove('text-on-surface-variant');
-            });
-        });
-    </script>
-</body></html>
+const modal=document.getElementById('vendorModal');
+
+document.getElementById('openVendorModal')?.addEventListener('click',()=>{
+
+modal.classList.remove('hidden');
+
+modal.classList.add('flex');
+
+});
+
+function closeVendor(){
+
+modal.classList.add('hidden');
+
+modal.classList.remove('flex');
+
+}
+
+document.getElementById('closeVendorModal')?.addEventListener('click',closeVendor);
+
+document.getElementById('cancelVendorModal')?.addEventListener('click',closeVendor);
+
+window.addEventListener('click',(e)=>{
+
+if(e.target===modal){
+
+closeVendor();
+
+}
+
+});
+
+document.getElementById('vendorForm')?.addEventListener('submit',function(e){
+
+e.preventDefault();
+
+const fd=new FormData(this);
+
+fetch('api/save-vendor.php',{
+
+method:'POST',
+
+body:fd
+
+})
+
+.then(r=>r.json())
+
+.then(data=>{
+
+alert(data.message);
+
+if(data.status==='success'){
+
+location.reload();
+
+}
+
+});
+
+});
+
+</script>
