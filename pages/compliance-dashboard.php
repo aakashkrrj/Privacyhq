@@ -120,7 +120,7 @@
     </style>
 <style>
     body {
-      min-height: 100dvh;
+      min-height: max(884px, 100dvh);
     }
   </style>
   </head>
@@ -145,19 +145,19 @@
 <main class="max-w-7xl mx-auto px-4 py-6 md:px-8">
 <!-- Quick Actions Grid -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-<button onclick="window.location='index.php?page=assessments'" class="flex items-center justify-center gap-3 p-4 bg-primary text-white rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 group">
+<button class="flex items-center justify-center gap-3 p-4 bg-primary text-white rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 group">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_moderator</span>
 <span class="font-title-md text-body-md font-semibold">Start Assessment</span>
 </button>
-<button onclick="alert('Coming Soon: Feature under development.');" class="flex items-center justify-center gap-3 p-4 bg-white border border-outline-variant text-primary rounded-xl shadow-sm hover:bg-surface-container transition-all active:scale-95">
+<button class="flex items-center justify-center gap-3 p-4 bg-white border border-outline-variant text-primary rounded-xl shadow-sm hover:bg-surface-container transition-all active:scale-95">
 <span class="material-symbols-outlined">description</span>
 <span class="font-title-md text-body-md font-semibold">Create Policy</span>
 </button>
-<button onclick="alert('Coming Soon: Feature under development.');" class="flex items-center justify-center gap-3 p-4 bg-white border border-outline-variant text-primary rounded-xl shadow-sm hover:bg-surface-container transition-all active:scale-95">
+<button class="flex items-center justify-center gap-3 p-4 bg-white border border-outline-variant text-primary rounded-xl shadow-sm hover:bg-surface-container transition-all active:scale-95">
 <span class="material-symbols-outlined">warning</span>
 <span class="font-title-md text-body-md font-semibold">Review Risks</span>
 </button>
-<button onclick="alert('Coming Soon: Feature under development.');" class="flex items-center justify-center gap-3 p-4 bg-white border border-outline-variant text-primary rounded-xl shadow-sm hover:bg-surface-container transition-all active:scale-95">
+<button class="flex items-center justify-center gap-3 p-4 bg-white border border-outline-variant text-primary rounded-xl shadow-sm hover:bg-surface-container transition-all active:scale-95">
 <span class="material-symbols-outlined">analytics</span>
 <span class="font-title-md text-body-md font-semibold">Generate Report</span>
 </button>
