@@ -13,4 +13,8 @@ class ReportService {
     public function getSummary() {
         return $this->reportSummaryModel->getSummary();
     }
+
+    public function getVendorRiskReport() {
+        return $this->reportSummaryModel->getVendorRiskReport();
+    }
 }

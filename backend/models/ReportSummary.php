@@ -55,4 +55,37 @@ class ReportSummary {
             'total_risks' => $totalRisks
         ];
     }
+
+    public function getVendorRiskReport() {
+        // Query KPIs
+        $kpiQuery = "
+            SELECT 
+                COUNT(v.id) as total,
+                SUM(IF(va.risk_score >= 90, 1, 0)) as critical_risk,
+                SUM(IF(va.risk_score >= 80 AND va.risk_score < 90, 1, 0)) as high_risk,
+                SUM(IF(va.risk_score >= 50 AND va.risk_score < 80, 1, 0)) as medium_risk,
+                SUM(IF(va.risk_score < 50 OR va.risk_score IS NULL, 1, 0)) as low_risk,
+                SUM(IF(va.status = 'Compliant', 1, 0)) as compliant_count
+            FROM vendors v
+            LEFT JOIN vendor_assessments va ON v.id = va.vendor_id
+            WHERE v.deleted_at IS NULL
+        ";
+        $kpis = $this->pdo->query($kpiQuery)->fetch(\PDO::FETCH_ASSOC);
+
+        // Query Vendor List
+        $listQuery = "
+            SELECT v.id, v.name as vendor_name, v.service_type as category, va.status as dpa_status,
+                   IF(va.risk_score >= 80, 'Critical', IF(va.risk_score >= 50, 'Medium', 'Low')) as risk_level
+            FROM vendors v
+            LEFT JOIN vendor_assessments va ON v.id = va.vendor_id
+            WHERE v.deleted_at IS NULL
+            ORDER BY v.id DESC
+        ";
+        $vendors = $this->pdo->query($listQuery)->fetchAll(\PDO::FETCH_ASSOC);
+
+        return [
+            'kpis' => $kpis,
+            'vendors' => $vendors
+        ];
+    }
 }

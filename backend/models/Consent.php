@@ -83,6 +83,40 @@ class Consent {
         return ['total' => $total, 'items' => $items];
     }
 
+    public function getExportList($search, $statusFilter, $categoryFilter) {
+        $whereClauses = ["1=1"];
+        $params = [];
+
+        if ($search) {
+            $whereClauses[] = "ds.identifier_hash LIKE ?";
+            $params[] = "%$search%";
+        }
+        if ($statusFilter) {
+            $whereClauses[] = "c.status = ?";
+            $params[] = $statusFilter;
+        }
+        if ($categoryFilter) {
+            $whereClauses[] = "cp.purpose_name = ?";
+            $params[] = $categoryFilter;
+        }
+
+        $whereSql = "WHERE " . implode(" AND ", $whereClauses);
+
+        $sql = "
+            SELECT c.id, c.status, c.source, c.created_at, c.granted_at, 
+                   ds.identifier_hash as subject_email, cp.purpose_name as category
+            FROM consents c
+            LEFT JOIN data_subjects ds ON c.data_subject_id = ds.id
+            LEFT JOIN consent_purposes cp ON c.consent_purpose_id = cp.id
+            $whereSql
+            ORDER BY c.id DESC
+        ";
+            
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
     public function getDashboardMetrics() {
         // Total Consents & breakdown
         $kpiQuery = "

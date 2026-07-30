@@ -1,0 +1,292 @@
+// assets/js/consent-management.js
+
+let currentPage = 1;
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+function showAlert(message, type = 'success') {
+    const alertBox = document.getElementById('jsAlertBox');
+    if (!alertBox) return;
+    alertBox.textContent = message;
+    alertBox.className = 'p-4 mb-4 text-sm rounded-lg border block';
+    if (type === 'success') {
+        alertBox.classList.add('text-green-800', 'bg-green-50', 'border-green-200');
+    } else {
+        alertBox.classList.add('text-red-800', 'bg-red-50', 'border-red-200');
+    }
+    // Auto-scroll to top to see alert
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+        alertBox.classList.add('hidden');
+        alertBox.classList.remove('block');
+    }, 5000);
+}
+
+// Phase 1: Dynamic Dashboard & Record Consent
+async function loadDashboard() {
+    try {
+        const res = await fetch('backend/api/consent/dashboard.php');
+        const data = await res.json();
+        if (data.success && data.data) {
+            const metrics = data.data;
+            document.getElementById('kpi-total').innerText = metrics.total || 0;
+            document.getElementById('kpi-granted').innerText = metrics.active_consents || 0;
+            document.getElementById('kpi-revoked').innerText = metrics.revoked_consents || 0;
+            document.getElementById('kpi-pending').innerText = metrics.opt_outs || 0;
+
+            // Health KPIs
+            document.getElementById('health-compliance').innerText = metrics.opt_in_rate || '0%';
+            
+            // Distribution percentages
+            const total = parseInt(metrics.total) || 1;
+            const grantedPct = Math.round((parseInt(metrics.active_consents) || 0) / total * 100);
+            const revokedPct = Math.round((parseInt(metrics.revoked_consents) || 0) / total * 100);
+            const pendingPct = Math.round((parseInt(metrics.opt_outs) || 0) / total * 100);
+
+            document.getElementById('dist-granted-pct').innerText = grantedPct + '%';
+            document.getElementById('dist-granted-bar').style.width = grantedPct + '%';
+
+            document.getElementById('dist-revoked-pct').innerText = revokedPct + '%';
+            document.getElementById('dist-revoked-bar').style.width = revokedPct + '%';
+
+            document.getElementById('dist-pending-pct').innerText = pendingPct + '%';
+            document.getElementById('dist-pending-bar').style.width = pendingPct + '%';
+        }
+    } catch (e) {
+        console.error('Failed to load dashboard metrics', e);
+    }
+}
+
+async function loadRecords() {
+    const search = document.getElementById('filter-search').value;
+    const status = document.getElementById('filter-status').value;
+    const category = document.getElementById('filter-category').value;
+
+    const url = `backend/api/consent/list.php?p=${currentPage}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`;
+    
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const tbody = document.getElementById('consentTableBody');
+        
+        if (data.success && data.data) {
+            tbody.innerHTML = '';
+            const items = data.data.items || [];
+            const total = data.data.total || 0;
+            
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-400">No consent records found.</td></tr>';
+            } else {
+                // Update recent events list dynamically too
+                const recentList = document.getElementById('recentEventsList');
+                if (recentList) recentList.innerHTML = '';
+
+                items.forEach((c, idx) => {
+                    let statusLabel = 'Granted';
+                    let statusClass = 'bg-green-100 text-green-700';
+                    if (c.status === 'withdrawn') {
+                        statusLabel = 'Revoked';
+                        statusClass = 'bg-red-100 text-red-700';
+                    } else if (c.status === 'opt_out') {
+                        statusLabel = 'Pending';
+                        statusClass = 'bg-yellow-100 text-yellow-700';
+                    }
+
+                    const row = `
+                        <tr class="border-b border-gray-50 hover:bg-gray-50/50">
+                            <td class="px-6 py-4 font-medium text-gray-900">${escapeHtml(c.subject_email)}</td>
+                            <td class="px-6 py-4">${escapeHtml(c.category)}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs rounded-full font-medium ${statusClass}">
+                                    ${statusLabel}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-xs text-gray-500">${escapeHtml(c.created_at)}</td>
+                            <td class="px-6 py-4 text-right">
+                                ${c.status !== 'withdrawn' ? 
+                                    `<button onclick="revokeConsent(${c.id})" class="text-xs text-red-600 hover:underline">Revoke</button>` : 
+                                    `<span class="text-xs text-gray-400">N/A</span>`}
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+
+                    // Populate recent events with first 4 items
+                    if (recentList && idx < 4) {
+                        let actionText = `${escapeHtml(c.subject_email)} granted ${escapeHtml(c.category)}`;
+                        if (c.status === 'withdrawn') {
+                            actionText = `${escapeHtml(c.subject_email)} revoked ${escapeHtml(c.category)}`;
+                        } else if (c.status === 'opt_out') {
+                            actionText = `${escapeHtml(c.subject_email)} pending ${escapeHtml(c.category)}`;
+                        }
+
+                        const date = new Date(c.created_at);
+                        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                        recentList.innerHTML += `
+                            <div class="flex justify-between items-center border-b pb-3">
+                                <div>
+                                    <p class="font-medium text-gray-700">${actionText}</p>
+                                    <p class="text-xs text-gray-500">${escapeHtml(c.created_at)}</p>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs ${statusClass}">${statusLabel}</span>
+                            </div>
+                        `;
+                    }
+                });
+            }
+
+            // Pagination
+            const totalPages = Math.ceil(total / 10) || 1;
+            const paginationDiv = document.getElementById('consentPagination');
+            if (paginationDiv) {
+                paginationDiv.innerHTML = `
+                    <div class="text-xs text-gray-500">
+                        Showing page <b>${currentPage}</b> of <b>${totalPages}</b> (Total: ${total} records)
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-3 py-1 text-xs border rounded bg-white hover:bg-gray-50 disabled:opacity-50">Previous</button>
+                        <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-3 py-1 text-xs border rounded bg-white hover:bg-gray-50 disabled:opacity-50">Next</button>
+                    </div>
+                `;
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load records', e);
+    }
+}
+
+function changePage(page) {
+    currentPage = page;
+    loadRecords();
+}
+
+async function revokeConsent(id) {
+    if (!confirm("Are you sure you want to revoke this consent record?")) return;
+    const fd = new FormData();
+    fd.append('revoke_id', id);
+    fd.append('csrf_token', G_CSRF_TOKEN);
+    try {
+        const res = await fetch('backend/api/consent/revoke.php', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.success) {
+            showAlert(data.message || 'Consent revoked successfully.');
+            loadRecords();
+            loadDashboard();
+        } else {
+            showAlert(data.message || 'Failed to revoke consent.', 'error');
+        }
+    } catch (e) {
+        showAlert("Network error revoking consent.", 'error');
+    }
+}
+
+// Modal Toggle Helpers
+function openRecordConsentModal() {
+    document.getElementById('recordConsentModal').classList.remove('hidden');
+}
+
+function closeRecordConsentModal() {
+    document.getElementById('recordConsentModal').classList.add('hidden');
+    document.getElementById('recordConsentForm').reset();
+}
+
+// Event Listeners Setup
+document.addEventListener('DOMContentLoaded', () => {
+    // Load initial data
+    loadDashboard();
+    loadRecords();
+
+    // Search action
+    document.getElementById('btn-search').addEventListener('click', () => {
+        currentPage = 1;
+        loadRecords();
+    });
+
+    // Quick Action button triggers
+    document.getElementById('btn-record-consent').addEventListener('click', openRecordConsentModal);
+    document.getElementById('closeConsentModalBtn').addEventListener('click', closeRecordConsentModal);
+    document.getElementById('cancelConsentModalBtn').addEventListener('click', closeRecordConsentModal);
+
+    // Save Consent form submit
+    document.getElementById('recordConsentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const fd = new FormData(this);
+        try {
+            const res = await fetch('backend/api/consent/create.php', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (data.success) {
+                showAlert(data.message || 'Consent recorded successfully.');
+                closeRecordConsentModal();
+                loadRecords();
+                loadDashboard();
+            } else {
+                alert(data.message || 'Failed to record consent.');
+            }
+        } catch (e) {
+            alert('Network error recording consent.');
+        }
+    });
+
+    // Phase 2: Export Log
+    document.getElementById('btn-export-log').addEventListener('click', () => {
+        const search = document.getElementById('filter-search').value;
+        const status = document.getElementById('filter-status').value;
+        const category = document.getElementById('filter-category').value;
+        const url = `backend/api/consent/export.php?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`;
+        window.location.href = url;
+    });
+
+    // Phase 3: Generate Report
+    document.getElementById('btn-generate-report').addEventListener('click', () => {
+        window.open('backend/api/consent/report.php', '_blank');
+    });
+
+    // Phase 4: Import CSV
+    document.getElementById('btn-import-csv').addEventListener('click', () => {
+        document.getElementById('importCsvModal').classList.remove('hidden');
+    });
+    document.getElementById('closeImportModalBtn').addEventListener('click', () => {
+        document.getElementById('importCsvModal').classList.add('hidden');
+        document.getElementById('importCsvForm').reset();
+        document.getElementById('importResults').classList.add('hidden');
+    });
+    document.getElementById('cancelImportModalBtn').addEventListener('click', () => {
+        document.getElementById('importCsvModal').classList.add('hidden');
+        document.getElementById('importCsvForm').reset();
+        document.getElementById('importResults').classList.add('hidden');
+    });
+
+    document.getElementById('importCsvForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const fd = new FormData(this);
+        const resultsDiv = document.getElementById('importResults');
+        resultsDiv.innerHTML = 'Uploading and processing file...';
+        resultsDiv.className = 'max-h-40 overflow-y-auto p-3 text-xs bg-gray-50 border rounded-lg space-y-1 block';
+
+        try {
+            const res = await fetch('backend/api/consent/import.php', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (data.success) {
+                let reportHtml = `<p class="font-bold text-green-700">Success: ${data.data.success_count} imported successfully.</p>`;
+                if (data.data.errors && data.data.errors.length > 0) {
+                    reportHtml += `<p class="font-bold text-amber-700 mt-1">Warnings / Skip Reasons (${data.data.errors.length}):</p>`;
+                    data.data.errors.forEach(err => {
+                        reportHtml += `<p class="text-red-600">${escapeHtml(err)}</p>`;
+                    });
+                }
+                resultsDiv.innerHTML = reportHtml;
+                loadRecords();
+                loadDashboard();
+            } else {
+                resultsDiv.innerHTML = `<p class="font-bold text-red-700">Error: ${escapeHtml(data.message)}</p>`;
+            }
+        } catch (e) {
+            resultsDiv.innerHTML = '<p class="font-bold text-red-700">Network error processing import.</p>';
+        }
+    });
+});

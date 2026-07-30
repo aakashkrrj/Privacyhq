@@ -97,6 +97,10 @@ class ConsentService {
         return $this->consentModel->getList($search, $statusFilter, $categoryFilter, $pageSize, $offset);
     }
 
+    public function getExportList($search, $statusFilter, $categoryFilter) {
+        return $this->consentModel->getExportList($search, $statusFilter, $categoryFilter);
+    }
+
     public function getDashboardMetrics() {
         return $this->consentModel->getDashboardMetrics();
     }

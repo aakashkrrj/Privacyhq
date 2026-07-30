@@ -19,4 +19,12 @@ class ReportController extends BaseController {
             ApiResponse::error($e->getMessage());
         }
     }
+
+    public function vendorRisk() {
+        try {
+            return $this->reportService->getVendorRiskReport();
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
 }

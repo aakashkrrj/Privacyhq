@@ -13,10 +13,12 @@ if (!isset($conn) && isset($pdo) && $pdo instanceof mysqli) {
     $conn = $pdo;
 }
 
+$csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
+
 $message = '';
 $error = '';
 
-// 2. Handle Form Submission (Save Consent)
+// 2. Handle Form Submission (Save Consent) - Fallback
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_consent') {
     $user_identifier = trim($_POST['user_identifier'] ?? '');
     $category = trim($_POST['category'] ?? '');
@@ -87,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// 3. Handle Revoke Action
+// 3. Handle Revoke Action - Fallback
 if (isset($_GET['revoke_id'])) {
     $revoke_id = intval($_GET['revoke_id']);
     if (isset($conn) && $conn) {
@@ -104,7 +106,7 @@ if (isset($_GET['revoke_id'])) {
     }
 }
 
-// 4. Fetch Existing Consents (MySQLi Compatible)
+// 4. Fetch Existing Consents (MySQLi Compatible) - Fallback/Initial Load
 $consents = [];
 if (isset($conn) && $conn) {
     $query = "SELECT c.id, ds.identifier_hash AS user_identifier, p.purpose_name AS category, c.status AS db_status, c.created_at AS captured_at 
@@ -143,197 +145,130 @@ if (isset($conn) && $conn) {
     <?php if ($error): ?>
         <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200"><?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
+    <div id="jsAlertBox" class="hidden p-4 mb-4 text-sm rounded-lg border"></div>
+
     <!-- ================= KPI CARDS ================= -->
-
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
-
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">Total Consents</p>
-        <h2 class="text-3xl font-bold text-blue-600 mt-2">1,248</h2>
-    </div>
-
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">Granted</p>
-        <h2 class="text-3xl font-bold text-green-600 mt-2">926</h2>
-    </div>
-
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">Revoked</p>
-        <h2 class="text-3xl font-bold text-red-600 mt-2">214</h2>
-    </div>
-
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">Pending</p>
-        <h2 class="text-3xl font-bold text-amber-500 mt-2">108</h2>
-    </div>
-
-</div>
-
-<!-- ================= SEARCH & FILTER ================= -->
-
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-
-    <h2 class="text-md font-semibold text-gray-700 mb-5">
-        Search & Filter Consents
-    </h2>
-
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-
-        <input
-            type="text"
-            placeholder="Search User..."
-            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
-
-        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-            <option>All Categories</option>
-            <option>Marketing Emails</option>
-            <option>Analytics Cookies</option>
-            <option>Third-party Sharing</option>
-            <option>Terms of Service</option>
-        </select>
-
-        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-            <option>All Status</option>
-            <option>Granted</option>
-            <option>Pending</option>
-            <option>Revoked</option>
-        </select>
-
-        <input
-            type="date"
-            class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-
-        <button
-            class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition">
-
-            Search
-
-        </button>
-
-    </div>
-
-</div>
-
-<!-- ================= CONSENT ANALYTICS ================= -->
-
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-
-        <h2 class="font-semibold text-gray-700 mb-5">
-            Consent Distribution
-        </h2>
-
-        <div class="space-y-5">
-
-            <div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span>Granted</span>
-                    <span>74%</span>
-                </div>
-
-                <div class="w-full h-2 bg-gray-200 rounded-full">
-                    <div class="h-2 rounded-full bg-green-500 w-3/4"></div>
-                </div>
-            </div>
-
-            <div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span>Revoked</span>
-                    <span>18%</span>
-                </div>
-
-                <div class="w-full h-2 bg-gray-200 rounded-full">
-                    <div class="h-2 rounded-full bg-red-500" style="width:18%"></div>
-                </div>
-            </div>
-
-            <div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span>Pending</span>
-                    <span>8%</span>
-                </div>
-
-                <div class="w-full h-2 bg-gray-200 rounded-full">
-                    <div class="h-2 rounded-full bg-yellow-400" style="width:8%"></div>
-                </div>
-            </div>
-
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <p class="text-sm text-gray-500">Total Consents</p>
+            <h2 id="kpi-total" class="text-3xl font-bold text-blue-600 mt-2">1,248</h2>
         </div>
 
-    </div>
-
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-
-        <h2 class="font-semibold text-gray-700 mb-5">
-            Consent Health
-        </h2>
-
-        <div class="grid grid-cols-2 gap-4">
-
-            <div class="bg-green-50 rounded-lg p-4">
-                <p class="text-sm text-gray-500">Compliance Rate</p>
-                <h3 class="text-2xl font-bold text-green-600 mt-2">97%</h3>
-            </div>
-
-            <div class="bg-blue-50 rounded-lg p-4">
-                <p class="text-sm text-gray-500">Categories</p>
-                <h3 class="text-2xl font-bold text-blue-600 mt-2">4</h3>
-            </div>
-
-            <div class="bg-yellow-50 rounded-lg p-4">
-                <p class="text-sm text-gray-500">Awaiting Review</p>
-                <h3 class="text-2xl font-bold text-yellow-600 mt-2">16</h3>
-            </div>
-
-            <div class="bg-red-50 rounded-lg p-4">
-                <p class="text-sm text-gray-500">Revoked Today</p>
-                <h3 class="text-2xl font-bold text-red-600 mt-2">9</h3>
-            </div>
-
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <p class="text-sm text-gray-500">Granted</p>
+            <h2 id="kpi-granted" class="text-3xl font-bold text-green-600 mt-2">926</h2>
         </div>
 
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <p class="text-sm text-gray-500">Revoked</p>
+            <h2 id="kpi-revoked" class="text-3xl font-bold text-red-600 mt-2">214</h2>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <p class="text-sm text-gray-500">Pending</p>
+            <h2 id="kpi-pending" class="text-3xl font-bold text-amber-500 mt-2">108</h2>
+        </div>
     </div>
 
-</div>
+    <!-- ================= SEARCH & FILTER ================= -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="text-md font-semibold text-gray-700 mb-5">Search & Filter Consents</h2>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <input
+                type="text"
+                id="filter-search"
+                placeholder="Search User..."
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
 
-    <!-- Log User Consent Form -->
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 class="text-md font-semibold text-gray-700 mb-4">+ Log User Consent</h2>
-        
-        <form method="POST" action="index.php?page=consent" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <input type="hidden" name="action" value="save_consent">
+            <select id="filter-category" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option value="">All Categories</option>
+                <option value="Marketing Emails">Marketing Emails</option>
+                <option value="Analytics Cookies">Analytics Cookies</option>
+                <option value="Third-party Sharing">Third-party Sharing</option>
+                <option value="Terms of Service">Terms of Service</option>
+            </select>
 
-            <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">User Identifier (Email / ID)</label>
-                <input type="text" name="user_identifier" required placeholder="user@example.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+            <select id="filter-status" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option value="">All Status</option>
+                <option value="opt_in">Granted</option>
+                <option value="opt_out">Pending</option>
+                <option value="withdrawn">Revoked</option>
+            </select>
+
+            <input
+                type="date"
+                id="filter-date"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+
+            <button
+                id="btn-search"
+                class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition">
+                Search
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= CONSENT ANALYTICS ================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 class="font-semibold text-gray-700 mb-5">Consent Distribution</h2>
+            <div class="space-y-5">
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>Granted</span>
+                        <span id="dist-granted-pct">74%</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-200 rounded-full">
+                        <div id="dist-granted-bar" class="h-2 rounded-full bg-green-500 w-3/4"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>Revoked</span>
+                        <span id="dist-revoked-pct">18%</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-200 rounded-full">
+                        <div id="dist-revoked-bar" class="h-2 rounded-full bg-red-500" style="width:18%"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>Pending</span>
+                        <span id="dist-pending-pct">8%</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-200 rounded-full">
+                        <div id="dist-pending-bar" class="h-2 rounded-full bg-yellow-400" style="width:8%"></div>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Consent Category</label>
-                <select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
-                    <option value="Marketing Emails">Marketing Emails</option>
-                    <option value="Analytics Cookies">Analytics Cookies</option>
-                    <option value="Third-party Sharing">Third-party Sharing</option>
-                    <option value="Terms of Service">Terms of Service</option>
-                </select>
-            </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 class="font-semibold text-gray-700 mb-5">Consent Health</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-green-50 rounded-lg p-4">
+                    <p class="text-sm text-gray-500">Compliance Rate</p>
+                    <h3 id="health-compliance" class="text-2xl font-bold text-green-600 mt-2">97%</h3>
+                </div>
 
-            <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Initial Status</label>
-                <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
-                    <option value="Granted">Granted</option>
-                    <option value="Revoked">Revoked</option>
-                    <option value="Pending">Pending</option>
-                </select>
-            </div>
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <p class="text-sm text-gray-500">Categories</p>
+                    <h3 id="health-categories" class="text-2xl font-bold text-blue-600 mt-2">4</h3>
+                </div>
 
-            <div>
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors flex items-center justify-center gap-1">
-                    <span class="material-symbols-outlined text-sm">add</span> Save Consent
-                </button>
+                <div class="bg-yellow-50 rounded-lg p-4">
+                    <p class="text-sm text-gray-500">Awaiting Review</p>
+                    <h3 id="health-pending" class="text-2xl font-bold text-yellow-600 mt-2">16</h3>
+                </div>
+
+                <div class="bg-red-50 rounded-lg p-4">
+                    <p class="text-sm text-gray-500">Revoked Today</p>
+                    <h3 id="health-revoked" class="text-2xl font-bold text-red-600 mt-2">9</h3>
+                </div>
             </div>
-        </form>
+        </div>
     </div>
 
     <!-- Consent Activity Log Table -->
@@ -352,7 +287,7 @@ if (isset($conn) && $conn) {
                         <th class="px-6 py-3 text-right">Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="consentTableBody">
                     <?php if (empty($consents)): ?>
                         <tr>
                             <td colspan="5" class="px-6 py-8 text-center text-gray-400">No consent records found.</td>
@@ -384,162 +319,172 @@ if (isset($conn) && $conn) {
                 </tbody>
             </table>
         </div>
+        <div id="consentPagination" class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+            <!-- Dynamic pagination will load here -->
+        </div>
     </div>
+
     <!-- ================= CONSENT CATEGORIES ================= -->
-
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
-
-    <h2 class="text-md font-semibold text-gray-700 mb-5">
-        Consent Categories Overview
-    </h2>
-
-    <div class="space-y-5">
-
-        <div>
-            <div class="flex justify-between text-sm mb-1">
-                <span>Marketing Emails</span>
-                <span>42%</span>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+        <h2 class="text-md font-semibold text-gray-700 mb-5">Consent Categories Overview</h2>
+        <div class="space-y-5">
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span>Marketing Emails</span>
+                    <span id="cat-marketing-pct">42%</span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div id="cat-marketing-bar" class="h-2 bg-blue-500 rounded-full" style="width:42%"></div>
+                </div>
             </div>
-            <div class="w-full h-2 bg-gray-200 rounded-full">
-                <div class="h-2 bg-blue-500 rounded-full" style="width:42%"></div>
-            </div>
-        </div>
 
-        <div>
-            <div class="flex justify-between text-sm mb-1">
-                <span>Analytics Cookies</span>
-                <span>31%</span>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span>Analytics Cookies</span>
+                    <span id="cat-analytics-pct">31%</span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div id="cat-analytics-bar" class="h-2 bg-green-500 rounded-full" style="width:31%"></div>
+                </div>
             </div>
-            <div class="w-full h-2 bg-gray-200 rounded-full">
-                <div class="h-2 bg-green-500 rounded-full" style="width:31%"></div>
-            </div>
-        </div>
 
-        <div>
-            <div class="flex justify-between text-sm mb-1">
-                <span>Third-party Sharing</span>
-                <span>17%</span>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span>Third-party Sharing</span>
+                    <span id="cat-sharing-pct">17%</span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div id="cat-sharing-bar" class="h-2 bg-yellow-500 rounded-full" style="width:17%"></div>
+                </div>
             </div>
-            <div class="w-full h-2 bg-gray-200 rounded-full">
-                <div class="h-2 bg-yellow-500 rounded-full" style="width:17%"></div>
-            </div>
-        </div>
 
-        <div>
-            <div class="flex justify-between text-sm mb-1">
-                <span>Terms of Service</span>
-                <span>10%</span>
-            </div>
-            <div class="w-full h-2 bg-gray-200 rounded-full">
-                <div class="h-2 bg-purple-500 rounded-full" style="width:10%"></div>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span>Terms of Service</span>
+                    <span id="cat-tos-pct">10%</span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 rounded-full">
+                    <div id="cat-tos-bar" class="h-2 bg-purple-500 rounded-full" style="width:10%"></div>
+                </div>
             </div>
         </div>
-
     </div>
 
-</div>
-
-<!-- ================= RECENT CONSENT EVENTS ================= -->
-
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
-
-    <h2 class="text-md font-semibold text-gray-700 mb-5">
-        Recent Consent Events
-    </h2>
-
-    <div class="space-y-4">
-
-        <div class="flex justify-between items-center border-b pb-3">
-            <div>
-                <p class="font-medium text-gray-700">
-                    John Miller granted Marketing Emails
-                </p>
-                <p class="text-xs text-gray-500">
-                    Today • 09:15 AM
-                </p>
+    <!-- ================= RECENT CONSENT EVENTS ================= -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+        <h2 class="text-md font-semibold text-gray-700 mb-5">Recent Consent Events</h2>
+        <div id="recentEventsList" class="space-y-4">
+            <!-- Dynamic recent events will load here -->
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>
+                    <p class="font-medium text-gray-700">John Miller granted Marketing Emails</p>
+                    <p class="text-xs text-gray-500">Today • 09:15 AM</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">Granted</span>
             </div>
 
-            <span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">
-                Granted
-            </span>
-        </div>
-
-        <div class="flex justify-between items-center border-b pb-3">
-            <div>
-                <p class="font-medium text-gray-700">
-                    Sarah revoked Analytics Cookies
-                </p>
-                <p class="text-xs text-gray-500">
-                    Today • 08:42 AM
-                </p>
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>
+                    <p class="font-medium text-gray-700">Sarah revoked Analytics Cookies</p>
+                    <p class="text-xs text-gray-500">Today • 08:42 AM</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-xs bg-red-100 text-red-700">Revoked</span>
             </div>
-
-            <span class="px-3 py-1 rounded-full text-xs bg-red-100 text-red-700">
-                Revoked
-            </span>
         </div>
-
-        <div class="flex justify-between items-center border-b pb-3">
-            <div>
-                <p class="font-medium text-gray-700">
-                    Alex accepted Terms of Service
-                </p>
-                <p class="text-xs text-gray-500">
-                    Yesterday
-                </p>
-            </div>
-
-            <span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">
-                Granted
-            </span>
-        </div>
-
-        <div class="flex justify-between items-center">
-            <div>
-                <p class="font-medium text-gray-700">
-                    Emily pending Third-party Sharing
-                </p>
-                <p class="text-xs text-gray-500">
-                    Yesterday
-                </p>
-            </div>
-
-            <span class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
-                Pending
-            </span>
-        </div>
-
     </div>
 
-</div>
+    <!-- ================= QUICK ACTIONS ================= -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+        <h2 class="text-md font-semibold text-gray-700 mb-5">Quick Actions</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button id="btn-record-consent" class="bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-medium transition">
+                + Record Consent
+            </button>
 
-<!-- ================= QUICK ACTIONS ================= -->
+            <button id="btn-export-log" class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition">
+                Export Log
+            </button>
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+            <button id="btn-generate-report" class="bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition">
+                Generate Report
+            </button>
 
-    <h2 class="text-md font-semibold text-gray-700 mb-5">
-        Quick Actions
-    </h2>
-
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-        <button class="bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-medium transition">
-            + Record Consent
-        </button>
-
-        <button class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition">
-            Export Log
-        </button>
-
-        <button class="bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition">
-            Generate Report
-        </button>
-
-        <button class="bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-medium transition">
-            Import CSV
-        </button>
-
+            <button id="btn-import-csv" class="bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-medium transition">
+                Import CSV
+            </button>
+        </div>
     </div>
+</div>
 
+<!-- Modal: Record Consent -->
+<div id="recordConsentModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl relative">
+        <button id="closeConsentModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+        <h2 class="text-lg font-bold text-gray-800 mb-4">+ Record User Consent</h2>
+        
+        <form id="recordConsentForm" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">User Identifier (Email / ID)</label>
+                <input type="text" name="user_identifier" required placeholder="user@example.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Consent Category</label>
+                <select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                    <option value="Marketing Emails">Marketing Emails</option>
+                    <option value="Analytics Cookies">Analytics Cookies</option>
+                    <option value="Third-party Sharing">Third-party Sharing</option>
+                    <option value="Terms of Service">Terms of Service</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Initial Status</label>
+                <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                    <option value="Granted">Granted</option>
+                    <option value="Revoked">Revoked</option>
+                    <option value="Pending">Pending</option>
+                </select>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t">
+                <button type="button" id="cancelConsentModalBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">Save Consent</button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<!-- Modal: Import CSV -->
+<div id="importCsvModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl relative">
+        <button id="closeImportModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+        <h2 class="text-lg font-bold text-gray-800 mb-4">Import Consent CSV</h2>
+        
+        <form id="importCsvForm" class="space-y-4" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-2">Select CSV File</label>
+                <input type="file" name="csv_file" accept=".csv" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                <p class="text-xs text-gray-400 mt-2">
+                    Expected columns: <code>user_identifier</code> (or <code>email</code>), <code>category</code> (or <code>consent_category</code>), <code>status</code>.
+                </p>
+            </div>
+
+            <div id="importResults" class="hidden max-h-40 overflow-y-auto p-3 text-xs bg-gray-50 border rounded-lg space-y-1"></div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t">
+                <button type="button" id="cancelImportModalBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600">Upload & Import</button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<script>
+    const G_CSRF_TOKEN = '<?= $csrfToken ?>';
+</script>
+<script src="assets/js/consent-management.js"></script>

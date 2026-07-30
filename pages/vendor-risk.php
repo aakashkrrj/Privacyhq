@@ -32,7 +32,7 @@
         <div class="flex flex-wrap gap-sm">
 
             <button
-                id="openVendorModal"
+                id="btn-onboard-header"
                 class="flex items-center gap-sm bg-primary text-on-primary px-lg py-md rounded-xl shadow-sm hover:brightness-95 transition">
 
                 <span class="material-symbols-outlined">
@@ -44,6 +44,7 @@
             </button>
 
             <button
+                id="btn-export-report-header"
                 class="flex items-center gap-sm border border-outline-variant bg-surface-container-lowest px-lg py-md rounded-xl hover:bg-surface-container">
 
                 <span class="material-symbols-outlined">
@@ -76,11 +77,8 @@
                         Total Vendors
                     </p>
 
-                    <h2 class="text-[42px] font-bold mt-sm text-on-surface">
-                        <?php
-                        $vendorCount = $conn->query("SELECT COUNT(*) AS total FROM vendors");
-                        echo ($vendorCount) ? $vendorCount->fetch_assoc()['total'] : 0;
-                        ?>
+                    <h2 id="kpi-total-vendors" class="text-[42px] font-bold mt-sm text-on-surface">
+                        0
                     </h2>
 
                 </div>
@@ -107,8 +105,8 @@
                         Compliant
                     </p>
 
-                    <h2 class="text-[42px] font-bold mt-sm text-[#107C10]">
-                        118
+                    <h2 id="kpi-compliant" class="text-[42px] font-bold mt-sm text-[#107C10]">
+                        0
                     </h2>
 
                 </div>
@@ -120,7 +118,7 @@
             </div>
 
             <p class="font-caption text-[#107C10] mt-sm">
-                ▲ 8% this month
+                Active & Signed
             </p>
 
         </div>
@@ -139,8 +137,8 @@
                         High Risk Vendors
                     </p>
 
-                    <h2 class="text-[42px] font-bold mt-sm text-error">
-                        12
+                    <h2 id="kpi-high-risk" class="text-[42px] font-bold mt-sm text-error">
+                        0
                     </h2>
 
                 </div>
@@ -171,8 +169,8 @@
                         Average Risk Score
                     </p>
 
-                    <h2 class="text-[42px] font-bold mt-sm">
-                        91%
+                    <h2 id="kpi-avg-score" class="text-[42px] font-bold mt-sm">
+                        0%
                     </h2>
 
                 </div>
@@ -185,7 +183,7 @@
 
             <div class="w-full bg-white/20 rounded-full h-2 mt-lg">
 
-                <div class="bg-white rounded-full h-2 w-[91%]"></div>
+                <div id="kpi-avg-bar" class="bg-white rounded-full h-2 w-[0%]"></div>
 
             </div>
 
@@ -648,6 +646,7 @@
 
                 <input
                     type="text"
+                    id="filter-search"
                     placeholder="Search vendor, category or service..."
                     class="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant focus:ring-2 focus:ring-primary outline-none">
 
@@ -655,26 +654,25 @@
 
             <div class="flex flex-wrap gap-sm">
 
-                <select class="rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3">
+                <select id="filter-risk" class="rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3">
 
-                    <option>All Risks</option>
-                    <option>Low</option>
-                    <option>Medium</option>
-                    <option>High</option>
-                    <option>Critical</option>
-
-                </select>
-
-                <select class="rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3">
-
-                    <option>All Status</option>
-                    <option>Compliant</option>
-                    <option>Pending</option>
-                    <option>Review</option>
+                    <option value="">All Risks</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
 
                 </select>
 
-                <button class="bg-primary text-white rounded-xl px-lg py-md hover:brightness-95">
+                <select id="filter-status" class="rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3">
+
+                    <option value="">All Status</option>
+                    <option value="Compliant">Compliant</option>
+                    <option value="Under Audit">Under Audit</option>
+
+                </select>
+
+                <button id="btn-search" class="bg-primary text-white rounded-xl px-lg py-md hover:brightness-95">
 
                     Apply Filters
 
@@ -742,13 +740,9 @@
 
                         <th class="text-left px-lg py-md">Category</th>
 
-                        <th class="text-left px-lg py-md">Risk Score</th>
-
                         <th class="text-left px-lg py-md">Risk Level</th>
 
                         <th class="text-left px-lg py-md">Compliance</th>
-
-                        <th class="text-left px-lg py-md">Review</th>
 
                         <th class="text-center px-lg py-md">Actions</th>
 
@@ -756,298 +750,17 @@
 
                 </thead>
 
-                <tbody class="divide-y divide-outline-variant">
-
-                    <tr class="hover:bg-surface-container-low">
-
-                        <td class="px-lg py-md">
-
-                            <div>
-
-                                <div class="font-semibold">
-
-                                    Microsoft Azure
-
-                                </div>
-
-                                <div class="text-sm text-outline">
-
-                                    Cloud Infrastructure
-
-                                </div>
-
-                            </div>
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            Cloud
-
-                        </td>
-
-                        <td class="px-lg py-md font-bold text-green-600">
-
-                            96%
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm">
-
-                                Low
-
-                            </span>
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm">
-
-                                Compliant
-
-                            </span>
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            02 Aug 2026
-
-                        </td>
-
-                        <td class="px-lg py-md text-center">
-
-                            <button class="text-primary">
-
-                                <span class="material-symbols-outlined">
-
-                                    visibility
-
-                                </span>
-
-                            </button>
-
-                        </td>
-
-                    </tr>
-
-
-
-
-
-                    <tr class="hover:bg-surface-container-low">
-
-                        <td class="px-lg py-md">
-
-                            <div>
-
-                                <div class="font-semibold">
-
-                                    AWS
-
-                                </div>
-
-                                <div class="text-sm text-outline">
-
-                                    Cloud Platform
-
-                                </div>
-
-                            </div>
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            Cloud
-
-                        </td>
-
-                        <td class="px-lg py-md font-bold text-yellow-600">
-
-                            82%
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            <span class="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm">
-
-                                Medium
-
-                            </span>
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            <span class="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm">
-
-                                Under Review
-
-                            </span>
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            08 Aug 2026
-
-                        </td>
-
-                        <td class="px-lg py-md text-center">
-
-                            <button class="text-primary">
-
-                                <span class="material-symbols-outlined">
-
-                                    edit
-
-                                </span>
-
-                            </button>
-
-                        </td>
-
-                    </tr>
-
-
-
-
-
-                    <tr class="hover:bg-surface-container-low">
-
-                        <td class="px-lg py-md">
-
-                            <div>
-
-                                <div class="font-semibold">
-
-                                    Razorpay
-
-                                </div>
-
-                                <div class="text-sm text-outline">
-
-                                    Payment Gateway
-
-                                </div>
-
-                            </div>
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            Finance
-
-                        </td>
-
-                        <td class="px-lg py-md font-bold text-red-600">
-
-                            61%
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            <span class="px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm">
-
-                                High
-
-                            </span>
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            <span class="px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm">
-
-                                Review Required
-
-                            </span>
-
-                        </td>
-
-                        <td class="px-lg py-md">
-
-                            15 Aug 2026
-
-                        </td>
-
-                        <td class="px-lg py-md text-center">
-
-                            <button class="text-primary">
-
-                                <span class="material-symbols-outlined">
-
-                                    assignment
-
-                                </span>
-
-                            </button>
-
-                        </td>
-
-                    </tr>
-
+                <tbody id="vendorTableBody" class="divide-y divide-outline-variant">
+                    <tr><td colspan="5" class="px-lg py-md text-center text-gray-500">Loading...</td></tr>
                 </tbody>
 
             </table>
 
         </div>
 
-
-
-
-
         <!-- Pagination -->
-
-        <div class="flex flex-col md:flex-row justify-between items-center p-lg border-t border-outline-variant gap-md">
-
-            <div class="text-sm text-outline">
-
-                Showing <strong>1–10</strong> of <strong>142</strong> Vendors
-
-            </div>
-
-            <div class="flex items-center gap-sm">
-
-                <button class="px-4 py-2 rounded-lg border border-outline-variant">
-
-                    Previous
-
-                </button>
-
-                <button class="w-10 h-10 rounded-lg bg-primary text-white">
-
-                    1
-
-                </button>
-
-                <button class="w-10 h-10 rounded-lg border border-outline-variant">
-
-                    2
-
-                </button>
-
-                <button class="w-10 h-10 rounded-lg border border-outline-variant">
-
-                    3
-
-                </button>
-
-                <button class="px-4 py-2 rounded-lg border border-outline-variant">
-
-                    Next
-
-                </button>
-
-            </div>
-
+        <div id="vendorPagination" class="flex flex-col md:flex-row justify-between items-center p-lg border-t border-outline-variant gap-md">
+            <!-- Dynamic controls loaded here -->
         </div>
 
     </div>
@@ -1216,51 +929,37 @@
     <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg shadow-sm">
 
         <h3 class="font-title-md mb-lg">
-
             Quick Actions
-
         </h3>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-md">
 
-            <button id="openVendorModal" class="rounded-xl bg-primary text-white p-lg hover:brightness-95 transition">
-
+            <button id="btn-add-vendor" class="rounded-xl bg-primary text-white p-lg hover:brightness-95 transition">
                 <span class="material-symbols-outlined text-3xl block mb-sm">
                     add_business
                 </span>
-
                 Add Vendor
-
             </button>
 
-            <button onclick="window.location='index.php?page=assessments'" class="rounded-xl bg-surface-container-low border border-outline-variant p-lg">
-
+            <button id="btn-start-assessment" class="rounded-xl bg-surface-container-low border border-outline-variant p-lg">
                 <span class="material-symbols-outlined text-primary text-3xl block mb-sm">
                     fact_check
                 </span>
-
                 Start Assessment
-
             </button>
 
-            <button onclick="alert('Coming Soon: Feature under development.');" class="rounded-xl bg-surface-container-low border border-outline-variant p-lg">
-
+            <button id="btn-download-report" class="rounded-xl bg-surface-container-low border border-outline-variant p-lg">
                 <span class="material-symbols-outlined text-primary text-3xl block mb-sm">
                     download
                 </span>
-
                 Download Report
-
             </button>
 
-            <button onclick="alert('Coming Soon: Feature under development.');" class="rounded-xl bg-surface-container-low border border-outline-variant p-lg">
-
+            <button id="btn-review-flags" class="rounded-xl bg-surface-container-low border border-outline-variant p-lg">
                 <span class="material-symbols-outlined text-primary text-3xl block mb-sm">
                     flag
                 </span>
-
                 Review Flags
-
             </button>
 
         </div>
@@ -1294,144 +993,156 @@
 <!-- ===========================================================
     ONBOARD VENDOR MODAL
 =========================================================== -->
+<div id="vendorModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-4">
+    <div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden">
+        <div class="flex justify-between items-center p-6 border-b bg-gray-50">
+            <h2 class="text-xl font-bold">Onboard New Vendor</h2>
+            <button id="closeVendorModal" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+        </div>
+        <form id="vendorForm" class="p-6 space-y-4">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Vendor Name</label>
+                <input type="text" name="vendor_name" placeholder="Vendor Name" required class="w-full border rounded-xl px-4 py-3">
+            </div>
 
-<div id="vendorModal"
-class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100]">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Service Category</label>
+                <select name="category" required class="w-full border rounded-xl px-4 py-3 bg-white">
+                    <option value="Cloud Storage">Cloud Storage</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Analytics">Analytics</option>
+                    <option value="HR / Payroll">HR / Payroll</option>
+                    <option value="Software">Software</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
 
-<div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">DPA Status</label>
+                <select name="dpa_status" required class="w-full border rounded-xl px-4 py-3 bg-white">
+                    <option value="Pending">Pending Signature</option>
+                    <option value="Signed">Signed / Executed</option>
+                    <option value="Not Required">Not Required</option>
+                </select>
+            </div>
 
-<div class="flex justify-between items-center p-6 border-b">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Inherent Risk Level</label>
+                <select name="risk_level" required class="w-full border rounded-xl px-4 py-3 bg-white">
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                </select>
+            </div>
 
-<h2 class="text-xl font-bold">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Data Shared / Processed</label>
+                <textarea name="data_shared" placeholder="e.g. Customer email, payment tokens..." class="w-full border rounded-xl px-4 py-3" rows="2"></textarea>
+            </div>
 
-Onboard New Vendor
-
-</h2>
-
-<button id="closeVendorModal">
-
-<span class="material-symbols-outlined">
-
-close
-
-</span>
-
-</button>
-
+            <div class="flex justify-end gap-md pt-lg border-t mt-4">
+                <button type="button" id="cancelVendorModal" class="px-lg py-md rounded-xl border">Cancel</button>
+                <button type="submit" class="bg-primary text-white rounded-xl px-lg py-md">Save Vendor</button>
+            </div>
+        </form>
+    </div>
 </div>
 
-<form id="vendorForm" class="p-6 space-y-4">
+<!-- ===========================================================
+    START ASSESSMENT MODAL
+=========================================================== -->
+<div id="startAssessmentModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-4">
+    <div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden">
+        <div class="flex justify-between items-center p-6 border-b bg-gray-50">
+            <h2 class="text-xl font-bold">Start Vendor DPIA Assessment</h2>
+            <button id="closeAssessmentModal" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+        </div>
+        <form id="assessmentForm" class="p-6 space-y-4">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Select Vendor</label>
+                <select id="assessment_vendor_select" name="vendor_id" required class="w-full border rounded-xl px-4 py-3 bg-white">
+                    <!-- Loaded dynamically -->
+                </select>
+            </div>
 
-<input
-type="text"
-name="vendor_name"
-placeholder="Vendor Name"
-required
-class="w-full border rounded-xl px-4 py-3">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Assessment Title</label>
+                <input type="text" name="title" id="assessment_title" placeholder="e.g. AWS Security Audit" required class="w-full border rounded-xl px-4 py-3">
+            </div>
 
-<input
-type="text"
-name="service_type"
-placeholder="Service Category"
-required
-class="w-full border rounded-xl px-4 py-3">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Assessor Email</label>
+                <input type="email" name="assessor" placeholder="assessor@company.com" required class="w-full border rounded-xl px-4 py-3">
+            </div>
 
-<input
-type="text"
-name="data_shared"
-placeholder="Data Shared"
-required
-class="w-full border rounded-xl px-4 py-3">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Assessment Risk Level</label>
+                    <select name="risk_level" required class="w-full border rounded-xl px-4 py-3 bg-white">
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Assessment Status</label>
+                    <select name="status" required class="w-full border rounded-xl px-4 py-3 bg-white">
+                        <option value="Draft">Draft</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="Approved">Approved</option>
+                    </select>
+                </div>
+            </div>
 
-<div class="flex justify-end gap-md pt-lg">
-
-<button
-type="button"
-id="cancelVendorModal"
-class="px-lg py-md rounded-xl border">
-
-Cancel
-
-</button>
-
-<button
-type="submit"
-class="bg-primary text-white rounded-xl px-lg py-md">
-
-Save Vendor
-
-</button>
-
+            <div class="flex justify-end gap-md pt-lg border-t mt-4">
+                <button type="button" id="cancelAssessmentModal" class="px-lg py-md rounded-xl border">Cancel</button>
+                <button type="submit" class="bg-primary text-white rounded-xl px-lg py-md">Save Assessment</button>
+            </div>
+        </form>
+    </div>
 </div>
 
-</form>
-
-</div>
-
+<!-- ===========================================================
+    REVIEW FLAGS MODAL
+=========================================================== -->
+<div id="reviewFlagsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-4">
+    <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden">
+        <div class="flex justify-between items-center p-6 border-b bg-gray-50">
+            <h2 class="text-xl font-bold flex items-center gap-2 text-error">
+                <span class="material-symbols-outlined">warning</span>
+                Review Critical & High Risk Flags
+            </h2>
+            <button id="closeFlagsModal" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+        </div>
+        <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            <p class="text-sm text-gray-500">The following third-party vendors are flagged for having Critical/High risk, or non-compliant DPA status.</p>
+            <div class="overflow-x-auto border rounded-xl">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="text-left p-4">Vendor</th>
+                            <th class="text-left p-4">Risk Level</th>
+                            <th class="text-left p-4">DPA Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flaggedVendorsTableBody">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="p-6 border-t bg-gray-50 flex justify-end">
+            <button type="button" id="closeFlagsModalBtn" class="px-lg py-md rounded-xl border bg-white">Close</button>
+        </div>
+    </div>
 </div>
 
 <script>
-
-const modal=document.getElementById('vendorModal');
-
-document.getElementById('openVendorModal')?.addEventListener('click',()=>{
-
-modal.classList.remove('hidden');
-
-modal.classList.add('flex');
-
-});
-
-function closeVendor(){
-
-modal.classList.add('hidden');
-
-modal.classList.remove('flex');
-
-}
-
-document.getElementById('closeVendorModal')?.addEventListener('click',closeVendor);
-
-document.getElementById('cancelVendorModal')?.addEventListener('click',closeVendor);
-
-window.addEventListener('click',(e)=>{
-
-if(e.target===modal){
-
-closeVendor();
-
-}
-
-});
-
-document.getElementById('vendorForm')?.addEventListener('submit',function(e){
-
-e.preventDefault();
-
-const fd=new FormData(this);
-
-fetch('api/save-vendor.php',{
-
-method:'POST',
-
-body:fd
-
-})
-
-.then(r=>r.json())
-
-.then(data=>{
-
-alert(data.message);
-
-if(data.status==='success'){
-
-location.reload();
-
-}
-
-});
-
-});
-
+    const G_CSRF_TOKEN = '<?= $csrfToken ?>';
 </script>
+<script src="assets/js/vendor-risk.js"></script>
