@@ -4,7 +4,7 @@ $host = "127.0.0.1";
 $user = "root";
 $pass = "";
 $dbname = "privacyhq";
-$port = 3307;
+$port = 3306;
 
 $conn = new mysqli($host, $user, $pass, $dbname, $port);
 
@@ -43,10 +43,10 @@ if (!function_exists('log_audit_event')) {
     function log_audit_event($pdo, $module, $action, $user_id, $record_id, $old_value = null, $new_value = null) {
         try {
             $ip = $_SERVER['REMOTE_ADDR'] ?? null;
-            $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
+            $ua = isset($_SERVER['HTTP_USER_AGENT']) ? substr($_SERVER['HTTP_USER_AGENT'], 0, 255) : null;
             $stmt = $pdo->prepare("INSERT INTO audit_logs (module, action, user_id, record_id, old_value, new_value, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([$module, $action, $user_id, $record_id, $old_value, $new_value, $ip, $ua]);
-        } catch (Exception $e) {}
+        } catch (\Throwable $e) {}
     }
 }
 ?>
