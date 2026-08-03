@@ -103,6 +103,78 @@ public function changePassword(
         $newPassword
     );
 }
+/**
+ * Get notification preferences
+ */
+public function getNotificationPreferences($userId)
+{
+    return $this->userModel->getNotificationPreferences($userId);
+}
+/**
+ * Update notification preferences
+ */
+public function updateNotificationPreferences(
+    $userId,
+    $emailNotifications,
+    $inAppNotifications,
+    $privacyIncidentAlerts,
+    $consentUpdates,
+    $assessmentReminders,
+    $riskAlerts,
+    $systemAnnouncements
+)
+{
+    try {
+
+        $this->pdo->beginTransaction();
+
+        $this->userModel->updateNotificationPreferences(
+            $userId,
+            $emailNotifications,
+            $inAppNotifications,
+            $privacyIncidentAlerts,
+            $consentUpdates,
+            $assessmentReminders,
+            $riskAlerts,
+            $systemAnnouncements
+        );
+
+        // Audit Log
+        if (function_exists('log_audit_event')) {
+
+            log_audit_event(
+                $this->pdo,
+                'Settings',
+                'Notification Preferences Updated',
+                $userId,
+                $userId,
+                null,
+                json_encode([
+                    'email_notifications' => $emailNotifications,
+                    'in_app_notifications' => $inAppNotifications,
+                    'privacy_incident_alerts' => $privacyIncidentAlerts,
+                    'consent_updates' => $consentUpdates,
+                    'assessment_reminders' => $assessmentReminders,
+                    'risk_alerts' => $riskAlerts,
+                    'system_announcements' => $systemAnnouncements
+                ])
+            );
+
+        }
+
+        $this->pdo->commit();
+
+        return true;
+
+    } catch (\Throwable $t) {
+
+        if ($this->pdo->inTransaction()) {
+            $this->pdo->rollBack();
+        }
+
+        throw $t;
+    }
+}
     /**
      * Update profile image
      */

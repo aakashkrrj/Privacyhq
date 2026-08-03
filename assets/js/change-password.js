@@ -68,6 +68,10 @@ document.getElementById("changePasswordForm").addEventListener("submit", functio
 
                 document.getElementById("changePasswordForm").reset();
 
+                setTimeout(() => {
+                    window.location.href = "settings.php";
+                }, 2000);
+
             } else {
 
                 showMessage(result.message);

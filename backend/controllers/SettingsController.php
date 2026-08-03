@@ -92,7 +92,90 @@ public function changePassword()
 
     }
 }
+/**
+ * Get notification preferences
+ */
+public function notificationPreferences()
+{
+    try {
 
+        $preferences = $this->settingsService->getNotificationPreferences(
+            $this->getUserId()
+        );
+
+        ApiResponse::success(
+            "Notification preferences fetched successfully.",
+            $preferences
+        );
+
+    } catch (\Exception $e) {
+
+        ApiResponse::error(
+            $e->getMessage()
+        );
+
+    }
+}
+/**
+ * Update notification preferences
+ */
+public function updateNotificationPreferences()
+{
+    try {
+
+        $emailNotifications =
+            isset($_POST['email_notifications']) ? 1 : 0;
+
+        $inAppNotifications =
+            isset($_POST['in_app_notifications']) ? 1 : 0;
+
+        $privacyIncidentAlerts =
+            isset($_POST['privacy_incident_alerts']) ? 1 : 0;
+
+        $consentUpdates =
+            isset($_POST['consent_updates']) ? 1 : 0;
+
+        $assessmentReminders =
+            isset($_POST['assessment_reminders']) ? 1 : 0;
+
+        $riskAlerts =
+            isset($_POST['risk_alerts']) ? 1 : 0;
+
+        $systemAnnouncements =
+            isset($_POST['system_announcements']) ? 1 : 0;
+
+        $this->settingsService->updateNotificationPreferences(
+
+            $this->getUserId(),
+
+            $emailNotifications,
+
+            $inAppNotifications,
+
+            $privacyIncidentAlerts,
+
+            $consentUpdates,
+
+            $assessmentReminders,
+
+            $riskAlerts,
+
+            $systemAnnouncements
+
+        );
+
+        ApiResponse::success(
+            "Notification preferences updated successfully."
+        );
+
+    } catch (\Exception $e) {
+
+        ApiResponse::error(
+            $e->getMessage()
+        );
+
+    }
+}
     /**
      * Update profile image
      */

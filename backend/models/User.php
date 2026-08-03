@@ -79,7 +79,9 @@ public function changePassword($userId, $currentPassword, $newPassword)
     }
 
     // Verify current password
-    if (!password_verify($currentPassword, $user['password'])) {
+    if (password_verify(
+    $currentPassword,
+    $user['password_hash'])){
         throw new \Exception("Current password is incorrect.");
     }
 
@@ -96,6 +98,61 @@ public function changePassword($userId, $currentPassword, $newPassword)
 
     return $stmt->execute([
         $hashedPassword,
+        $userId
+    ]);
+}
+/**
+ * Get notification preferences
+ */
+public function getNotificationPreferences($userId)
+{
+    $stmt = $this->pdo->prepare("
+        SELECT *
+        FROM notification_preferences
+        WHERE user_id = ?
+        LIMIT 1
+    ");
+
+    $stmt->execute([$userId]);
+
+    return $stmt->fetch(\PDO::FETCH_ASSOC);
+}
+/**
+ * Update notification preferences
+ */
+public function updateNotificationPreferences(
+    $userId,
+    $emailNotifications,
+    $inAppNotifications,
+    $privacyIncidentAlerts,
+    $consentUpdates,
+    $assessmentReminders,
+    $riskAlerts,
+    $systemAnnouncements
+)
+{
+    $stmt = $this->pdo->prepare("
+        UPDATE notification_preferences
+        SET
+            email_notifications = ?,
+            in_app_notifications = ?,
+            privacy_incident_alerts = ?,
+            consent_updates = ?,
+            assessment_reminders = ?,
+            risk_alerts = ?,
+            system_announcements = ?,
+            updated_at = NOW()
+        WHERE user_id = ?
+    ");
+
+    return $stmt->execute([
+        $emailNotifications,
+        $inAppNotifications,
+        $privacyIncidentAlerts,
+        $consentUpdates,
+        $assessmentReminders,
+        $riskAlerts,
+        $systemAnnouncements,
         $userId
     ]);
 }
