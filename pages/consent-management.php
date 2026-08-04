@@ -120,6 +120,7 @@ if (isset($conn) && $conn) {
             $status = 'Granted';
             if ($row['db_status'] === 'withdrawn') $status = 'Revoked';
             if ($row['db_status'] === 'opt_out') $status = 'Pending';
+            if ($row['db_status'] === 'expired') $status = 'Expired';
             
             $row['status'] = $status;
             $consents[] = $row;

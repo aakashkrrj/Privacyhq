@@ -96,6 +96,9 @@ async function loadRecords() {
                         } else if (c.status === 'opt_out') {
                             statusLabel = 'Pending';
                             statusClass = 'bg-yellow-100 text-yellow-700';
+                        } else if (c.status === 'expired') {
+                            statusLabel = 'Expired';
+                            statusClass = 'bg-gray-100 text-gray-700';
                         }
 
                         const row = `
@@ -126,6 +129,8 @@ async function loadRecords() {
                             actionText = `${escapeHtml(c.subject_email)} revoked ${escapeHtml(c.category)}`;
                         } else if (c.status === 'opt_out') {
                             actionText = `${escapeHtml(c.subject_email)} pending ${escapeHtml(c.category)}`;
+                        } else if (c.status === 'expired') {
+                            actionText = `${escapeHtml(c.subject_email)} expired ${escapeHtml(c.category)}`;
                         }
 
                         const date = new Date(c.created_at);
@@ -321,18 +326,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('backend/api/consent/update.php', { method: 'POST', body: fd });
             const data = await res.json();
             if (data.success) {
-                showAlert(data.message || 'Consent preference updated successfully.');
                 closeModifyPreferenceModal();
-                await loadRecords();
-                await loadDashboard();
-                const historyModal = document.getElementById('consentHistoryModal');
-                if (historyModal && !historyModal.classList.contains('hidden')) {
-                    viewConsentHistory(consentId);
+                showAlert(data.message || 'Consent preference updated successfully.');
+                
+                try {
+                    await loadRecords();
+                } catch (err) {
+                    console.error("Error refreshing records:", err);
+                }
+
+                try {
+                    await loadDashboard();
+                } catch (err) {
+                    console.error("Error refreshing dashboard:", err);
+                }
+
+                try {
+                    const historyModal = document.getElementById('consentHistoryModal');
+                    if (historyModal && !historyModal.classList.contains('hidden')) {
+                        viewConsentHistory(consentId);
+                    }
+                } catch (err) {
+                    console.error("Error refreshing history timeline:", err);
                 }
             } else {
                 alert(data.message || 'Failed to update consent preference.');
             }
         } catch (e) {
+            console.error('Network error updating consent preference:', e);
             alert('Network error updating consent preference.');
         }
     });
@@ -382,8 +403,8 @@ async function viewConsentHistory(consentId) {
                 let prevStatus = item.previous_status || 'Initial';
                 let newStatus = item.new_status || 'Granted';
                 let reason = item.reason || 'No details provided';
-                let changedBy = item.changed_by || 'System / Self';
-                let dateStr = item.created_at || 'N/A';
+                let changedBy = item.user_full_name || item.changed_by || 'System / Self';
+                let dateStr = item.created_at || item.changed_at || item.timestamp || 'N/A';
 
                 const entry = `
                     <div class="relative pl-6 pb-4 border-l-2 border-blue-200 last:border-l-0 last:pb-0">
@@ -403,9 +424,13 @@ async function viewConsentHistory(consentId) {
                 container.innerHTML += entry;
             });
         } else {
+            if (!data.success && data.message) {
+                console.error("History API returned error:", data.message);
+            }
             container.innerHTML = '<p class="text-sm text-gray-400 py-8 text-center">No consent history available.</p>';
         }
     } catch (e) {
+        console.error("Error fetching consent history:", e);
         container.innerHTML = '<p class="text-sm text-red-500 py-4 text-center">Error loading consent history.</p>';
     }
 }

@@ -181,8 +181,8 @@ class Consent {
 
     public function getHistory($consentId) {
         $sql = "
-            SELECT ch.id, ch.previous_status, ch.new_status, ch.reason, ch.created_at,
-                   COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'System / Self') AS changed_by
+            SELECT ch.*,
+                   COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'System / Self') AS user_full_name
             FROM consent_history ch
             LEFT JOIN users u ON ch.changed_by = u.id
             WHERE ch.consent_id = ?

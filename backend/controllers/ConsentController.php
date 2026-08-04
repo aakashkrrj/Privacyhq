@@ -70,13 +70,13 @@ class ConsentController extends BaseController {
 
     public function history() {
         try {
-            $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+            $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
             if (!$id) {
                 throw new \Exception("Valid Consent ID is required.");
             }
             $data = $this->consentService->getConsentHistory($id);
             ApiResponse::success('Consent history fetched successfully', $data);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             ApiResponse::error($e->getMessage());
         }
     }
