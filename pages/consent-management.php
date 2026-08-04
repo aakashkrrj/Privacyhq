@@ -449,6 +449,21 @@ if (isset($conn) && $conn) {
                 </select>
             </div>
 
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Collection Method</label>
+                <select name="collection_method" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                    <option value="web_portal">Web Portal</option>
+                    <option value="mobile_app">Mobile App</option>
+                    <option value="api">API Integration</option>
+                    <option value="crm">CRM Platform</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Expiration Date (Optional)</label>
+                <input type="date" name="expires_at" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+            </div>
+
             <div class="flex justify-end gap-3 pt-4 border-t">
                 <button type="button" id="cancelConsentModalBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
                 <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">Save Consent</button>
@@ -479,6 +494,63 @@ if (isset($conn) && $conn) {
             <div class="flex justify-end gap-3 pt-4 border-t">
                 <button type="button" id="cancelImportModalBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
                 <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600">Upload & Import</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Consent History Timeline -->
+<div id="consentHistoryModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl relative max-h-[85vh] flex flex-col">
+        <button id="closeHistoryModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+        <h2 class="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-600">history</span>
+            Consent Audit History
+        </h2>
+        <p id="historyModalSubtitle" class="text-xs text-gray-500 mb-4">Audit log timeline of status changes.</p>
+        
+        <div id="historyTimelineContainer" class="overflow-y-auto flex-1 pr-2 space-y-4">
+            <!-- Dynamic timeline will load here -->
+        </div>
+
+        <div class="flex justify-end pt-4 border-t mt-4">
+            <button type="button" id="cancelHistoryModalBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Modify Preference -->
+<div id="modifyPreferenceModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl relative">
+        <button id="closeModifyModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+        <h2 class="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+            <span class="material-symbols-outlined text-purple-600">edit_note</span>
+            Modify Consent Preference
+        </h2>
+        <p id="modifyModalSubtitle" class="text-xs text-gray-500 mb-4">Update consent status with mandatory audit reason.</p>
+
+        <form id="modifyPreferenceForm" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            <input type="hidden" name="consent_id" id="modify_consent_id">
+
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">New Consent Status</label>
+                <select name="status" id="modify_status" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                    <option value="Granted">Granted (Opt-In)</option>
+                    <option value="Pending">Pending (Opt-Out)</option>
+                    <option value="Revoked">Revoked (Withdrawn)</option>
+                    <option value="Expired">Expired</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Reason for Modification <span class="text-red-500">*</span></label>
+                <textarea name="reason" id="modify_reason" required rows="3" placeholder="Specify why the consent preference is being updated..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t">
+                <button type="button" id="cancelModifyModalBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700">Update Preference</button>
             </div>
         </form>
     </div>

@@ -2,18 +2,45 @@
 namespace Backend\Models;
 
 class Consent {
+    public const STATUS_OPT_IN = 'opt_in';
+    public const STATUS_OPT_OUT = 'opt_out';
+    public const STATUS_WITHDRAWN = 'withdrawn';
+    public const STATUS_EXPIRED = 'expired';
+
+    public static function getValidStatuses(): array {
+        return [
+            self::STATUS_OPT_IN,
+            self::STATUS_OPT_OUT,
+            self::STATUS_WITHDRAWN,
+            self::STATUS_EXPIRED
+        ];
+    }
+
+    public static function getStatusMap(): array {
+        return [
+            'Granted'   => self::STATUS_OPT_IN,
+            'Pending'   => self::STATUS_OPT_OUT,
+            'Revoked'   => self::STATUS_WITHDRAWN,
+            'Expired'   => self::STATUS_EXPIRED,
+            self::STATUS_OPT_IN    => self::STATUS_OPT_IN,
+            self::STATUS_OPT_OUT   => self::STATUS_OPT_OUT,
+            self::STATUS_WITHDRAWN => self::STATUS_WITHDRAWN,
+            self::STATUS_EXPIRED   => self::STATUS_EXPIRED,
+        ];
+    }
+
     private $pdo;
 
     public function __construct(\PDO $pdo) {
         $this->pdo = $pdo;
     }
 
-    public function create($subjectId, $purposeId, $policyId, $status, $source) {
+    public function create($subjectId, $purposeId, $policyId, $status, $source, $collectionMethod = 'web_portal', $ipAddress = null, $userAgent = null, $expiresAt = null) {
         $stmt = $this->pdo->prepare("
-            INSERT INTO consents (data_subject_id, consent_purpose_id, policy_id, status, source) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO consents (data_subject_id, consent_purpose_id, policy_id, status, source, collection_method, ip_address, user_agent, expires_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->execute([$subjectId, $purposeId, $policyId, $status, $source]);
+        $stmt->execute([$subjectId, $purposeId, $policyId, $status, $source, $collectionMethod, $ipAddress, $userAgent, $expiresAt]);
         return $this->pdo->lastInsertId();
     }
 
@@ -67,7 +94,7 @@ class Consent {
 
         // Fetch items
         $sql = "
-            SELECT c.id, c.status, c.source, c.created_at, c.granted_at, 
+            SELECT c.id, c.status, c.source, c.collection_method, c.ip_address, c.user_agent, c.created_at, c.granted_at, c.expires_at, 
                    ds.identifier_hash as subject_email, cp.purpose_name as category
             FROM consents c
             LEFT JOIN data_subjects ds ON c.data_subject_id = ds.id
@@ -103,7 +130,7 @@ class Consent {
         $whereSql = "WHERE " . implode(" AND ", $whereClauses);
 
         $sql = "
-            SELECT c.id, c.status, c.source, c.created_at, c.granted_at, 
+            SELECT c.id, c.status, c.source, c.collection_method, c.ip_address, c.user_agent, c.created_at, c.granted_at, c.expires_at, 
                    ds.identifier_hash as subject_email, cp.purpose_name as category
             FROM consents c
             LEFT JOIN data_subjects ds ON c.data_subject_id = ds.id
@@ -150,5 +177,19 @@ class Consent {
             'opt_in_rate' => $optInRate,
             'new_this_month' => $newThisMonth ?? 0
         ];
+    }
+
+    public function getHistory($consentId) {
+        $sql = "
+            SELECT ch.id, ch.previous_status, ch.new_status, ch.reason, ch.created_at,
+                   COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'System / Self') AS changed_by
+            FROM consent_history ch
+            LEFT JOIN users u ON ch.changed_by = u.id
+            WHERE ch.consent_id = ?
+            ORDER BY ch.id DESC
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$consentId]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 }

@@ -11,21 +11,18 @@ class ConsentController extends BaseController {
         $this->consentService = $consentService;
     }
 
-    private function respond($data) {
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit;
-    }
-
-    
-
     public function create() {
         try {
             $email = trim($_POST['user_identifier'] ?? '');
             $category = trim($_POST['category'] ?? '');
             $status = trim($_POST['status'] ?? 'Granted');
+            $collectionMethod = trim($_POST['collection_method'] ?? 'web_portal');
+            $source = trim($_POST['source'] ?? 'Manual');
+            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+            $userAgent = isset($_SERVER['HTTP_USER_AGENT']) ? substr($_SERVER['HTTP_USER_AGENT'], 0, 255) : null;
+            $expiresAt = !empty($_POST['expires_at']) ? trim($_POST['expires_at']) : null;
 
-            $this->consentService->createConsent($email, $category, $status, $this->getUserId());
+            $this->consentService->createConsent($email, $category, $status, $this->getUserId(), $collectionMethod, $source, $ipAddress, $userAgent, $expiresAt);
             ApiResponse::success('Consent logged successfully');
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
@@ -66,6 +63,35 @@ class ConsentController extends BaseController {
         try {
             $data = $this->consentService->getDashboardMetrics();
             ApiResponse::success('Success', $data);
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function history() {
+        try {
+            $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+            if (!$id) {
+                throw new \Exception("Valid Consent ID is required.");
+            }
+            $data = $this->consentService->getConsentHistory($id);
+            ApiResponse::success('Consent history fetched successfully', $data);
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function updatePreference() {
+        try {
+            $id = filter_input(INPUT_POST, 'consent_id', FILTER_VALIDATE_INT);
+            if (!$id) {
+                throw new \Exception("Valid Consent ID is required.");
+            }
+            $status = trim($_POST['status'] ?? '');
+            $reason = trim($_POST['reason'] ?? '');
+
+            $this->consentService->updatePreference($id, $status, $this->getUserId(), $reason);
+            ApiResponse::success('Consent preference updated successfully');
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
         }

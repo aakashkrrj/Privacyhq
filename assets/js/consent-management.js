@@ -85,34 +85,38 @@ async function loadRecords() {
                 const recentList = document.getElementById('recentEventsList');
                 if (recentList) recentList.innerHTML = '';
 
-                items.forEach((c, idx) => {
-                    let statusLabel = 'Granted';
-                    let statusClass = 'bg-green-100 text-green-700';
-                    if (c.status === 'withdrawn') {
-                        statusLabel = 'Revoked';
-                        statusClass = 'bg-red-100 text-red-700';
-                    } else if (c.status === 'opt_out') {
-                        statusLabel = 'Pending';
-                        statusClass = 'bg-yellow-100 text-yellow-700';
-                    }
+                    window.loadedConsentsMap = {};
+                    items.forEach((c, idx) => {
+                        window.loadedConsentsMap[c.id] = c;
+                        let statusLabel = 'Granted';
+                        let statusClass = 'bg-green-100 text-green-700';
+                        if (c.status === 'withdrawn') {
+                            statusLabel = 'Revoked';
+                            statusClass = 'bg-red-100 text-red-700';
+                        } else if (c.status === 'opt_out') {
+                            statusLabel = 'Pending';
+                            statusClass = 'bg-yellow-100 text-yellow-700';
+                        }
 
-                    const row = `
-                        <tr class="border-b border-gray-50 hover:bg-gray-50/50">
-                            <td class="px-6 py-4 font-medium text-gray-900">${escapeHtml(c.subject_email)}</td>
-                            <td class="px-6 py-4">${escapeHtml(c.category)}</td>
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-1 text-xs rounded-full font-medium ${statusClass}">
-                                    ${statusLabel}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-xs text-gray-500">${escapeHtml(c.created_at)}</td>
-                            <td class="px-6 py-4 text-right">
-                                ${c.status !== 'withdrawn' ? 
-                                    `<button onclick="revokeConsent(${c.id})" class="text-xs text-red-600 hover:underline">Revoke</button>` : 
-                                    `<span class="text-xs text-gray-400">N/A</span>`}
-                            </td>
-                        </tr>
-                    `;
+                        const row = `
+                            <tr class="border-b border-gray-50 hover:bg-gray-50/50">
+                                <td class="px-6 py-4 font-medium text-gray-900">${escapeHtml(c.subject_email)}</td>
+                                <td class="px-6 py-4">${escapeHtml(c.category)}</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 text-xs rounded-full font-medium ${statusClass}">
+                                        ${statusLabel}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-gray-500">${escapeHtml(c.created_at)}</td>
+                                <td class="px-6 py-4 text-right">
+                                    <button onclick="viewConsentHistory(${c.id})" class="text-xs text-blue-600 hover:underline mr-2">History</button>
+                                    <button onclick="openModifyPreferenceModal(${c.id})" class="text-xs text-purple-600 hover:underline mr-2">Modify</button>
+                                    ${c.status !== 'withdrawn' ? 
+                                        `<button onclick="revokeConsent(${c.id})" class="text-xs text-red-600 hover:underline">Revoke</button>` : 
+                                        `<span class="text-xs text-gray-400">Revoked</span>`}
+                                </td>
+                            </tr>
+                        `;
                     tbody.innerHTML += row;
 
                     // Populate recent events with first 4 items
@@ -289,4 +293,119 @@ document.addEventListener('DOMContentLoaded', () => {
             resultsDiv.innerHTML = '<p class="font-bold text-red-700">Network error processing import.</p>';
         }
     });
+
+    // History Modal Event Listeners
+    document.getElementById('closeHistoryModalBtn').addEventListener('click', () => {
+        document.getElementById('consentHistoryModal').classList.add('hidden');
+    });
+    document.getElementById('cancelHistoryModalBtn').addEventListener('click', () => {
+        document.getElementById('consentHistoryModal').classList.add('hidden');
+    });
+
+    // Modify Preference Modal Event Listeners
+    document.getElementById('closeModifyModalBtn').addEventListener('click', closeModifyPreferenceModal);
+    document.getElementById('cancelModifyModalBtn').addEventListener('click', closeModifyPreferenceModal);
+
+    document.getElementById('modifyPreferenceForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const fd = new FormData(this);
+        const consentId = document.getElementById('modify_consent_id').value;
+        const reason = document.getElementById('modify_reason').value.trim();
+
+        if (!reason) {
+            alert('Please provide a reason for modifying this consent preference.');
+            return;
+        }
+
+        try {
+            const res = await fetch('backend/api/consent/update.php', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (data.success) {
+                showAlert(data.message || 'Consent preference updated successfully.');
+                closeModifyPreferenceModal();
+                await loadRecords();
+                await loadDashboard();
+                const historyModal = document.getElementById('consentHistoryModal');
+                if (historyModal && !historyModal.classList.contains('hidden')) {
+                    viewConsentHistory(consentId);
+                }
+            } else {
+                alert(data.message || 'Failed to update consent preference.');
+            }
+        } catch (e) {
+            alert('Network error updating consent preference.');
+        }
+    });
 });
+
+function openModifyPreferenceModal(consentId) {
+    const record = window.loadedConsentsMap[consentId] || {};
+    document.getElementById('modify_consent_id').value = consentId;
+    document.getElementById('modifyModalSubtitle').innerText = `Updating consent for ${record.subject_email || 'User'} (${record.category || 'Consent'})`;
+    
+    let currStatus = 'Granted';
+    if (record.status === 'withdrawn') currStatus = 'Revoked';
+    if (record.status === 'opt_out') currStatus = 'Pending';
+    if (record.status === 'expired') currStatus = 'Expired';
+    document.getElementById('modify_status').value = currStatus;
+    document.getElementById('modify_reason').value = '';
+
+    document.getElementById('modifyPreferenceModal').classList.remove('hidden');
+}
+
+function closeModifyPreferenceModal() {
+    document.getElementById('modifyPreferenceModal').classList.add('hidden');
+    document.getElementById('modifyPreferenceForm').reset();
+}
+
+window.loadedConsentsMap = window.loadedConsentsMap || {};
+
+async function viewConsentHistory(consentId) {
+    const modal = document.getElementById('consentHistoryModal');
+    const subtitle = document.getElementById('historyModalSubtitle');
+    const container = document.getElementById('historyTimelineContainer');
+    
+    const record = window.loadedConsentsMap[consentId] || {};
+    const email = record.subject_email || 'User';
+    const category = record.category || 'Consent';
+
+    subtitle.innerText = `Audit history for ${email} (${category})`;
+    container.innerHTML = '<p class="text-xs text-gray-400 p-4 text-center">Loading audit history...</p>';
+    modal.classList.remove('hidden');
+
+    try {
+        const res = await fetch(`backend/api/consent/history.php?id=${consentId}`);
+        const data = await res.json();
+        if (data.success && data.data && data.data.length > 0) {
+            container.innerHTML = '';
+            data.data.forEach((item, index) => {
+                let prevStatus = item.previous_status || 'Initial';
+                let newStatus = item.new_status || 'Granted';
+                let reason = item.reason || 'No details provided';
+                let changedBy = item.changed_by || 'System / Self';
+                let dateStr = item.created_at || 'N/A';
+
+                const entry = `
+                    <div class="relative pl-6 pb-4 border-l-2 border-blue-200 last:border-l-0 last:pb-0">
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-600 border-2 border-white"></div>
+                        <div class="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-xs font-semibold text-gray-800">
+                                    Status: <span class="text-gray-500">${escapeHtml(prevStatus)}</span> &rarr; <span class="text-blue-700 font-bold">${escapeHtml(newStatus)}</span>
+                                </span>
+                                <span class="text-[10px] text-gray-400">${escapeHtml(dateStr)}</span>
+                            </div>
+                            <p class="text-xs text-gray-600 mb-1"><strong>Reason:</strong> ${escapeHtml(reason)}</p>
+                            <p class="text-[11px] text-gray-400"><strong>Changed By:</strong> ${escapeHtml(changedBy)}</p>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += entry;
+            });
+        } else {
+            container.innerHTML = '<p class="text-sm text-gray-400 py-8 text-center">No consent history available.</p>';
+        }
+    } catch (e) {
+        container.innerHTML = '<p class="text-sm text-red-500 py-4 text-center">Error loading consent history.</p>';
+    }
+}
