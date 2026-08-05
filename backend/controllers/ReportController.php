@@ -27,4 +27,30 @@ class ReportController extends BaseController {
             ApiResponse::error($e->getMessage());
         }
     }
+
+    public function riskRegister() {
+        try {
+            return $this->reportService->getRiskRegisterReport();
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function ropa() {
+        try {
+            return $this->reportService->getRopaReport();
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function policies() {
+        try {
+            return $this->reportService->getPoliciesReport();
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
 }
+
+

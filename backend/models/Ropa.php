@@ -99,4 +99,26 @@ class Ropa {
             'new_this_month' => $newThisMonth ?? 0
         ];
     }
+
+    public function getIncomplete() {
+        $sql = "
+            SELECT *
+            FROM processing_activities
+            WHERE deleted_at IS NULL
+              AND (
+                activity_name IS NULL OR TRIM(activity_name) = ''
+                OR purpose IS NULL OR TRIM(purpose) = ''
+                OR department IS NULL OR TRIM(department) = ''
+                OR data_controller IS NULL OR TRIM(data_controller) = ''
+                OR data_categories IS NULL OR TRIM(data_categories) = ''
+                OR data_subjects IS NULL OR TRIM(data_subjects) = ''
+                OR recipients IS NULL OR TRIM(recipients) = ''
+                OR retention_period IS NULL OR TRIM(retention_period) = ''
+              )
+            ORDER BY id DESC
+        ";
+        $stmt = $this->pdo->query($sql);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
 }
+

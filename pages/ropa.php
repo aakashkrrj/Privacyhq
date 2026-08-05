@@ -106,6 +106,25 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
             </div>
         </div>
     </div>
+
+    <!-- Quick Actions Card -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
+        <h3 class="text-md font-semibold text-gray-700 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <button id="btn-add-activity-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                + Add Processing Activity
+            </button>
+            <button id="btn-export-records-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition">
+                Export Records
+            </button>
+            <button id="btn-generate-report-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition">
+                Generate Report
+            </button>
+            <button id="btn-review-activities-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition">
+                Review Activities
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- Modal: Add / Edit ROPA -->
@@ -173,205 +192,38 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
     </div>
 </div>
 
+<!-- Modal: Review Activities -->
+<div id="reviewActivitiesModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 w-full max-w-4xl shadow-xl relative max-h-[90vh] overflow-y-auto">
+        <button id="closeReviewActivitiesModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Review Incomplete Activities</h3>
+        <p class="text-sm text-gray-500 mb-6">Listed below are active processing operations requiring further compliance documentation.</p>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-200">
+                        <th class="p-3">Activity Name</th>
+                        <th class="p-3">Missing Details</th>
+                        <th class="p-3">Department</th>
+                        <th class="p-3 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="incompleteTableBody">
+                    <tr><td colspan="4" class="text-center py-6 text-gray-500">Loading incomplete activities...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="pt-4 flex justify-end border-t mt-6">
+            <button type="button" id="btnCloseReviewActivitiesModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
-let currentPage = 1;
-let currentEndpoint = 'create.php';
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-}
-
-async function loadDashboard() {
-    try {
-        const res = await fetch('backend/api/ropa/dashboard.php');
-        const data = await res.json();
-        if (data.success && data.data) {
-            document.getElementById('kpi-total').innerText = data.data.total_activities;
-            document.getElementById('kpi-active').innerText = data.data.active_activities;
-            document.getElementById('kpi-inactive').innerText = data.data.inactive_activities;
-            document.getElementById('kpi-new-month').innerText = data.data.new_this_month;
-        }
-    } catch (e) {
-        console.error('Failed to load dashboard metrics', e);
-    }
-}
-
-async function loadRecords() {
-    const search = document.getElementById('filter-search').value;
-    const status = document.getElementById('filter-status').value;
-
-    const url = `backend/api/ropa/list.php?p=${currentPage}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}`;
-    
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
-        const tbody = document.getElementById('ropaTableBody');
-        
-        if (data.success) {
-            tbody.innerHTML = '';
-            const items = data.data.items;
-            const total = data.data.total;
-            
-            if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No records found.</td></tr>';
-            } else {
-                items.forEach(i => {
-                    let statusClass = 'bg-gray-100 text-gray-800';
-                    if (i.status === 'active') statusClass = 'bg-green-100 text-green-800';
-                    else if (i.status === 'inactive') statusClass = 'bg-orange-100 text-orange-800';
-
-                    const row = `
-                        <tr class="hover:bg-gray-50 border-b border-gray-100">
-                            <td class="p-4 font-medium text-gray-900">
-                                ${escapeHtml(i.activity_name)}
-                                <div class="text-xs text-gray-500 truncate max-w-xs" title="${escapeHtml(i.purpose)}">${escapeHtml(i.purpose)}</div>
-                            </td>
-                            <td class="p-4 text-gray-600">${escapeHtml(i.data_controller)}</td>
-                            <td class="p-4 text-gray-600">${escapeHtml(i.department)}</td>
-                            <td class="p-4">
-                                <span class="px-2 py-1 text-xs font-medium rounded-full ${statusClass}">
-                                    ${escapeHtml(i.status)}
-                                </span>
-                            </td>
-                            <td class="p-4 text-gray-600 text-sm">${escapeHtml(i.retention_period)}</td>
-                            <td class="p-4 text-right">
-                                <button onclick="editRopa(${i.id})" class="text-blue-600 hover:text-blue-900 font-medium text-sm mr-3">Edit</button>
-                                <button onclick="deleteRopa(${i.id})" class="text-red-600 hover:text-red-900 font-medium text-sm">Delete</button>
-                            </td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += row;
-                });
-            }
-
-            // Pagination
-            const totalPages = Math.ceil(total / 10);
-            const controls = document.getElementById('paginationControls');
-            if (totalPages > 1) {
-                controls.classList.remove('hidden');
-                document.getElementById('pageInfo').innerText = `Showing page ${currentPage} of ${totalPages}`;
-                document.getElementById('btnPrev').style.display = currentPage > 1 ? 'block' : 'none';
-                document.getElementById('btnNext').style.display = currentPage < totalPages ? 'block' : 'none';
-            } else {
-                controls.classList.add('hidden');
-            }
-        }
-    } catch (e) {
-        console.error('Failed to load records', e);
-    }
-}
-
-document.getElementById('searchForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    currentPage = 1;
-    loadRecords();
-});
-
-document.getElementById('btnPrev').addEventListener('click', () => {
-    if (currentPage > 1) {
-        currentPage--;
-        loadRecords();
-    }
-});
-
-document.getElementById('btnNext').addEventListener('click', () => {
-    currentPage++;
-    loadRecords();
-});
-
-async function submitApi(formId, endpoint, modalCallback) {
-    const form = document.getElementById(formId);
-    const formData = new FormData(form);
-    try {
-        const res = await fetch(endpoint, { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.success) {
-            loadRecords();
-            loadDashboard();
-            form.reset();
-            modalCallback();
-        } else {
-            alert(data.message || 'Error occurred');
-        }
-    } catch (e) {
-        alert('Request failed');
-    }
-}
-
-document.getElementById('ropaForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    submitApi('ropaForm', `backend/api/ropa/${currentEndpoint}`, closeRopaModal);
-});
-
-async function editRopa(id) {
-    try {
-        const res = await fetch(`backend/api/ropa/details.php?id=${id}`);
-        const data = await res.json();
-        if (data.success) {
-            const i = data.data;
-            document.getElementById('ropa_id').value = i.id;
-            document.getElementById('ropa_activity_name').value = i.activity_name;
-            document.getElementById('ropa_purpose').value = i.purpose;
-            document.getElementById('ropa_department').value = i.department || '';
-            document.getElementById('ropa_data_controller').value = i.data_controller || '';
-            document.getElementById('ropa_data_categories').value = i.data_categories || '';
-            document.getElementById('ropa_data_subjects').value = i.data_subjects || '';
-            document.getElementById('ropa_recipients').value = i.recipients || '';
-            document.getElementById('ropa_retention_period').value = i.retention_period || '';
-            document.getElementById('ropa_status').value = i.status || 'active';
-            
-            document.getElementById('statusGroup').classList.remove('hidden');
-            document.getElementById('modalTitle').innerText = 'Edit Activity';
-            currentEndpoint = 'update.php';
-            
-            document.getElementById('ropaModal').classList.remove('hidden');
-        }
-    } catch (e) {
-        alert('Failed to load record details');
-    }
-}
-
-async function deleteRopa(id) {
-    if (confirm("Are you sure you want to delete this ROPA record?")) {
-        const formData = new FormData();
-        formData.append('csrf_token', '<?= $csrfToken ?>');
-        formData.append('id', id);
-        
-        try {
-            const res = await fetch('backend/api/ropa/delete.php', { method: 'POST', body: formData });
-            const data = await res.json();
-            if (data.success) {
-                loadRecords();
-                loadDashboard();
-            } else {
-                alert(data.message);
-            }
-        } catch (e) {
-            alert('Request failed');
-        }
-    }
-}
-
-function openRopaModal() {
-    document.getElementById('ropaForm').reset();
-    document.getElementById('ropa_id').value = '';
-    document.getElementById('statusGroup').classList.add('hidden');
-    document.getElementById('modalTitle').innerText = 'Add New Activity';
-    currentEndpoint = 'create.php';
-    document.getElementById('ropaModal').classList.remove('hidden');
-}
-
-function closeRopaModal() {
-    document.getElementById('ropaModal').classList.add('hidden');
-}
-
-// Initial load
-document.addEventListener('DOMContentLoaded', () => {
-    loadDashboard();
-    loadRecords();
-});
+    const G_CSRF_TOKEN = '<?= $csrfToken ?>';
 </script>
+<script src="assets/js/ropa.js"></script>
 </body>
 </html>

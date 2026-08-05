@@ -17,4 +17,18 @@ class ReportService {
     public function getVendorRiskReport() {
         return $this->reportSummaryModel->getVendorRiskReport();
     }
+
+    public function getRiskRegisterReport() {
+        return $this->reportSummaryModel->getRiskRegisterReport();
+    }
+
+    public function getRopaReport() {
+        return $this->reportSummaryModel->getRopaReport();
+    }
+
+    public function getPoliciesReport() {
+        return $this->reportSummaryModel->getPoliciesReport();
+    }
 }
+
+

@@ -98,4 +98,14 @@ class RopaController extends BaseController {
             ApiResponse::error($e->getMessage());
         }
     }
+
+    public function getIncomplete() {
+        try {
+            $data = $this->ropaService->getIncomplete();
+            ApiResponse::success('Success', $data);
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
 }
+

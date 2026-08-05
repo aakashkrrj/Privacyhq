@@ -99,4 +99,9 @@ class RopaService {
     public function getDashboardMetrics() {
         return $this->ropaModel->getDashboardMetrics();
     }
+
+    public function getIncomplete() {
+        return $this->ropaModel->getIncomplete();
+    }
 }
+

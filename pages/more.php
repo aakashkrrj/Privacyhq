@@ -135,8 +135,26 @@
                 </div>
             </a>
 
+            <!-- Policies & Version Control -->
+            <a href="index.php?page=policies"
+               class="bg-white border rounded-xl p-5 flex items-center gap-4
+                      hover:shadow-md transition">
+
+                <span class="material-symbols-outlined text-blue-700 text-3xl">
+                    description
+                </span>
+
+                <div>
+                    <h3 class="font-semibold text-lg">Policies</h3>
+                    <p class="text-sm text-gray-500">
+                        Create, edit, and track compliance policy documents.
+                    </p>
+                </div>
+            </a>
+
         </div>
     </main>
+
 
     <!-- Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 w-full z-50

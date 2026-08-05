@@ -294,149 +294,111 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
         <div class="card">
             <h3 style="margin-bottom:20px;">Quick Actions</h3>
             <div class="form-grid">
-                <button onclick="alert('Coming Soon: Feature under development.');" class="btn">+ Log Risk</button>
-                <button onclick="alert('Coming Soon: Feature under development.');" class="btn" style="background:#2563eb;">Export Register</button>
-                <button onclick="alert('Coming Soon: Feature under development.');" class="btn" style="background:#16a34a;">Generate Report</button>
-                <button onclick="alert('Coming Soon: Feature under development.');" class="btn" style="background:#7c3aed;">Review Controls</button>
+                <button id="btn-log-risk-qa" class="btn">+ Log Risk</button>
+                <button id="btn-export-register-qa" class="btn" style="background:#2563eb;">Export Register</button>
+                <button id="btn-generate-report-qa" class="btn" style="background:#16a34a;">Generate Report</button>
+                <button id="btn-review-controls-qa" class="btn" style="background:#7c3aed;">Review Controls</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Log Risk -->
+    <div id="logRiskModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:100; padding:16px;">
+        <div class="card" style="width:100%; max-width:600px; margin:0; padding:24px; position:relative; overflow-y:auto; max-height:90vh;">
+            <button id="closeLogRiskModal" style="position:absolute; right:16px; top:16px; border:none; background:transparent; font-size:1.5rem; cursor:pointer;">&times;</button>
+            <h3 style="margin-top:0; margin-bottom:20px;">Log New Risk Entry</h3>
+            <form id="modalRiskForm">
+                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                <div style="display:grid; grid-template-columns:1fr; gap:16px;">
+                    <div class="form-group">
+                        <label>Risk Title / Description</label>
+                        <input type="text" name="title" placeholder="e.g., Unencrypted S3 bucket storing user backups" required>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="category">
+                                <option value="Data Transfer">Data Transfer</option>
+                                <option value="Access Control">Access Control</option>
+                                <option value="Third-Party Vendor">Third-Party Vendor</option>
+                                <option value="Data Retention">Data Retention</option>
+                                <option value="Security Governance">Security Governance</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Risk Owner / Lead</label>
+                            <input type="text" name="owner" placeholder="e.g., DevOps / DPO Team">
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+                        <div class="form-group">
+                            <label>Likelihood</label>
+                            <select name="likelihood">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Impact Rating</label>
+                            <select name="impact">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select name="status">
+                                <option value="Open">Open</option>
+                                <option value="In Review">In Review</option>
+                                <option value="Mitigated">Mitigated</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mitigation Strategy / Action Plan</label>
+                        <textarea name="mitigation" rows="3" placeholder="Describe controls, policies, or technical fixes to resolve this risk..."></textarea>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px;">
+                    <button type="button" id="btnCancelLogRiskModal" class="btn" style="background:#6b7280;">Cancel</button>
+                    <button type="submit" class="btn">+ Log Risk</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Review Controls -->
+    <div id="reviewControlsModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:100; padding:16px;">
+        <div class="card" style="width:100%; max-width:800px; margin:0; padding:24px; position:relative; overflow-y:auto; max-height:90vh;">
+            <button id="closeReviewControlsModal" style="position:absolute; right:16px; top:16px; border:none; background:transparent; font-size:1.5rem; cursor:pointer;">&times;</button>
+            <h3 style="margin-top:0; margin-bottom:20px;">Review Controls & Mitigations</h3>
+            <p style="color:#6b7280; font-size:0.9rem; margin-bottom:20px;">Monitor and update status of mitigations associated with logged risks.</p>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Risk Item</th>
+                            <th>Mitigation Strategy</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="controlsTableBody">
+                        <tr><td colspan="4" style="text-align:center; color:#6b7280;">Loading controls...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+                <button type="button" id="btnCloseReviewControlsModal" class="btn" style="background:#6b7280;">Close</button>
             </div>
         </div>
     </div>
 
 <script>
-function escapeHtml(text) {
-    if (!text) return '';
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-}
-
-async function loadDashboard() {
-    try {
-        const res = await fetch('backend/api/risk-register/dashboard.php');
-        const data = await res.json();
-        if (data.success && data.data) {
-            document.getElementById('kpi-total').innerText = data.data.total_risks;
-            document.getElementById('kpi-high').innerText = data.data.high_risks;
-            document.getElementById('kpi-mitigated').innerText = data.data.mitigated_risks;
-            document.getElementById('kpi-needs-action').innerText = data.data.needs_action;
-        }
-    } catch (e) {
-        console.error('Failed to load dashboard metrics', e);
-    }
-}
-
-async function loadRecords() {
-    try {
-        const res = await fetch('backend/api/risk-register/list.php');
-        const data = await res.json();
-        const tbody = document.getElementById('riskTableBody');
-        
-        if (data.success) {
-            tbody.innerHTML = '';
-            const items = data.data.items;
-            const total = data.data.total;
-            
-            if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #6b7280;">No risks logged in the matrix yet.</td></tr>';
-            } else {
-                let priorityHigh = 0, priorityMed = 0, priorityLow = 0;
-                let categoryCounts = {};
-                
-                items.forEach(i => {
-                    const lh = (i.likelihood || 'medium').toLowerCase();
-                    const badgeLh = (lh === 'high') ? 'badge-high' : ((lh === 'medium') ? 'badge-medium' : 'badge-low');
-                    
-                    const imp = (i.impact || 'medium').toLowerCase();
-                    const badgeImp = (imp === 'high') ? 'badge-high' : ((imp === 'medium') ? 'badge-medium' : 'badge-low');
-                    
-                    const st = (i.status || 'open').toLowerCase();
-                    const badgeSt = (st === 'mitigated') ? 'badge-status-mitigated' : ((st === 'in review') ? 'badge-status-in-review' : 'badge-status-open');
-
-                    const rl = (i.risk_level || 'medium').toLowerCase();
-                    if (rl === 'high') priorityHigh++;
-                    else if (rl === 'medium') priorityMed++;
-                    else priorityLow++;
-
-                    const cat = i.category || 'Uncategorized';
-                    if (!categoryCounts[cat]) categoryCounts[cat] = 0;
-                    categoryCounts[cat]++;
-
-                    const row = `
-                        <tr>
-                            <td><strong>${escapeHtml(i.title)}</strong></td>
-                            <td>${escapeHtml(i.category)}</td>
-                            <td><span class="badge ${badgeLh}">${escapeHtml(i.likelihood)}</span></td>
-                            <td><span class="badge ${badgeImp}">${escapeHtml(i.impact)}</span></td>
-                            <td>${escapeHtml(i.owner || 'Unassigned')}</td>
-                            <td><span class="badge ${badgeSt}">${escapeHtml(i.status)}</span></td>
-                            <td>${escapeHtml(i.mitigation)}</td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += row;
-                });
-                
-                // Update distribution card
-                document.getElementById('distributionCard').style.display = 'block';
-                document.getElementById('dist-high').innerText = priorityHigh;
-                document.getElementById('dist-med').innerText = priorityMed;
-                document.getElementById('dist-low').innerText = priorityLow;
-                document.getElementById('dist-total').innerText = total;
-
-                // Sort categories
-                const sortedCategories = Object.keys(categoryCounts).map(k => ({ cat: k, count: categoryCounts[k] }))
-                    .sort((a,b) => b.count - a.count).slice(0, 5);
-                
-                let distHtml = '';
-                const colors = ['#dc2626', '#2563eb', '#16a34a', '#d97706', '#7c3aed'];
-                const totalForPct = total > 0 ? total : 1;
-
-                sortedCategories.forEach((item, idx) => {
-                    const pct = Math.round((item.count / totalForPct) * 100);
-                    const color = colors[idx % colors.length];
-                    distHtml += `
-                        <p style="margin-bottom:8px;">${escapeHtml(item.cat)} (${pct}%)</p>
-                        <div style="height:8px;background:#e5e7eb;border-radius:5px;">
-                            <div style="width:${pct}%;height:8px;background:${color};border-radius:5px;"></div>
-                        </div><br>
-                    `;
-                });
-                document.getElementById('categoryDistribution').innerHTML = distHtml || '<p style="color:#6b7280; font-size:0.9rem;">No data available.</p>';
-            }
-        }
-    } catch (e) {
-        console.error('Failed to load records', e);
-    }
-}
-
-document.getElementById('riskForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    try {
-        const res = await fetch('backend/api/risk-register/create.php', { method: 'POST', body: formData });
-        const data = await res.json();
-        const alertBox = document.getElementById('alertBox');
-        alertBox.style.display = 'block';
-        if (data.success) {
-            alertBox.innerText = data.message;
-            alertBox.style.background = '#d1fae5';
-            alertBox.style.color = '#065f46';
-            this.reset();
-            loadRecords();
-            loadDashboard();
-        } else {
-            alertBox.innerText = data.message;
-            alertBox.style.background = '#fee2e2';
-            alertBox.style.color = '#991b1b';
-        }
-    } catch (e) {
-        alert('Request failed');
-    }
-});
-
-// Initial load
-document.addEventListener('DOMContentLoaded', () => {
-    loadDashboard();
-    loadRecords();
-});
+    const G_CSRF_TOKEN = '<?= $csrfToken ?>';
 </script>
+<script src="../assets/js/risk-register.js"></script>
 </body>
 </html>
