@@ -12,6 +12,7 @@ class RopaController extends BaseController {
     }
 
     public function create() {
+        $this->checkPermission('manage_ropa');
         try {
             $activityName = trim($_POST['activity_name'] ?? '');
             $purpose = trim($_POST['purpose'] ?? '');
@@ -30,6 +31,7 @@ class RopaController extends BaseController {
     }
 
     public function update() {
+        $this->checkPermission('manage_ropa');
         try {
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new \Exception("Invalid request ID");
@@ -52,6 +54,7 @@ class RopaController extends BaseController {
     }
 
     public function delete() {
+        $this->checkPermission('manage_ropa');
         try {
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new \Exception("Invalid request ID");
@@ -64,6 +67,7 @@ class RopaController extends BaseController {
     }
 
     public function get() {
+        $this->checkPermission('view_dashboard');
         try {
             $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new \Exception("Invalid request ID");
@@ -78,6 +82,7 @@ class RopaController extends BaseController {
     }
 
     public function listRecords() {
+        $this->checkPermission('view_dashboard');
         try {
             $search = trim($_GET['search'] ?? '');
             $statusFilter = trim($_GET['status'] ?? '');
@@ -91,6 +96,7 @@ class RopaController extends BaseController {
     }
 
     public function dashboard() {
+        $this->checkPermission('view_dashboard');
         try {
             $data = $this->ropaService->getDashboardMetrics();
             ApiResponse::success('Success', $data);
@@ -100,6 +106,7 @@ class RopaController extends BaseController {
     }
 
     public function getIncomplete() {
+        $this->checkPermission('view_dashboard');
         try {
             $data = $this->ropaService->getIncomplete();
             ApiResponse::success('Success', $data);

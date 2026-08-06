@@ -9,6 +9,7 @@ class CookieGovernanceController extends BaseController {
 
     public function __construct($cookieModel) {
         $this->cookieModel = $cookieModel;
+        $this->checkPermission('view_dashboard');
     }
 
     public function index() {

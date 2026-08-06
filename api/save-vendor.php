@@ -3,6 +3,7 @@ header('Content-Type: application/json');
 
 // Database Connection
 require_once "../includes/db.php";
+require_permission('manage_vendors');
 
 if ($conn->connect_error) {
     echo json_encode([

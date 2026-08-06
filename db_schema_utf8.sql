@@ -1,4 +1,4 @@
-﻿-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
+-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
 --
 -- Host: 127.0.0.1    Database: privacyhq
 -- ------------------------------------------------------
@@ -76,6 +76,11 @@ CREATE TABLE `incidents` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `deleted_at` timestamp NULL DEFAULT NULL,
+  `containment_actions` longtext DEFAULT NULL,
+  `remediation_notes` longtext DEFAULT NULL,
+  `is_escalated` tinyint(1) NOT NULL DEFAULT 0,
+  `dpo_notified` tinyint(1) NOT NULL DEFAULT 0,
+  `regulatory_status` varchar(100) NOT NULL DEFAULT 'Not Required',
   PRIMARY KEY (`id`),
   KEY `idx_status` (`status`),
   KEY `idx_severity` (`severity`),
@@ -194,6 +199,49 @@ CREATE TABLE `risk_register` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `roles`
+--
+DROP TABLE IF EXISTS `roles`;
+CREATE TABLE `roles` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `role_name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `role_name` (`role_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `permissions`
+--
+DROP TABLE IF EXISTS `permissions`;
+CREATE TABLE `permissions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `permission_name` varchar(100) NOT NULL,
+  `module` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `permission_name` (`permission_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `role_permissions`
+--
+DROP TABLE IF EXISTS `role_permissions`;
+CREATE TABLE `role_permissions` (
+  `role_id` bigint(20) unsigned NOT NULL,
+  `permission_id` bigint(20) unsigned NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`role_id`,`permission_id`),
+  KEY `permission_id` (`permission_id`),
+  CONSTRAINT `role_permissions_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `role_permissions_ibfk_2` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
 -- Table structure for table `users`
 --
 
@@ -220,6 +268,176 @@ CREATE TABLE `users` (
   CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+--
+-- Table structure for table `assessment_statuses`
+--
+DROP TABLE IF EXISTS `assessment_statuses`;
+CREATE TABLE `assessment_statuses` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `status_name` varchar(100) NOT NULL UNIQUE,
+  `description` text DEFAULT NULL,
+  `display_order` int(10) unsigned NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `assessment_templates`
+--
+DROP TABLE IF EXISTS `assessment_templates`;
+CREATE TABLE `assessment_templates` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `assessment_type_id` bigint(20) unsigned NOT NULL,
+  `template_name` varchar(255) NOT NULL,
+  `version_number` varchar(50) NOT NULL,
+  `is_current_version` tinyint(1) DEFAULT 1,
+  `description` text DEFAULT NULL,
+  `status_id` bigint(20) unsigned NOT NULL,
+  `effective_date` date NOT NULL,
+  `expiry_date` date DEFAULT NULL,
+  `created_by` bigint(20) unsigned NOT NULL,
+  `updated_by` bigint(20) unsigned NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_template_version` (`template_name`,`version_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `assessment_sections`
+--
+DROP TABLE IF EXISTS `assessment_sections`;
+CREATE TABLE `assessment_sections` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `template_id` bigint(20) unsigned NOT NULL,
+  `section_name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `display_order` int(10) unsigned NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`template_id`) REFERENCES `assessment_templates` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `assessment_questions`
+--
+DROP TABLE IF EXISTS `assessment_questions`;
+CREATE TABLE `assessment_questions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `section_id` bigint(20) unsigned NOT NULL,
+  `question_text` text NOT NULL,
+  `question_type` varchar(50) NOT NULL,
+  `is_required` tinyint(1) DEFAULT 0,
+  `help_text` text DEFAULT NULL,
+  `placeholder` varchar(255) DEFAULT NULL,
+  `display_order` int(10) unsigned NOT NULL DEFAULT 0,
+  `options_json` longtext DEFAULT NULL,
+  `validation_rules_json` longtext DEFAULT NULL,
+  `weight_yes` int(11) DEFAULT 0,
+  `weight_no` int(11) DEFAULT 0,
+  `score_options_json` text DEFAULT NULL,
+  `risk_category_id` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`section_id`) REFERENCES `assessment_sections` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `privacy_assessments`
+--
+DROP TABLE IF EXISTS `privacy_assessments`;
+CREATE TABLE `privacy_assessments` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `processing_activity_id` bigint(20) unsigned NOT NULL,
+  `template_id` bigint(20) unsigned NOT NULL,
+  `status_id` bigint(20) unsigned NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `assigned_to` bigint(20) unsigned DEFAULT NULL,
+  `reviewer_id` bigint(20) unsigned DEFAULT NULL,
+  `priority enum('Low','Medium','High') NOT NULL DEFAULT 'Medium',
+  `due_date` date DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `created_by` bigint(20) unsigned NOT NULL,
+  `updated_by` bigint(20) unsigned NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`template_id`) REFERENCES `assessment_templates` (`id`),
+  FOREIGN KEY (`status_id`) REFERENCES `assessment_statuses` (`id`),
+  FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `assessment_responses`
+--
+DROP TABLE IF EXISTS `assessment_responses`;
+CREATE TABLE `assessment_responses` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `assessment_id` bigint(20) unsigned NOT NULL,
+  `question_id` bigint(20) unsigned NOT NULL,
+  `response_text` text DEFAULT NULL,
+  `response_json` longtext DEFAULT NULL,
+  `answered_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_assessment_question` (`assessment_id`,`question_id`),
+  FOREIGN KEY (`assessment_id`) REFERENCES `privacy_assessments` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`question_id`) REFERENCES `assessment_questions` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `assessment_risks`
+--
+DROP TABLE IF EXISTS `assessment_risks`;
+CREATE TABLE `assessment_risks` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `assessment_id` bigint(20) unsigned NOT NULL,
+  `risk_category_id` bigint(20) unsigned NOT NULL,
+  `description` text NOT NULL,
+  `inherent_risk_matrix_id` bigint(20) unsigned DEFAULT NULL,
+  `residual_risk_matrix_id` bigint(20) unsigned DEFAULT NULL,
+  `status` enum('open','mitigated','accepted') DEFAULT 'open',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`assessment_id`) REFERENCES `privacy_assessments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `assessment_notes`
+--
+DROP TABLE IF EXISTS `assessment_notes`;
+CREATE TABLE `assessment_notes` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `assessment_id` bigint(20) unsigned NOT NULL,
+  `note_text` text NOT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`assessment_id`) REFERENCES `privacy_assessments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `assessment_documents`
+--
+DROP TABLE IF EXISTS `assessment_documents`;
+CREATE TABLE `assessment_documents` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `assessment_id` bigint(20) unsigned NOT NULL,
+  `document_type` enum('evidence','approval_signoff','external_report') NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `uploaded_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`assessment_id`) REFERENCES `privacy_assessments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

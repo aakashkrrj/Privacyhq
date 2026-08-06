@@ -125,4 +125,23 @@ class Incident {
             ]
         ];
     }
+
+    public function updateRemediation($id, $containment, $remediation) {
+        $stmt = $this->pdo->prepare("
+            UPDATE incidents 
+            SET containment_actions = ?, remediation_notes = ? 
+            WHERE id = ? AND deleted_at IS NULL
+        ");
+        return $stmt->execute([$containment, $remediation, $id]);
+    }
+
+    public function updateEscalation($id, $isEscalated, $dpoNotified, $regulatoryStatus) {
+        $stmt = $this->pdo->prepare("
+            UPDATE incidents 
+            SET is_escalated = ?, dpo_notified = ?, regulatory_status = ? 
+            WHERE id = ? AND deleted_at IS NULL
+        ");
+        return $stmt->execute([$isEscalated ? 1 : 0, $dpoNotified ? 1 : 0, $regulatoryStatus, $id]);
+    }
 }
+

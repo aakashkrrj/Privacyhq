@@ -9,6 +9,7 @@ class DsrController extends BaseController {
 
     public function __construct($dsrService) {
         $this->dsrService = $dsrService;
+        $this->checkPermission('manage_dsr');
     }
 
     private function respond($data) {
@@ -101,4 +102,42 @@ class DsrController extends BaseController {
             ApiResponse::error($e->getMessage());
         }
     }
+
+    public function verify() {
+        try {
+            $id = filter_input(INPUT_POST, 'request_id', FILTER_VALIDATE_INT);
+            $status = trim($_POST['verification_status'] ?? '');
+            if (!$id || empty($status)) {
+                throw new \Exception("Invalid parameters");
+            }
+            $this->dsrService->verifyRequest($id, $status, $this->getUserId());
+            ApiResponse::success('Verification status updated successfully');
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function assign() {
+        try {
+            $id = filter_input(INPUT_POST, 'request_id', FILTER_VALIDATE_INT);
+            $assigneeId = filter_input(INPUT_POST, 'assigned_to', FILTER_VALIDATE_INT);
+            if (!$id) {
+                throw new \Exception("Invalid parameters");
+            }
+            $this->dsrService->assignRequest($id, $assigneeId, $this->getUserId());
+            ApiResponse::success('Assignment updated successfully');
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function pending() {
+        try {
+            $data = $this->dsrService->getPendingAction();
+            ApiResponse::success('Success', $data);
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
 }
+

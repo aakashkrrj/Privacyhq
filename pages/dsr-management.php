@@ -34,6 +34,31 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
         </div>
     </div>
     
+    <!-- Quick Actions Card -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
+        <h3 class="text-md font-semibold text-gray-700 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <button id="btn-log-request-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+                + Log New Request
+            </button>
+            <button id="btn-verify-subject-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition">
+                Verify Subject Identity
+            </button>
+            <button id="btn-assign-request-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                Assign Request
+            </button>
+            <button id="btn-export-dsr-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition">
+                Export DSR Register
+            </button>
+            <button id="btn-generate-report-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition col-span-1 sm:col-span-2">
+                Generate SLA Compliance Report
+            </button>
+            <button id="btn-review-requests-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition col-span-1 sm:col-span-2">
+                Review Pending Actions
+            </button>
+        </div>
+    </div>
+    
     <!-- ENHANCED KPI DASHBOARD -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-6">
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
@@ -262,211 +287,93 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
     </div>
 </div>
 
+<!-- Modal: Verify Subject Identity -->
+<div id="verifySubjectModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl relative">
+        <button id="closeVerifySubjectModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Verify Subject Identity</h3>
+        <form id="verifySubjectForm" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Select DSR Request</label>
+                <select name="request_id" id="verify_request_select" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    <option value="">Choose a request...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Verification Status</label>
+                <select name="verification_status" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    <option value="verified">Verified (Identity Confirmed)</option>
+                    <option value="failed">Failed (Verification Failed)</option>
+                </select>
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" id="btnCancelVerifySubject" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Save Verification</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Assign Request -->
+<div id="assignRequestModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl relative">
+        <button id="closeAssignRequestModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Assign DSR Request</h3>
+        <form id="assignRequestForm" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Select DSR Request</label>
+                <select name="request_id" id="assign_request_select" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    <option value="">Choose a request...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Select Assignee (Active Officers)</label>
+                <select name="assigned_to" id="assignee_select" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    <option value="">Loading users...</option>
+                </select>
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" id="btnCancelAssignRequest" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Assign Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Review Pending Actions -->
+<div id="reviewPendingModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 w-full max-w-4xl shadow-xl relative max-h-[90vh] overflow-y-auto">
+        <button id="closeReviewPendingModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Review Pending Actions</h3>
+        <p class="text-sm text-gray-500 mb-6">List of requests requiring verification, assignment, or processing updates.</p>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-200">
+                        <th class="p-3">Request ID</th>
+                        <th class="p-3">Subject Email</th>
+                        <th class="p-3">Reason for Review</th>
+                        <th class="p-3 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingTableBody">
+                    <tr><td colspan="4" class="text-center py-6 text-gray-500">Loading pending requests...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="pt-4 flex justify-end border-t mt-6">
+            <button type="button" id="btnCloseReviewPendingModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
-let currentPage = 1;
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-}
-
-async function loadDashboard() {
-    try {
-        const res = await fetch('backend/api/dsr/dashboard.php');
-        const data = await res.json();
-        if (data.status === 'success' && data.data) {
-            document.getElementById('kpi-total').innerText = data.data.total;
-            document.getElementById('kpi-pending').innerText = data.data.pending;
-            document.getElementById('kpi-completed').innerText = data.data.completed;
-            
-            document.getElementById('kpi-sla').innerText = data.data.sla_compliance;
-            document.getElementById('kpi-avg-res').innerText = data.data.avg_resolution;
-            document.getElementById('kpi-high-priority').innerText = data.data.open_high_priority;
-
-            const dist = data.data.distribution;
-            document.getElementById('dist-access').innerText = dist.access + '%';
-            document.getElementById('bar-access').style.width = dist.access + '%';
-            
-            document.getElementById('dist-erasure').innerText = dist.erasure + '%';
-            document.getElementById('bar-erasure').style.width = dist.erasure + '%';
-
-            document.getElementById('dist-portability').innerText = dist.portability + '%';
-            document.getElementById('bar-portability').style.width = dist.portability + '%';
-
-            document.getElementById('dist-rectification').innerText = dist.rectification + '%';
-            document.getElementById('bar-rectification').style.width = dist.rectification + '%';
-
-            const perf = data.data.performance;
-            document.getElementById('perf-verified').innerText = perf.verified;
-            document.getElementById('perf-completed').innerText = perf.completed;
-            document.getElementById('perf-pending').innerText = perf.pending;
-            document.getElementById('perf-escalated').innerText = perf.escalated;
-        }
-    } catch (e) {
-        console.error('Failed to load DSR dashboard', e);
-    }
-}
-
-async function loadRequests() {
-    const search = document.getElementById('filter-search').value;
-    const status = document.getElementById('filter-status').value;
-    const type = document.getElementById('filter-type').value;
-
-    const url = `backend/api/dsr/list.php?p=${currentPage}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&type=${encodeURIComponent(type)}`;
-    
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
-        const tbody = document.getElementById('dsrTableBody');
-        
-        if (data.status === 'success') {
-            tbody.innerHTML = '';
-            const items = data.data.items;
-            const total = data.data.total;
-            
-            if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No requests found.</td></tr>';
-            } else {
-                items.forEach(r => {
-                    let statusClass = 'bg-gray-100 text-gray-800';
-                    if (r.status === 'completed') statusClass = 'bg-green-100 text-green-800';
-                    if (r.status === 'open' || r.status === 'processing' || r.status === 'verifying') statusClass = 'bg-yellow-100 text-yellow-800';
-                    if (r.status === 'rejected') statusClass = 'bg-red-100 text-red-800';
-
-                    const row = `
-                        <tr class="hover:bg-gray-50 border-b border-gray-100">
-                            <td class="p-4 font-medium text-gray-900">${escapeHtml(r.request_id_code)}</td>
-                            <td class="p-4 text-gray-600">${escapeHtml(r.subject_email)}</td>
-                            <td class="p-4 text-gray-600 uppercase text-xs font-semibold">${escapeHtml(r.request_type)}</td>
-                            <td class="p-4">
-                                <span class="px-2 py-1 text-xs font-medium rounded-full ${statusClass}">
-                                    ${escapeHtml(r.status)}
-                                </span>
-                            </td>
-                            <td class="p-4 text-gray-600 text-sm">${escapeHtml(r.due_date)}</td>
-                            <td class="p-4 text-right">
-                                <button onclick="openStatusModal(${r.id}, '${escapeHtml(r.status)}')" class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mx-1">Status</button>
-                                <button onclick="deleteRequest(${r.id})" class="text-red-600 hover:text-red-900 font-medium text-sm mx-1">Delete</button>
-                            </td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += row;
-                });
-            }
-
-            // Pagination
-            const totalPages = Math.ceil(total / 10);
-            const controls = document.getElementById('paginationControls');
-            if (totalPages > 1) {
-                controls.classList.remove('hidden');
-                document.getElementById('pageInfo').innerText = `Showing page ${currentPage} of ${totalPages}`;
-                document.getElementById('btnPrev').style.display = currentPage > 1 ? 'block' : 'none';
-                document.getElementById('btnNext').style.display = currentPage < totalPages ? 'block' : 'none';
-            } else {
-                controls.classList.add('hidden');
-            }
-        }
-    } catch (e) {
-        console.error('Failed to load requests', e);
-    }
-}
-
-document.getElementById('searchForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    currentPage = 1;
-    loadRequests();
-});
-
-document.getElementById('btnPrev').addEventListener('click', () => {
-    if (currentPage > 1) {
-        currentPage--;
-        loadRequests();
-    }
-});
-
-document.getElementById('btnNext').addEventListener('click', () => {
-    currentPage++;
-    loadRequests();
-});
-
-async function submitApi(formId, endpoint) {
-    const form = document.getElementById(formId);
-    const formData = new FormData(form);
-    try {
-        const res = await fetch(endpoint, { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.status === 'success') {
-            loadRequests();
-            loadDashboard();
-            if (formId === 'addDsrForm') {
-                form.reset();
-                closeDsrModal();
-            }
-            if (formId === 'changeStatusForm') {
-                form.reset();
-                closeStatusModal();
-            }
-        } else {
-            alert(data.message || 'Error occurred');
-        }
-    } catch (e) {
-        alert('Request failed');
-    }
-}
-
-document.getElementById('addDsrForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    submitApi('addDsrForm', 'backend/api/dsr/create.php');
-});
-
-document.getElementById('changeStatusForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    submitApi('changeStatusForm', 'backend/api/dsr/change-status.php');
-});
-
-async function deleteRequest(id) {
-    if (confirm('Are you sure you want to delete this DSR?')) {
-        const fd = new FormData();
-        fd.append('request_id', id);
-        fd.append('csrf_token', '<?= $csrfToken ?>');
-        
-        try {
-            const res = await fetch('backend/api/dsr/delete.php', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data.status === 'success') {
-                loadRequests();
-                loadDashboard();
-            } else {
-                alert(data.message || 'Error occurred');
-            }
-        } catch (e) {
-            alert('Request failed');
-        }
-    }
-}
-
-function openDsrModal() {
-    document.getElementById('dsrModal').classList.remove('hidden');
-}
-
-function closeDsrModal() {
-    document.getElementById('dsrModal').classList.add('hidden');
-}
-
-function openStatusModal(id, currentStatus) {
-    document.getElementById('status_request_id').value = id;
-    document.getElementById('status_select').value = currentStatus;
-    document.getElementById('statusModal').classList.remove('hidden');
-}
-
-function closeStatusModal() {
-    document.getElementById('statusModal').classList.add('hidden');
-}
-
-// Initial load
-document.addEventListener('DOMContentLoaded', () => {
-    loadDashboard();
-    loadRequests();
-});
+    const G_CSRF_TOKEN = '<?= $csrfToken ?>';
 </script>
+<script src="assets/js/dsr-management.js"></script>
+</body>
+</html>

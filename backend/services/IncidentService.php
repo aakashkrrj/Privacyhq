@@ -102,4 +102,53 @@ class IncidentService {
     public function getDashboardMetrics() {
         return $this->incidentModel->getDashboardMetrics();
     }
+
+    public function remediateIncident($id, $containment, $remediation, $userId) {
+        $existing = $this->incidentModel->findById($id);
+        if (!$existing) {
+            throw new \Exception("Incident not found.");
+        }
+
+        try {
+            $this->pdo->beginTransaction();
+            $this->incidentModel->updateRemediation($id, $containment, $remediation);
+
+            if (function_exists('log_audit_event')) {
+                log_audit_event($this->pdo, 'Incident Management', 'Remediate', $userId, $id, null, json_encode(['containment' => $containment, 'remediation' => $remediation]));
+            }
+
+            $this->pdo->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    public function escalateIncident($id, $isEscalated, $dpoNotified, $regulatoryStatus, $userId) {
+        $existing = $this->incidentModel->findById($id);
+        if (!$existing) {
+            throw new \Exception("Incident not found.");
+        }
+
+        if ($isEscalated && !in_array($existing['severity'], ['High', 'Critical'])) {
+            throw new \Exception("Escalation is only allowed for High and Critical incidents.");
+        }
+
+        try {
+            $this->pdo->beginTransaction();
+            $this->incidentModel->updateEscalation($id, $isEscalated, $dpoNotified, $regulatoryStatus);
+
+            if (function_exists('log_audit_event')) {
+                log_audit_event($this->pdo, 'Incident Management', 'Escalate', $userId, $id, null, json_encode(['escalated' => $isEscalated, 'dpo_notified' => $dpoNotified, 'regulatory' => $regulatoryStatus]));
+            }
+
+            $this->pdo->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
 }
+

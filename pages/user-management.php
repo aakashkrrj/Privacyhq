@@ -1,209 +1,273 @@
 <?php
 // governance/pages/user-management.php
 require_once __DIR__ . '/../includes/db.php';
-include_once __DIR__ . '/../includes/bottom-nav.php';
+
+// Super Admin only
+require_permission('manage_users');
 
 /** @var PDO $pdo */
 
-// Handle User Creation
-$message = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
-    $full_name = trim($_POST['full_name'] ?? '');
-    $email     = trim($_POST['email'] ?? '');
-    $role      = trim($_POST['role'] ?? 'Viewer');
-    $status    = trim($_POST['status'] ?? 'Active');
+// Fetch Statistics counts
+$totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+$activeUsers = $pdo->query("SELECT COUNT(*) FROM users WHERE status = 'active'")->fetchColumn();
+$suspendedUsers = $pdo->query("SELECT COUNT(*) FROM users WHERE status = 'suspended'")->fetchColumn();
+$superAdminsCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role_id = 1")->fetchColumn();
+$dpoCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role_id = 2")->fetchColumn();
+$assessorCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role_id = 3")->fetchColumn();
+$auditorCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role_id = 4")->fetchColumn();
 
-    if (!empty($full_name) && !empty($email)) {
-        if (isset($pdo)) {
-            $stmt = $pdo->prepare("INSERT INTO system_users (full_name, email, role, status) VALUES (?, ?, ?, ?)");
-            if ($stmt->execute([$full_name, $email, $role, $status])) {
-                $message = "User account registered successfully!";
-            } else {
-                $message = "Failed to register user account.";
-            }
-        } else {
-            $message = "Database connection error.";
-        }
-    }
+// Fetch roles
+$roles = $pdo->query("SELECT * FROM roles ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch permissions
+$permissions = $pdo->query("SELECT * FROM permissions ORDER BY module ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch role permissions mapping
+$rolePermsMapping = [];
+$mapRows = $pdo->query("SELECT role_id, permission_id FROM role_permissions")->fetchAll(PDO::FETCH_ASSOC);
+foreach ($mapRows as $row) {
+    $rolePermsMapping[$row['role_id']][$row['permission_id']] = true;
 }
 
-// Fetch Existing Users
-$users = [];
-try {
-    if (isset($pdo)) {
-        $stmt = $pdo->query("SELECT * FROM system_users ORDER BY id DESC");
-        if ($stmt) {
-            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
-    }
-} catch (Exception $e) {
-    // Graceful fallback
-}
+// Fetch all users with their roles
+$users = $pdo->query("
+    SELECT u.*, r.role_name 
+    FROM users u 
+    LEFT JOIN roles r ON u.role_id = r.id 
+    ORDER BY u.id DESC
+")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User & Roles Management - PrivacyHQ</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <style>
-        .container { max-width: 1100px; margin: 20px auto; padding: 20px; font-family: system-ui, sans-serif; }
-        .card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
-        .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
-        .form-group input, .form-group select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn { background: #0891b2; color: white; padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
-        .btn:hover { background: #0e7490; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem; }
-        th { background-color: #f9fafb; font-weight: 600; }
-        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
-        .bg-green-100 { background:#DCFCE7; }
-        .text-green-700 { color:#15803D; }
-        .badge-active { background: #d1fae5; color: #065f46; }
-        .bg-gray-100 { background:#F3F4F6; }
-        .text-gray-700 { color:#374151; }
-        .badge-inactive { background: #f3f4f6; color: #4b5563; }
-        .badge-role { background: #e0e7ff; color: #3730a3; }
-        .alert { padding: 10px 15px; background: #d1fae5; color: #065f46; border-radius: 4px; margin-bottom: 16px; }
-    </style>
-</head>
-<body>
-    <div class="max-w-screen-xl mt-6 mx-auto px-6 py-6">
-        <h2 class="text-3xl font-bold text-on-surface">
-    User Management & Access Control
-</h2>
-        <p class="text-on-surface-variant mt-1">
-    Manage system users, roles and access permissions.
-</p>
+<div class="space-y-lg">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-sm">
+        <div>
+            <h1 class="text-display font-display text-primary leading-tight">User & Roles Management</h1>
+            <p class="text-body-md text-on-surface-variant">Configure enterprise accounts, assign security profiles, and define global access policies.</p>
+        </div>
+        <button onclick="openCreateUserModal()" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:opacity-90 transition shadow-sm">
+            + New User
+        </button>
+    </div>
 
-        <?php if ($message): ?>
-            <div class="alert"><?= htmlspecialchars($message) ?></div>
-        <?php endif; ?>
-<div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
+        <div class="bg-surface shadow-sm rounded-xl border border-outline-variant p-md flex items-center justify-between">
+            <div>
+                <span class="text-caption font-semibold uppercase tracking-wider text-on-surface-variant">Total Users</span>
+                <p class="text-display font-bold text-on-surface mt-base"><?= $totalUsers ?></p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <span class="material-symbols-outlined text-primary">group</span>
+            </div>
+        </div>
+        <div class="bg-surface shadow-sm rounded-xl border border-outline-variant p-md flex items-center justify-between">
+            <div>
+                <span class="text-caption font-semibold uppercase tracking-wider text-emerald-600">Active Accounts</span>
+                <p class="text-display font-bold text-emerald-600 mt-base"><?= $activeUsers ?></p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+                <span class="material-symbols-outlined text-emerald-600">check_circle</span>
+            </div>
+        </div>
+        <div class="bg-surface shadow-sm rounded-xl border border-outline-variant p-md flex items-center justify-between">
+            <div>
+                <span class="text-caption font-semibold uppercase tracking-wider text-red-600">Suspended</span>
+                <p class="text-display font-bold text-red-600 mt-base"><?= $suspendedUsers ?></p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+                <span class="material-symbols-outlined text-red-600">block</span>
+            </div>
+        </div>
+        <div class="bg-surface shadow-sm rounded-xl border border-outline-variant p-md flex items-center justify-between">
+            <div>
+                <span class="text-caption font-semibold uppercase tracking-wider text-amber-600">Compliance Roles</span>
+                <p class="text-display font-bold text-amber-600 mt-base"><?= $dpoCount + $assessorCount ?></p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center">
+                <span class="material-symbols-outlined text-amber-600">shield_with_heart</span>
+            </div>
+        </div>
+    </div>
 
-<div class="bg-surface-container-lowest rounded-xl border p-5">
-<h4 class="text-sm text-on-surface-variant">Total Users</h4>
-<p class="text-3xl font-bold"><?= count($users) ?></p>
-</div>
-
-<div class="bg-surface-container-lowest rounded-xl border p-5">
-<h4 class="text-sm text-on-surface-variant">Active</h4>
-<p class="text-3xl font-bold text-green-600">12</p>
-</div>
-
-<div class="bg-surface-container-lowest rounded-xl border p-5">
-<h4 class="text-sm text-on-surface-variant">Admins</h4>
-<p class="text-3xl font-bold text-blue-600">3</p>
-</div>
-
-<div class="bg-surface-container-lowest rounded-xl border p-5">
-<h4 class="text-sm text-on-surface-variant">Viewers</h4>
-<p class="text-3xl font-bold text-orange-500">9</p>
-</div>
-
-</div>
-        <!-- Create User Form -->
-        <div class="bg-surface-container-lowest rounded-xl border border-[#EDEBE9] p-6 shadow-sm mb-6">
-            <h3>Add New System User</h3>
-            <form method="POST">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Full Name</label>
-                        <input type="text" name="full_name" placeholder="e.g., Alex Mercer" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" name="email" placeholder="e.g., alex@organization.com" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Assign Role</label>
-                        <select name="role">
-                            <option value="Admin">Admin</option>
-                            <option value="DPO">Data Protection Officer (DPO)</option>
-                            <option value="Auditor">Auditor</option>
-                            <option value="Viewer">Viewer</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Account Status</label>
-                        <select name="status">
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                        </select>
-                    </div>
-                </div>
-                <button
-type="submit"
-name="add_user"
-class="bg-primary text-on-primary px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition">+ Create User Account</button>
-            </form>
+    <!-- Tabs Container -->
+    <div class="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+        <div class="border-b border-outline-variant bg-surface-container-low px-md flex gap-md">
+            <button onclick="switchTab('users')" id="tabBtn-users" class="px-md py-4 font-title-md border-b-2 border-primary text-primary transition-all font-semibold focus:outline-none">Users List</button>
+            <button onclick="switchTab('matrix')" id="tabBtn-matrix" class="px-md py-4 font-title-md border-b-2 border-transparent text-on-surface-variant transition-all font-semibold focus:outline-none">Permission Matrix</button>
         </div>
 
-        <!-- User Registry Table -->
-        <div class="bg-surface-container-lowest rounded-xl border border-[#EDEBE9] p-6 shadow-sm mb-6">
-            <h3>Registered Team Members</h3>
-            <div style="overflow-x: auto;">
-                <div class="flex gap-4 mb-5 flex-wrap">
-
-<input
-class="border rounded-xl px-4 py-3 flex-1"
-placeholder="Search User">
-
-<select class="border rounded-xl px-4 py-3">
-<option>All Roles</option>
-<option>Admin</option>
-<option>DPO</option>
-<option>Auditor</option>
-<option>Viewer</option>
-</select>
-
-<select class="border rounded-xl px-4 py-3">
-<option>All Status</option>
-<option>Active</option>
-<option>Inactive</option>
-</select>
-
-</div>
-                <table class="w-full border-collapse">
+        <!-- Tab Content: Users List -->
+        <div id="tabContent-users" class="p-md space-y-md">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr>
-                            <th>User Name</th>
-                            <th>Email</th>
-                            <th>Assigned Role</th>
-                            <th>Status</th>
-                            <th>Joined Date</th>
+                        <tr class="bg-surface-container-low text-on-surface-variant font-semibold text-label-md uppercase border-b border-outline-variant">
+                            <th class="p-md">Name & Email</th>
+                            <th class="p-md">Assigned Role</th>
+                            <th class="p-md">Status</th>
+                            <th class="p-md">Last Login</th>
+                            <th class="p-md text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <?php if (!empty($users)): ?>
+                    <tbody class="divide-y divide-outline-variant text-body-md text-on-surface">
+                        <?php if (empty($users)): ?>
+                            <tr>
+                                <td colspan="5" class="p-lg text-center text-on-surface-variant">No user accounts found.</td>
+                            </tr>
+                        <?php else: ?>
                             <?php foreach ($users as $user): ?>
-                                <tr>
-                                    <td><strong><?= htmlspecialchars($user['full_name']) ?></strong></td>
-                                    <td><?= htmlspecialchars($user['email']) ?></td>
-                                    <td><span class="inline-flex px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold"><?= htmlspecialchars($user['role']) ?></span></td>
-                                    <td>
-                                        <?php 
-                                            $st = strtolower($user['status'] ?? 'active');
-                                            $badge_class = ($st === 'active') ? 'badge-active' : 'badge-inactive';
-                                        ?>
-                                        <span class="inline-flex px-3 py-1 rounded-full text-sm font-semibold <?= $badge_class ?>"><?= htmlspecialchars($user['status']) ?></span>
+                                <tr class="hover:bg-surface-container-lowest transition-colors" data-user-id="<?= $user['id'] ?>">
+                                    <td class="p-md">
+                                        <div class="font-semibold text-on-surface"><?= htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Unnamed User') ?></div>
+                                        <div class="text-caption text-on-surface-variant"><?= htmlspecialchars($user['email']) ?></div>
                                     </td>
-                                    <td><?= htmlspecialchars($user['created_at']) ?></td>
+                                    <td class="p-md">
+                                        <select class="role-selector border border-outline-variant rounded-lg p-base bg-surface text-body-md focus:outline-none focus:border-primary" data-user-id="<?= $user['id'] ?>">
+                                            <?php foreach ($roles as $roleOption): ?>
+                                                <option value="<?= $roleOption['id'] ?>" <?= ($user['role_id'] == $roleOption['id']) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($roleOption['role_name']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td class="p-md">
+                                        <?php $isActive = $user['status'] === 'active'; ?>
+                                        <span class="status-badge inline-flex px-2.5 py-1 text-caption font-semibold rounded-full border <?= $isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200' ?>">
+                                            <?= htmlspecialchars(ucfirst($user['status'])) ?>
+                                        </span>
+                                    </td>
+                                    <td class="p-md text-on-surface-variant font-mono text-caption">
+                                        <?= $user['last_login_at'] ? htmlspecialchars($user['last_login_at']) : 'Never logged in' ?>
+                                    </td>
+                                    <td class="p-md text-right space-x-base">
+                                        <button onclick="toggleUserStatus(<?= $user['id'] ?>)" class="inline-flex items-center justify-center p-2 rounded-lg border border-outline-variant hover:bg-surface-container-low text-on-surface transition-all" title="Toggle Status">
+                                            <span class="material-symbols-outlined text-[20px]"><?= $isActive ? 'block' : 'check_circle' ?></span>
+                                        </button>
+                                        <button onclick="openResetPasswordModal(<?= $user['id'] ?>, '<?= htmlspecialchars($user['email']) ?>')" class="inline-flex items-center justify-center p-2 rounded-lg border border-outline-variant hover:bg-surface-container-low text-primary transition-all" title="Reset Password">
+                                            <span class="material-symbols-outlined text-[20px]">key</span>
+                                        </button>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="5" style="text-align: center; color: #6b7280;">No users registered yet.</td>
-                            </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- Tab Content: Permission Matrix -->
+        <div id="tabContent-matrix" class="p-md hidden space-y-md">
+            <div class="p-sm bg-surface-container-low text-on-surface-variant text-caption rounded-lg flex items-center gap-xs">
+                <span class="material-symbols-outlined text-primary">info</span>
+                <span>Note: Permission matrices define granular API and page-level route controls. Super Admin modifications are locked to prevent configuration failure.</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface-container-low text-on-surface-variant font-semibold text-label-md uppercase border-b border-outline-variant">
+                            <th class="p-md">Module / Permission</th>
+                            <?php foreach ($roles as $role): ?>
+                                <th class="p-md text-center"><?= htmlspecialchars($role['role_name']) ?></th>
+                            <?php endforeach; ?>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-variant text-body-md text-on-surface">
+                        <?php foreach ($permissions as $perm): ?>
+                            <tr class="hover:bg-surface-container-lowest transition-colors">
+                                <td class="p-md">
+                                    <div class="font-semibold text-on-surface"><?= htmlspecialchars($perm['permission_name']) ?></div>
+                                    <div class="text-caption text-on-surface-variant"><?= htmlspecialchars($perm['description']) ?> (<?= htmlspecialchars($perm['module']) ?>)</div>
+                                </td>
+                                <?php foreach ($roles as $role): ?>
+                                    <td class="p-md text-center">
+                                        <input type="checkbox" 
+                                               class="permission-toggle w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary"
+                                               data-role-id="<?= $role['id'] ?>"
+                                               data-permission-id="<?= $perm['id'] ?>"
+                                               <?= ($role['id'] == 1) ? 'disabled checked' : '' ?>
+                                               <?= isset($rolePermsMapping[$role['id']][$perm['id']]) ? 'checked' : '' ?>
+                                               onclick="togglePermission(this, <?= $role['id'] ?>, <?= $perm['id'] ?>)">
+                                    </td>
+                                <?php endforeach; ?>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-</body>
-</html>
+</div>
+
+<!-- Modal: Reset Password -->
+<div id="resetPasswordModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-surface shadow-xl rounded-xl w-full max-w-md overflow-hidden border border-outline-variant">
+        <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+            <h3 class="font-bold text-on-surface text-title-md">Reset Password</h3>
+            <button onclick="closeResetPasswordModal()" class="text-on-surface-variant hover:text-on-surface text-xl font-bold">&times;</button>
+        </div>
+        <form id="resetPasswordForm" class="p-md space-y-md">
+            <input type="hidden" name="user_id" id="reset_user_id">
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Target Account</label>
+                <input type="text" id="reset_user_email" class="w-full border border-outline-variant rounded-lg p-2.5 bg-surface-container-low text-on-surface font-mono text-caption focus:outline-none" readonly>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="new_password">New Password</label>
+                <input type="password" name="password" id="new_password" required minlength="6" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="Min. 6 characters">
+            </div>
+            <div class="flex justify-end gap-sm pt-2">
+                <button type="button" onclick="closeResetPasswordModal()" class="px-md py-2 text-body-md text-on-surface-variant border border-outline-variant rounded-lg hover:bg-surface-container-low">Cancel</button>
+                <button type="submit" class="px-md py-2 text-body-md text-white bg-primary rounded-lg hover:opacity-90">Update Password</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Create User -->
+<div id="createUserModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-surface shadow-xl rounded-xl w-full max-w-md overflow-hidden border border-outline-variant">
+        <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+            <h3 class="font-bold text-on-surface text-title-md">Create User Account</h3>
+            <button onclick="closeCreateUserModal()" class="text-on-surface-variant hover:text-on-surface text-xl font-bold">&times;</button>
+        </div>
+        <form id="createUserForm" class="p-md space-y-md">
+            <div class="grid grid-cols-2 gap-sm">
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="first_name">First Name</label>
+                    <input type="text" name="first_name" id="first_name" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="Super">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="last_name">Last Name</label>
+                    <input type="text" name="last_name" id="last_name" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="Admin">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="create_email">Email Address</label>
+                <input type="email" name="email" id="create_email" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="name@company.com">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="create_phone">Phone Number</label>
+                <input type="text" name="phone" id="create_phone" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="+1-555-0199">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="create_role_id">Assign Role</label>
+                <select name="role_id" id="create_role_id" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                    <?php foreach ($roles as $r): ?>
+                        <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['role_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="create_password">Initial Password</label>
+                <input type="password" name="password" id="create_password" required minlength="6" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="Min. 6 characters">
+            </div>
+            <div class="flex justify-end gap-sm pt-2">
+                <button type="button" onclick="closeCreateUserModal()" class="px-md py-2 text-body-md text-on-surface-variant border border-outline-variant rounded-lg hover:bg-surface-container-low">Cancel</button>
+                <button type="submit" class="px-md py-2 text-body-md text-white bg-primary rounded-lg hover:opacity-90">Create User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="assets/js/user-management.js"></script>

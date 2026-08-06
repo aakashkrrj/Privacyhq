@@ -12,6 +12,7 @@ class ConsentController extends BaseController {
     }
 
     public function create() {
+        $this->checkPermission('manage_consents');
         try {
             $email = trim($_POST['user_identifier'] ?? '');
             $category = trim($_POST['category'] ?? '');
@@ -30,6 +31,7 @@ class ConsentController extends BaseController {
     }
 
     public function revoke() {
+        $this->checkPermission('manage_consents');
         try {
             $id = filter_input(INPUT_POST, 'revoke_id', FILTER_VALIDATE_INT);
             if (!$id) {
@@ -46,6 +48,7 @@ class ConsentController extends BaseController {
     }
 
     public function listConsents() {
+        $this->checkPermission('view_dashboard');
         try {
             $search = trim($_GET['search'] ?? '');
             $statusFilter = trim($_GET['status'] ?? '');
@@ -60,6 +63,7 @@ class ConsentController extends BaseController {
     }
 
     public function dashboard() {
+        $this->checkPermission('view_dashboard');
         try {
             $data = $this->consentService->getDashboardMetrics();
             ApiResponse::success('Success', $data);
@@ -69,6 +73,7 @@ class ConsentController extends BaseController {
     }
 
     public function history() {
+        $this->checkPermission('view_dashboard');
         try {
             $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
             if (!$id) {
@@ -82,6 +87,7 @@ class ConsentController extends BaseController {
     }
 
     public function updatePreference() {
+        $this->checkPermission('manage_consents');
         try {
             $id = filter_input(INPUT_POST, 'consent_id', FILTER_VALIDATE_INT);
             if (!$id) {

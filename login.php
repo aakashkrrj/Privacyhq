@@ -1,5 +1,6 @@
 <?php
 $error = '';
+require_once __DIR__ . '/backend/config/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
@@ -8,8 +9,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($email === '' || $password === '') {
         $error = 'Please enter both email and password.';
     } else {
-        header('Location: index.php');
-        exit;
+        try {
+            $stmt = $pdo->prepare("
+                SELECT u.*, r.role_name 
+                FROM users u
+                LEFT JOIN roles r ON u.role_id = r.id
+                WHERE u.email = ? AND u.deleted_at IS NULL AND u.status = 'active'
+                LIMIT 1
+            ");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user && password_verify($password, $user['password_hash'])) {
+                // Fetch user permissions
+                $stmtPerms = $pdo->prepare("
+                    SELECT p.permission_name 
+                    FROM role_permissions rp
+                    JOIN permissions p ON rp.permission_id = p.id
+                    WHERE rp.role_id = ?
+                ");
+                $stmtPerms->execute([$user['role_id']]);
+                $perms = $stmtPerms->fetchAll(PDO::FETCH_COLUMN);
+
+                // Start session and store credentials
+                if (session_status() === PHP_SESSION_NONE) {
+                    session_start();
+                }
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['role_id'] = $user['role_id'];
+                $_SESSION['role_name'] = $user['role_name'];
+                $_SESSION['user_email'] = $user['email'];
+                $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: $user['email'];
+                $_SESSION['permissions'] = $perms;
+
+                // Update last login
+                $stmtLogin = $pdo->prepare("UPDATE users SET last_login_at = NOW() WHERE id = ?");
+                $stmtLogin->execute([$user['id']]);
+
+                header('Location: index.php');
+                exit;
+            } else {
+                $error = 'Invalid email or password.';
+            }
+        } catch (Exception $e) {
+            $error = 'Authentication service error: ' . $e->getMessage();
+        }
     }
 }
 ?>
@@ -170,6 +214,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Welcome back</h2>
 <p class="font-body-md text-on-surface-variant">Please enter your credentials to continue</p>
 </div>
+
+<?php if (!empty($error)): ?>
+    <div class="p-3 bg-red-50 text-red-700 border border-red-200 text-xs rounded-lg text-center font-medium animate-pulse">
+        <?= htmlspecialchars($error) ?>
+    </div>
+<?php endif; ?>
+
 <!-- Form -->
 <form class="flex flex-col gap-md" method="POST" action="login.php">
 <!-- Email Field -->

@@ -9,6 +9,7 @@ class RiskRegisterController extends BaseController {
 
     public function __construct($riskRegisterService) {
         $this->riskRegisterService = $riskRegisterService;
+        $this->checkPermission('view_dashboard');
     }
 
     public function create() {

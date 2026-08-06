@@ -12,6 +12,7 @@ class PolicyController extends BaseController {
     }
 
     public function create() {
+        $this->checkPermission('manage_policies');
         try {
             $name = trim($_POST['title'] ?? '');
             $version = trim($_POST['version'] ?? '1.0');
@@ -38,6 +39,7 @@ class PolicyController extends BaseController {
     }
 
     public function upload() {
+        $this->checkPermission('manage_policies');
         try {
             $name = trim($_POST['title'] ?? '');
             $version = trim($_POST['version'] ?? '1.0');
@@ -79,6 +81,7 @@ class PolicyController extends BaseController {
     }
 
     public function listRecords() {
+        $this->checkPermission('view_dashboard');
         try {
             $search = trim($_GET['search'] ?? '');
             $status = trim($_GET['status'] ?? '');
@@ -90,6 +93,7 @@ class PolicyController extends BaseController {
     }
 
     public function history() {
+        $this->checkPermission('view_dashboard');
         try {
             $name = trim($_GET['name'] ?? '');
             if (empty($name)) {
@@ -103,6 +107,7 @@ class PolicyController extends BaseController {
     }
 
     public function updateStatus() {
+        $this->checkPermission('manage_policies');
         try {
             $id = filter_input(INPUT_POST, 'policy_id', FILTER_VALIDATE_INT);
             $status = trim($_POST['status'] ?? '');
@@ -119,6 +124,7 @@ class PolicyController extends BaseController {
     }
 
     public function dashboard() {
+        $this->checkPermission('view_dashboard');
         try {
             $data = $this->policyService->getDashboardMetrics();
             ApiResponse::success('Success', $data);
@@ -128,6 +134,7 @@ class PolicyController extends BaseController {
     }
 
     public function download() {
+        $this->checkPermission('manage_policies');
         try {
             $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
             if (!$id) {

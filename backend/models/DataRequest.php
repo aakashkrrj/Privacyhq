@@ -184,4 +184,28 @@ class DataRequest {
             'performance' => $performance
         ];
     }
+
+    public function updateVerification($id, $status) {
+        $stmt = $this->pdo->prepare("UPDATE data_requests SET verification_status = ? WHERE id = ?");
+        return $stmt->execute([$status, $id]);
+    }
+
+    public function updateAssignment($id, $userId) {
+        $stmt = $this->pdo->prepare("UPDATE data_requests SET assigned_to = ? WHERE id = ?");
+        return $stmt->execute([$userId ?: null, $id]);
+    }
+
+    public function getPendingAction() {
+        $sql = "
+            SELECT dr.*, ds.identifier_hash as subject_email, ds.type as subject_type 
+            FROM data_requests dr
+            LEFT JOIN data_subjects ds ON dr.data_subject_id = ds.id
+            WHERE dr.verification_status = 'pending' 
+               OR dr.assigned_to IS NULL 
+               OR dr.status IN ('open', 'verifying')
+            ORDER BY dr.id DESC
+        ";
+        return $this->pdo->query($sql)->fetchAll(\PDO::FETCH_ASSOC);
+    }
 }
+

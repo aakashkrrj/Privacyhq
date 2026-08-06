@@ -14,6 +14,7 @@ class VendorController extends BaseController {
 
 
     public function create() {
+        $this->checkPermission('manage_vendors');
         try {
             $name = trim($_POST['vendor_name'] ?? '');
             $category = trim($_POST['category'] ?? '');
@@ -28,6 +29,7 @@ class VendorController extends BaseController {
     }
 
     public function update() {
+        $this->checkPermission('manage_vendors');
         try {
             $id = filter_input(INPUT_POST, 'vendor_id', FILTER_VALIDATE_INT);
             $name = trim($_POST['vendor_name'] ?? '');
@@ -43,6 +45,7 @@ class VendorController extends BaseController {
     }
 
     public function delete() {
+        $this->checkPermission('manage_vendors');
         try {
             $id = filter_input(INPUT_POST, 'vendor_id', FILTER_VALIDATE_INT);
             $this->vendorService->deleteVendor($id, $this->getUserId());
@@ -53,6 +56,7 @@ class VendorController extends BaseController {
     }
 
     public function listVendors() {
+        $this->checkPermission('view_dashboard');
         try {
             $search = trim($_GET['search'] ?? '');
             $category = trim($_GET['category'] ?? '');
@@ -67,6 +71,7 @@ class VendorController extends BaseController {
     }
 
     public function kpis() {
+        $this->checkPermission('view_dashboard');
         try {
             $data = $this->vendorService->getVendorKpis();
             ApiResponse::success('Success', $data);

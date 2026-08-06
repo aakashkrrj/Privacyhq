@@ -2,6 +2,16 @@
 // governance/index.php
 require_once __DIR__ . '/includes/db.php';
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Session authentication check
+if (empty($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
 $currentPage = isset($_GET['page']) ? trim($_GET['page']) : 'dashboard';
 
 // Route Mappings
@@ -24,8 +34,41 @@ $routes = [
     'settings'            => 'pages/settings.php',
     'user-management'     => 'pages/user-management.php',
     'audit-logs'          => 'pages/audit-logs.php',
-    'more'                => 'pages/more.php'
+    'more'                => 'pages/more.php',
+    'my-assessments'      => 'pages/my-assessments.php',
+    'perform-assessment'  => 'pages/perform-assessment.php',
+    'review-assessment'   => 'pages/review-assessment.php'
 ];
+
+$pagePermissions = [
+    'dashboard'           => 'view_dashboard',
+    'consent'             => 'manage_consents',
+    'data-requests'       => 'manage_dsr',
+    'dsr-management'      => 'manage_dsr',
+    'assessments'         => 'manage_assessments',
+    'cookie-governance'   => 'view_dashboard',
+    'data-discovery'      => 'view_dashboard',
+    'data-mapping'        => 'view_dashboard',
+    'incident-management' => 'manage_incidents',
+    'vendor-risk'         => 'manage_vendors',
+    'vendor-management'   => 'manage_vendors',
+    'risk-register'       => 'view_dashboard',
+    'ropa'                => 'manage_ropa',
+    'policies'            => 'manage_policies',
+    'reports'             => 'view_reports',
+    'settings'            => 'view_dashboard',
+    'user-management'     => 'manage_users',
+    'audit-logs'          => 'view_audit_logs',
+    'more'                => 'view_dashboard',
+    'my-assessments'      => 'view_dashboard',
+    'perform-assessment'  => 'view_dashboard',
+    'review-assessment'   => 'view_dashboard'
+];
+
+$reqPermission = $pagePermissions[$currentPage] ?? null;
+if ($reqPermission) {
+    require_permission($reqPermission);
+}
 
 $fileToInclude = isset($routes[$currentPage]) ? $routes[$currentPage] : 'pages/dashboard-main.php';
 ?>
@@ -155,18 +198,27 @@ $fileToInclude = isset($routes[$currentPage]) ? $routes[$currentPage] : 'pages/d
             </button>
             <div class="hidden md:flex items-center gap-sm border-l border-outline-variant pl-md ml-base">
                 <div class="text-right">
-                    <p class="font-title-md text-on-surface leading-tight">Admin User</p>
-                    <p class="font-caption text-outline">DPO Officer</p>
+                    <p class="font-title-md text-on-surface leading-tight"><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin User') ?></p>
+                    <p class="font-caption text-outline"><?= htmlspecialchars($_SESSION['role_name'] ?? 'Super Admin') ?></p>
                 </div>
                 <div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center">
                     <span class="material-symbols-outlined text-on-primary-fixed" data-icon="person">person</span>
                 </div>
+                <a href="logout.php" class="p-2 rounded-full hover:bg-surface-container-low transition-colors ml-2 flex items-center justify-center text-red-600 hover:text-red-700" title="Logout">
+                    <span class="material-symbols-outlined">logout</span>
+                </a>
             </div>
         </div>
     </header>
 
     <!-- Main Dynamic Content Area -->
     <main class="pt-20 px-container-padding max-w-7xl mx-auto space-y-lg">
+        <?php if (isset($_GET['error'])): ?>
+            <div class="p-4 bg-red-50 border border-red-200 text-red-800 text-sm rounded-xl flex items-center gap-2 mb-4 shadow-sm">
+                <span class="material-symbols-outlined text-red-600">error</span>
+                <span><?= htmlspecialchars($_GET['error']) ?></span>
+            </div>
+        <?php endif; ?>
         <?php
         if (file_exists(__DIR__ . '/' . $fileToInclude)) {
             include __DIR__ . '/' . $fileToInclude;

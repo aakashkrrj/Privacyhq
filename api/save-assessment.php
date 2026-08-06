@@ -2,6 +2,7 @@
 // governance/api/save-assessment.php
 header("Content-Type: application/json");
 require_once "../includes/db.php";
+require_permission('manage_assessments');
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $title = trim($_POST['title'] ?? '');

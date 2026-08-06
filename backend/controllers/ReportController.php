@@ -9,6 +9,7 @@ class ReportController extends BaseController {
 
     public function __construct($reportService) {
         $this->reportService = $reportService;
+        $this->checkPermission('view_reports');
     }
 
     public function summary() {
@@ -51,6 +52,24 @@ class ReportController extends BaseController {
             ApiResponse::error($e->getMessage());
         }
     }
+
+    public function dsr() {
+        try {
+            return $this->reportService->getDsrReport();
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function incident() {
+        try {
+            return $this->reportService->getIncidentReport();
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
 }
+
+
 
 

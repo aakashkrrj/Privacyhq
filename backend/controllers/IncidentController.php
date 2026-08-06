@@ -20,6 +20,7 @@ class IncidentController extends BaseController {
     
 
     public function create() {
+        $this->checkPermission('manage_incidents');
         try {
             $summary = trim($_POST['summary'] ?? '');
             $description = trim($_POST['description'] ?? '');
@@ -34,6 +35,7 @@ class IncidentController extends BaseController {
     }
 
     public function update() {
+        $this->checkPermission('manage_incidents');
         try {
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new \Exception("Invalid request ID");
@@ -52,6 +54,7 @@ class IncidentController extends BaseController {
     }
 
     public function delete() {
+        $this->checkPermission('manage_incidents');
         try {
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new \Exception("Invalid request ID");
@@ -64,6 +67,7 @@ class IncidentController extends BaseController {
     }
 
     public function get() {
+        $this->checkPermission('view_dashboard');
         try {
             $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new \Exception("Invalid request ID");
@@ -78,6 +82,7 @@ class IncidentController extends BaseController {
     }
 
     public function listIncidents() {
+        $this->checkPermission('view_dashboard');
         try {
             $search = trim($_GET['search'] ?? '');
             $statusFilter = trim($_GET['status'] ?? '');
@@ -92,6 +97,7 @@ class IncidentController extends BaseController {
     }
 
     public function dashboard() {
+        $this->checkPermission('view_dashboard');
         try {
             $data = $this->incidentService->getDashboardMetrics();
             ApiResponse::success('Success', $data);
@@ -99,4 +105,39 @@ class IncidentController extends BaseController {
             ApiResponse::error($e->getMessage());
         }
     }
+
+
+    public function remediate() {
+        $this->checkPermission('manage_incidents');
+        try {
+            $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+            $containment = trim($_POST['containment_actions'] ?? '');
+            $remediation = trim($_POST['remediation_notes'] ?? '');
+            if (!$id) {
+                throw new \Exception("Invalid parameters");
+            }
+            $this->incidentService->remediateIncident($id, $containment, $remediation, $this->getUserId());
+            ApiResponse::success('Remediation details updated successfully');
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function escalate() {
+        $this->checkPermission('manage_incidents');
+        try {
+            $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+            $isEscalated = filter_input(INPUT_POST, 'is_escalated', FILTER_VALIDATE_BOOLEAN) || filter_input(INPUT_POST, 'is_escalated', FILTER_VALIDATE_INT);
+            $dpoNotified = filter_input(INPUT_POST, 'dpo_notified', FILTER_VALIDATE_BOOLEAN) || filter_input(INPUT_POST, 'dpo_notified', FILTER_VALIDATE_INT);
+            $regulatoryStatus = trim($_POST['regulatory_status'] ?? 'Not Required');
+            if (!$id) {
+                throw new \Exception("Invalid parameters");
+            }
+            $this->incidentService->escalateIncident($id, $isEscalated, $dpoNotified, $regulatoryStatus, $this->getUserId());
+            ApiResponse::success('Escalation and notification updated successfully');
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
 }
+

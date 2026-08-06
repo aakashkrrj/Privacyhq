@@ -4,9 +4,10 @@ $host = "127.0.0.1";
 $user = "root";
 $pass = "";
 $dbname = "privacyhq";
-$port = 3306;
+$port = 3307;
 
 $conn = new mysqli($host, $user, $pass, $dbname, $port);
+
 
 try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass);
@@ -49,4 +50,38 @@ if (!function_exists('log_audit_event')) {
         } catch (\Throwable $e) {}
     }
 }
+
+if (!function_exists('has_permission')) {
+    function has_permission($permission) {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        if (($_SESSION['role_id'] ?? null) == 1) {
+            return true;
+        }
+        $permissions = $_SESSION['permissions'] ?? [];
+        return in_array($permission, $permissions);
+    }
+}
+
+if (!function_exists('require_permission')) {
+    function require_permission($permission) {
+        if (!has_permission($permission)) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' || strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false) {
+                header('Content-Type: application/json');
+                header('HTTP/1.1 403 Forbidden');
+                echo json_encode([
+                    "success" => false,
+                    "status" => "error",
+                    "message" => "Unauthorized access. Permission required: " . $permission
+                ]);
+                exit;
+            } else {
+                header('Location: index.php?page=dashboard&error=' . urlencode("Unauthorized access to that section."));
+                exit;
+            }
+        }
+    }
+}
+
 ?>

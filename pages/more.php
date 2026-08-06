@@ -47,110 +47,117 @@
         <p class="text-gray-600 mb-6">
             Access additional governance modules and settings.
         </p>
-
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
             <!-- Vendor Risk -->
-            <a href="index.php?page=vendor-risk"
-               class="bg-white border rounded-xl p-5 flex items-center gap-4
-                      hover:shadow-md transition">
+            <?php if (has_permission('manage_vendors')): ?>
+                <a href="index.php?page=vendor-risk" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">business_center</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">Vendor Risk</h3>
+                        <p class="text-sm text-gray-500">Manage third-party risks and vendors.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
 
-                <span class="material-symbols-outlined text-blue-700 text-3xl">
-                    business_center
-                </span>
-
-                <div>
-                    <h3 class="font-semibold text-lg">Vendor Risk</h3>
-                    <p class="text-sm text-gray-500">
-                        Manage third-party risks and vendors.
-                    </p>
-                </div>
-            </a>
+            <!-- My Assessments -->
+            <?php if (has_permission('view_dashboard')): ?>
+                <a href="index.php?page=my-assessments" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">assignment</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">My Assessments</h3>
+                        <p class="text-sm text-gray-500">Perform and submit your assigned DPIAs.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
 
             <!-- Reports -->
-            <a href="index.php?page=reports"
-               class="bg-white border rounded-xl p-5 flex items-center gap-4
-                      hover:shadow-md transition">
-
-                <span class="material-symbols-outlined text-blue-700 text-3xl">
-                    analytics
-                </span>
-
-                <div>
-                    <h3 class="font-semibold text-lg">Reports</h3>
-                    <p class="text-sm text-gray-500">
-                        View governance and compliance reports.
-                    </p>
-                </div>
-            </a>
+            <?php if (has_permission('view_reports')): ?>
+                <a href="index.php?page=reports" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">analytics</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">Reports</h3>
+                        <p class="text-sm text-gray-500">View governance and compliance reports.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
 
             <!-- Settings -->
-            <a href="index.php?page=settings"
-               class="bg-white border rounded-xl p-5 flex items-center gap-4
-                      hover:shadow-md transition">
-
-                <span class="material-symbols-outlined text-blue-700 text-3xl">
-                    settings
-                </span>
-
-                <div>
-                    <h3 class="font-semibold text-lg">Settings</h3>
-                    <p class="text-sm text-gray-500">
-                        Manage system and account configuration.
-                    </p>
-                </div>
-            </a>
+            <?php if (has_permission('view_dashboard')): ?>
+                <a href="index.php?page=settings" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">settings</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">Settings</h3>
+                        <p class="text-sm text-gray-500">Manage system and account configuration.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
 
             <!-- ROPA -->
-            <a href="index.php?page=ropa"
-               class="bg-white border rounded-xl p-5 flex items-center gap-4
-                      hover:shadow-md transition">
-
-                <span class="material-symbols-outlined text-blue-700 text-3xl">
-                    fact_check
-                </span>
-
-                <div>
-                    <h3 class="font-semibold text-lg">ROPA</h3>
-                    <p class="text-sm text-gray-500">
-                        Records of Processing Activities.
-                    </p>
-                </div>
-            </a>
+            <?php if (has_permission('manage_ropa')): ?>
+                <a href="index.php?page=ropa" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">fact_check</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">ROPA</h3>
+                        <p class="text-sm text-gray-500">Records of Processing Activities.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
 
             <!-- Risk Register -->
-            <a href="index.php?page=risk-register"
-               class="bg-white border rounded-xl p-5 flex items-center gap-4
-                      hover:shadow-md transition">
-
-                <span class="material-symbols-outlined text-blue-700 text-3xl">
-                    warning
-                </span>
-
-                <div>
-                    <h3 class="font-semibold text-lg">Risk Register</h3>
-                    <p class="text-sm text-gray-500">
-                        Log, assess, and manage privacy risks.
-                    </p>
-                </div>
-            </a>
+            <?php if (has_permission('view_dashboard')): ?>
+                <a href="index.php?page=risk-register" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">warning</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">Risk Register</h3>
+                        <p class="text-sm text-gray-500">Log, assess, and manage privacy risks.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
 
             <!-- Policies & Version Control -->
-            <a href="index.php?page=policies"
-               class="bg-white border rounded-xl p-5 flex items-center gap-4
-                      hover:shadow-md transition">
+            <?php if (has_permission('manage_policies')): ?>
+                <a href="index.php?page=policies" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">description</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">Policies</h3>
+                        <p class="text-sm text-gray-500">Create, edit, and track compliance policy documents.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
 
-                <span class="material-symbols-outlined text-blue-700 text-3xl">
-                    description
-                </span>
+            <!-- User Management -->
+            <?php if (has_permission('manage_users')): ?>
+                <a href="index.php?page=user-management" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">group</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">User Management</h3>
+                        <p class="text-sm text-gray-500">Manage system users, roles, and permissions.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
 
-                <div>
-                    <h3 class="font-semibold text-lg">Policies</h3>
-                    <p class="text-sm text-gray-500">
-                        Create, edit, and track compliance policy documents.
-                    </p>
-                </div>
-            </a>
+            <!-- Audit Logs -->
+            <?php if (has_permission('view_audit_logs')): ?>
+                <a href="index.php?page=audit-logs" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">history</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">Audit Logs</h3>
+                        <p class="text-sm text-gray-500">View system user actions and compliance audit logs.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
+
+            <!-- Incident Management -->
+            <?php if (has_permission('manage_incidents')): ?>
+                <a href="index.php?page=incident-management" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">notification_important</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">Incidents</h3>
+                        <p class="text-sm text-gray-500">Track and remediate privacy incidents.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
 
         </div>
     </main>

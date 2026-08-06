@@ -29,6 +29,16 @@ class ReportService {
     public function getPoliciesReport() {
         return $this->reportSummaryModel->getPoliciesReport();
     }
+
+    public function getDsrReport() {
+        return $this->reportSummaryModel->getDsrReport();
+    }
+
+    public function getIncidentReport() {
+        return $this->reportSummaryModel->getIncidentReport();
+    }
 }
+
+
 
 

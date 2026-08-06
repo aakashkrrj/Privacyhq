@@ -141,4 +141,63 @@ class DsrService {
         if (!$data) throw new \Exception("Request not found");
         return $data;
     }
+
+    public function verifyRequest($id, $status, $userId) {
+        $existing = $this->dsrModel->findById($id);
+        if (!$existing) throw new \Exception("Request not found");
+
+        try {
+            $this->pdo->beginTransaction();
+            $this->dsrModel->updateVerification($id, $status);
+            
+            // Also transition DSR status to 'verifying' if verified is pending, or keep status sync
+            if ($status === 'verified') {
+                $this->dsrModel->updateStatus($id, 'verifying');
+            }
+
+            $this->historyModel->insert($id, $userId, $existing['status'], $status === 'verified' ? 'verifying' : $existing['status'], "Identity verification updated to " . $status);
+
+            if (function_exists('log_audit_event')) {
+                log_audit_event($this->pdo, 'DSR Management', 'Verify Subject', $userId, $id, $existing['verification_status'], $status);
+            }
+
+            $this->pdo->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    public function assignRequest($id, $assigneeId, $userId) {
+        $existing = $this->dsrModel->findById($id);
+        if (!$existing) throw new \Exception("Request not found");
+
+        try {
+            $this->pdo->beginTransaction();
+            $this->dsrModel->updateAssignment($id, $assigneeId);
+            
+            // Transition status to 'processing' when assigned
+            if ($existing['status'] === 'open') {
+                $this->dsrModel->updateStatus($id, 'processing');
+            }
+
+            $this->historyModel->insert($id, $userId, $existing['status'], $existing['status'] === 'open' ? 'processing' : $existing['status'], "Assigned request to User ID " . $assigneeId);
+
+            if (function_exists('log_audit_event')) {
+                log_audit_event($this->pdo, 'DSR Management', 'Assign Request', $userId, $id, $existing['assigned_to'], $assigneeId);
+            }
+
+            $this->pdo->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    public function getPendingAction() {
+        return $this->dsrModel->getPendingAction();
+    }
 }
+

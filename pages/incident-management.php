@@ -21,6 +21,31 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
             + Log New Incident
         </button>
     </div>
+    
+    <!-- Quick Actions Card -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
+        <h3 class="text-md font-semibold text-gray-700 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <button id="btn-log-incident-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+                + Log New Incident
+            </button>
+            <button id="btn-remediate-incident-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition">
+                Containment & Remediation
+            </button>
+            <button id="btn-escalate-incident-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                Escalation & Notification
+            </button>
+            <button id="btn-export-incidents-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition">
+                Export Incident Register
+            </button>
+            <button id="btn-generate-report-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition col-span-1 sm:col-span-2">
+                Generate Incident Compliance Report
+            </button>
+            <button id="btn-review-active-qa" class="inline-flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition col-span-1 sm:col-span-2">
+                Review Active Incidents
+            </button>
+        </div>
+    </div>
 
     <!-- KPI CARDS -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
@@ -167,235 +192,110 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
     </div>
 </div>
 
+<!-- Modal: Containment & Remediation -->
+<div id="remediateIncidentModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl relative">
+        <button id="closeRemediateIncidentModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Containment & Remediation</h3>
+        <form id="remediateIncidentForm" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Select Incident</label>
+                <select name="id" id="remediate_incident_select" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    <option value="">Choose an incident...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Containment Actions Taken</label>
+                <textarea name="containment_actions" id="remediate_containment" rows="3" required placeholder="Describe immediate steps taken to isolate/contain the incident..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Long-term Remediation Notes</label>
+                <textarea name="remediation_notes" id="remediate_notes" rows="3" placeholder="Describe long-term structural remediation plans..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none"></textarea>
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" id="btnCancelRemediate" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Save Remediation</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Escalation & DPO Notification -->
+<div id="escalateIncidentModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl relative">
+        <button id="closeEscalateIncidentModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Incident Escalation & DPO Notification</h3>
+        
+        <div id="escalate_severity_warning" class="hidden p-3 mb-4 bg-yellow-50 text-yellow-800 text-xs rounded-lg border border-yellow-200">
+            <strong>Warning:</strong> Escalation is only allowed for High and Critical incidents. Lower severity incidents cannot be escalated.
+        </div>
+
+        <form id="escalateIncidentForm" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Select Incident</label>
+                <select name="id" id="escalate_incident_select" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    <option value="">Choose an incident...</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-3 py-2">
+                <input type="checkbox" name="is_escalated" id="escalate_is_escalated" value="1" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="escalate_is_escalated" class="text-sm font-medium text-gray-700">Escalate to Management</label>
+            </div>
+            <div class="flex items-center gap-3 py-2">
+                <input type="checkbox" name="dpo_notified" id="escalate_dpo_notified" value="1" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                <label for="escalate_dpo_notified" class="text-sm font-medium text-gray-700">Notify DPO (Data Protection Officer)</label>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Regulatory Notification Status</label>
+                <select name="regulatory_status" id="escalate_regulatory_status" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    <option value="Not Required">Not Required</option>
+                    <option value="Required - Under Review">Required - Under Review</option>
+                    <option value="Reported to Authority">Reported to Authority</option>
+                </select>
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" id="btnCancelEscalate" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Save Incident Settings</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Review Active Incidents -->
+<div id="reviewActiveModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 w-full max-w-4xl shadow-xl relative max-h-[90vh] overflow-y-auto">
+        <button id="closeReviewActiveModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Review Active Incidents</h3>
+        <p class="text-sm text-gray-500 mb-6">List of active (Open or Investigating) incidents, as well as High, Critical, or Escalated incidents needing attention.</p>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-200">
+                        <th class="p-3">Summary</th>
+                        <th class="p-3">Severity</th>
+                        <th class="p-3">Status</th>
+                        <th class="p-3">Review Reason</th>
+                        <th class="p-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="activeIncidentsTableBody">
+                    <tr><td colspan="5" class="text-center py-6 text-gray-500">Loading active incidents...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="pt-4 flex justify-end border-t mt-6">
+            <button type="button" id="btnCloseReviewActiveModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
-let currentPage = 1;
-let currentEndpoint = 'create.php';
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-}
-
-async function loadDashboard() {
-    try {
-        const res = await fetch('backend/api/incident/dashboard.php');
-        const data = await res.json();
-        if (data.status === 'success' && data.data) {
-            document.getElementById('kpi-active').innerText = data.data.active_incidents;
-            document.getElementById('kpi-high-severity').innerText = data.data.high_severity;
-            document.getElementById('kpi-resolved').innerText = data.data.resolved;
-            document.getElementById('kpi-resolution-rate').innerText = data.data.resolution_rate;
-            
-            // Build distribution bars
-            const dist = data.data.distribution;
-            const total = data.data.total;
-            let html = '';
-            
-            if (total === 0) {
-                html = '<div class="text-gray-500 text-sm">No data available.</div>';
-            } else {
-                const levels = [
-                    { label: 'Critical', count: dist.critical, color: 'bg-red-600' },
-                    { label: 'High', count: dist.high, color: 'bg-orange-500' },
-                    { label: 'Medium', count: dist.medium, color: 'bg-blue-500' },
-                    { label: 'Low', count: dist.low, color: 'bg-gray-400' }
-                ];
-                
-                levels.forEach(lvl => {
-                    const pct = Math.round((lvl.count / total) * 100);
-                    html += `
-                        <div>
-                            <div class="flex justify-between text-sm mb-1">
-                                <span>${lvl.label}</span>
-                                <span>${pct}%</span>
-                            </div>
-                            <div class="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
-                                <div class="h-full rounded-full ${lvl.color}" style="width: ${pct}%"></div>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            document.getElementById('distributionBars').innerHTML = html;
-        }
-    } catch (e) {
-        console.error('Failed to load dashboard metrics', e);
-    }
-}
-
-async function loadIncidents() {
-    const search = document.getElementById('filter-search').value;
-    const severity = document.getElementById('filter-severity').value;
-    const status = document.getElementById('filter-status').value;
-
-    const url = `backend/api/incident/list.php?p=${currentPage}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&severity=${encodeURIComponent(severity)}`;
-    
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
-        const tbody = document.getElementById('incidentTableBody');
-        
-        if (data.status === 'success') {
-            tbody.innerHTML = '';
-            const items = data.data.items;
-            const total = data.data.total;
-            
-            if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No incidents found.</td></tr>';
-            } else {
-                items.forEach(i => {
-                    let statusClass = 'bg-gray-100 text-gray-800';
-                    if (i.status === 'Resolved') statusClass = 'bg-green-100 text-green-800';
-                    else if (i.status === 'Investigating') statusClass = 'bg-yellow-100 text-yellow-800';
-                    else if (i.status === 'Open') statusClass = 'bg-red-100 text-red-800';
-
-                    let severityClass = 'text-gray-600';
-                    if (i.severity === 'Critical') severityClass = 'text-red-700 font-bold';
-                    else if (i.severity === 'High') severityClass = 'text-orange-600 font-bold';
-                    else if (i.severity === 'Medium') severityClass = 'text-blue-600';
-                    
-                    const row = `
-                        <tr class="hover:bg-gray-50 border-b border-gray-100">
-                            <td class="p-4 font-medium text-gray-900">${escapeHtml(i.summary)}</td>
-                            <td class="p-4 ${severityClass}">${escapeHtml(i.severity)}</td>
-                            <td class="p-4">
-                                <span class="px-2 py-1 text-xs font-medium rounded-full ${statusClass}">
-                                    ${escapeHtml(i.status)}
-                                </span>
-                            </td>
-                            <td class="p-4 text-gray-600">${Number(i.impacted_records).toLocaleString()}</td>
-                            <td class="p-4 text-gray-500 text-sm">${escapeHtml(i.created_at)}</td>
-                            <td class="p-4 text-right">
-                                <button onclick="editIncident(${i.id})" class="text-indigo-600 hover:text-indigo-900 font-medium text-sm mr-3">Edit</button>
-                                <button onclick="deleteIncident(${i.id})" class="text-red-600 hover:text-red-900 font-medium text-sm">Delete</button>
-                            </td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += row;
-                });
-            }
-
-            // Pagination
-            const totalPages = Math.ceil(total / 10);
-            const controls = document.getElementById('paginationControls');
-            if (totalPages > 1) {
-                controls.classList.remove('hidden');
-                document.getElementById('pageInfo').innerText = `Showing page ${currentPage} of ${totalPages}`;
-                document.getElementById('btnPrev').style.display = currentPage > 1 ? 'block' : 'none';
-                document.getElementById('btnNext').style.display = currentPage < totalPages ? 'block' : 'none';
-            } else {
-                controls.classList.add('hidden');
-            }
-        }
-    } catch (e) {
-        console.error('Failed to load incidents', e);
-    }
-}
-
-document.getElementById('searchForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    currentPage = 1;
-    loadIncidents();
-});
-
-document.getElementById('btnPrev').addEventListener('click', () => {
-    if (currentPage > 1) {
-        currentPage--;
-        loadIncidents();
-    }
-});
-
-document.getElementById('btnNext').addEventListener('click', () => {
-    currentPage++;
-    loadIncidents();
-});
-
-async function submitApi(formId, endpoint, modalCallback) {
-    const form = document.getElementById(formId);
-    const formData = new FormData(form);
-    try {
-        const res = await fetch(endpoint, { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.status === 'success') {
-            loadIncidents();
-            loadDashboard();
-            form.reset();
-            modalCallback();
-        } else {
-            alert(data.message || 'Error occurred');
-        }
-    } catch (e) {
-        alert('Request failed');
-    }
-}
-
-document.getElementById('incidentForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    submitApi('incidentForm', `backend/api/incident/${currentEndpoint}`, closeIncidentModal);
-});
-
-async function editIncident(id) {
-    try {
-        const res = await fetch(`backend/api/incident/details.php?id=${id}`);
-        const data = await res.json();
-        if (data.status === 'success') {
-            const i = data.data;
-            document.getElementById('incident_id').value = i.id;
-            document.getElementById('incident_summary').value = i.summary;
-            document.getElementById('incident_description').value = i.description || '';
-            document.getElementById('incident_severity').value = i.severity;
-            document.getElementById('incident_impacted_records').value = i.impacted_records;
-            document.getElementById('incident_status').value = i.status;
-            
-            document.getElementById('statusGroup').classList.remove('hidden');
-            document.getElementById('modalTitle').innerText = 'Edit Incident';
-            currentEndpoint = 'update.php';
-            
-            document.getElementById('incidentModal').classList.remove('hidden');
-        }
-    } catch (e) {
-        alert('Failed to load incident details');
-    }
-}
-
-async function deleteIncident(id) {
-    if (confirm("Are you sure you want to delete this incident?")) {
-        const formData = new FormData();
-        formData.append('csrf_token', '<?= $csrfToken ?>');
-        formData.append('id', id);
-        
-        try {
-            const res = await fetch('backend/api/incident/delete.php', { method: 'POST', body: formData });
-            const data = await res.json();
-            if (data.status === 'success') {
-                loadIncidents();
-                loadDashboard();
-            } else {
-                alert(data.message);
-            }
-        } catch (e) {
-            alert('Request failed');
-        }
-    }
-}
-
-function openIncidentModal() {
-    document.getElementById('incidentForm').reset();
-    document.getElementById('incident_id').value = '';
-    document.getElementById('statusGroup').classList.add('hidden');
-    document.getElementById('modalTitle').innerText = 'Log New Incident';
-    currentEndpoint = 'create.php';
-    document.getElementById('incidentModal').classList.remove('hidden');
-}
-
-function closeIncidentModal() {
-    document.getElementById('incidentModal').classList.add('hidden');
-}
-
-// Initial load
-document.addEventListener('DOMContentLoaded', () => {
-    loadDashboard();
-    loadIncidents();
-});
+    const G_CSRF_TOKEN = '<?= $csrfToken ?>';
 </script>
+<script src="assets/js/incident-management.js"></script>
+</body>
+</html>
