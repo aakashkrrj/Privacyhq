@@ -23,8 +23,12 @@ if (!$userId) {
 try {
     if ($action === 'update_role') {
         $roleId = filter_input(INPUT_POST, 'role_id', FILTER_VALIDATE_INT);
-        if (!$roleId) {
-            echo json_encode(["success" => false, "message" => "Invalid role ID"]);
+        // Ensure target role is active and not disabled
+        $stmtRole = $pdo->prepare("SELECT status FROM roles WHERE id = ?");
+        $stmtRole->execute([$roleId]);
+        $roleStatus = $stmtRole->fetchColumn();
+        if ($roleStatus === 'disabled') {
+            echo json_encode(["success" => false, "message" => "Cannot assign user to a disabled role."]);
             exit;
         }
 

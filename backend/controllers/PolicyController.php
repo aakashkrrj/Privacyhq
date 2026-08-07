@@ -116,6 +116,12 @@ class PolicyController extends BaseController {
                 throw new \Exception("Invalid request parameters.");
             }
 
+            $policy = $this->policyService->getPolicyById($id);
+            if (!$policy) {
+                throw new \Exception("Policy document record not found.");
+            }
+            $this->checkOwnershipOrPermission('manage_policies', $policy);
+
             $this->policyService->updateStatus($id, $status, $this->getUserId());
             ApiResponse::success("Policy status updated successfully!");
         } catch (\Exception $e) {
@@ -145,6 +151,7 @@ class PolicyController extends BaseController {
             if (!$policy) {
                 throw new \Exception("Policy document record not found.");
             }
+            $this->checkOwnershipOrPermission('manage_policies', $policy);
 
             $relativePath = $policy['document_path'];
             if (empty($relativePath)) {

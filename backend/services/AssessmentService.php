@@ -54,10 +54,8 @@ class AssessmentService
             throw new \Exception("Assessment not found.");
         }
 
-        // Record-level security: only Super Admin, DPO, assignee, or reviewer can view
-        if ($userRoleId != 1 && $userRoleId != 2 && $assessment['assigned_to'] != $userId && $assessment['reviewer_id'] != $userId) {
-            throw new \Exception("Access Denied: You are not assigned to this assessment.");
-        }
+        // Record-level security: ownership or global permission
+        require_ownership_or_permission('manage_assessments', $assessment);
 
         $questions = $this->assessmentModel->getQuestionsByTemplate($assessment['template_id']);
         $responses = $this->assessmentModel->getResponses($id);
@@ -85,10 +83,8 @@ class AssessmentService
             throw new \Exception("Assessment not found.");
         }
 
-        // Check permission to modify: assignee or super admin
-        if ($userRoleId != 1 && $assessment['assigned_to'] != $userId) {
-            throw new \Exception("Access Denied: You cannot answer this assessment.");
-        }
+        // Check permission to modify: assignee or super admin (ownership check)
+        require_ownership_or_permission('manage_assessments', $assessment);
 
         // Update status to 'In Progress' if currently 'Draft' or 'Assigned'
         if (in_array($assessment['status'], ['Draft', 'Assigned'])) {
@@ -115,9 +111,7 @@ class AssessmentService
             throw new \Exception("Assessment not found.");
         }
 
-        if ($userRoleId != 1 && $assessment['assigned_to'] != $userId) {
-            throw new \Exception("Access Denied: You cannot submit this assessment.");
-        }
+        require_ownership_or_permission('manage_assessments', $assessment);
 
         // Calculate scores and findings before status transition
         $this->recalculateAssessmentRisks($assessmentId);

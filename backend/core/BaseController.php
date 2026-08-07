@@ -14,4 +14,16 @@ abstract class BaseController {
             require_permission($permission);
         }
     }
+
+    protected function checkAnyPermission(array $permissions): void {
+        if (function_exists('require_any_permission')) {
+            require_any_permission($permissions);
+        }
+    }
+
+    protected function checkOwnershipOrPermission(string $permission, $record): void {
+        if (function_exists('require_ownership_or_permission')) {
+            require_ownership_or_permission($permission, $record);
+        }
+    }
 }

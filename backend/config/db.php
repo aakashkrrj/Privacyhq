@@ -84,4 +84,98 @@ if (!function_exists('require_permission')) {
     }
 }
 
+if (!function_exists('has_any_permission')) {
+    function has_any_permission(array $permissions) {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        if (($_SESSION['role_id'] ?? null) == 1) {
+            return true;
+        }
+        $userPerms = $_SESSION['permissions'] ?? [];
+        foreach ($permissions as $p) {
+            if (in_array($p, $userPerms)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+if (!function_exists('require_any_permission')) {
+    function require_any_permission(array $permissions) {
+        if (!has_any_permission($permissions)) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' || strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false) {
+                header('Content-Type: application/json');
+                header('HTTP/1.1 403 Forbidden');
+                echo json_encode([
+                    "success" => false,
+                    "status" => "error",
+                    "message" => "Unauthorized access. Any of the following permissions required: " . implode(', ', $permissions)
+                ]);
+                exit;
+            } else {
+                header('Location: index.php?page=dashboard&error=' . urlencode("Unauthorized access to that section."));
+                exit;
+            }
+        }
+    }
+}
+
+if (!function_exists('has_ownership')) {
+    function has_ownership($record) {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        if (($_SESSION['role_id'] ?? null) == 1) {
+            return true;
+        }
+        $currentUserId = $_SESSION['user_id'] ?? null;
+        if ($currentUserId === null) {
+            return false;
+        }
+        
+        $ownerFields = ['created_by', 'assigned_to', 'reviewer_id', 'owner', 'user_id', 'answered_by', 'uploaded_by'];
+        
+        if (is_array($record)) {
+            foreach ($ownerFields as $field) {
+                if (isset($record[$field]) && (int)$record[$field] === (int)$currentUserId) {
+                    return true;
+                }
+            }
+        } elseif (is_object($record)) {
+            foreach ($ownerFields as $field) {
+                if (isset($record->$field) && (int)$record->$field === (int)$currentUserId) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+}
+
+if (!function_exists('require_ownership_or_permission')) {
+    function require_ownership_or_permission($permission, $record) {
+        if (has_permission($permission)) {
+            return;
+        }
+        if (!has_ownership($record)) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' || strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false) {
+                header('Content-Type: application/json');
+                header('HTTP/1.1 403 Forbidden');
+                echo json_encode([
+                    "success" => false,
+                    "status" => "error",
+                    "message" => "Unauthorized access. Ownership or permission '" . $permission . "' required."
+                ]);
+                exit;
+            } else {
+                header('Location: index.php?page=dashboard&error=' . urlencode("Unauthorized access: ownership or permission required."));
+                exit;
+            }
+        }
+    }
+}
+
 ?>

@@ -137,6 +137,17 @@
                 </a>
             <?php endif; ?>
 
+            <!-- Role Management -->
+            <?php if (has_permission('manage_users')): ?>
+                <a href="index.php?page=role-management" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">admin_panel_settings</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">Role Policies</h3>
+                        <p class="text-sm text-gray-500">Define custom roles, baselines, and permissions.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
+
             <!-- Audit Logs -->
             <?php if (has_permission('view_audit_logs')): ?>
                 <a href="index.php?page=audit-logs" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">

@@ -37,6 +37,8 @@ class DsrController extends BaseController {
     public function update() {
         try {
             $id = filter_input(INPUT_POST, 'request_id', FILTER_VALIDATE_INT);
+            $request = $this->dsrService->getDetails($id);
+            $this->checkOwnershipOrPermission('manage_dsr', $request);
             $priority = trim($_POST['priority'] ?? '');
 
             $this->dsrService->updateRequest($id, $priority, $this->getUserId());
@@ -49,6 +51,8 @@ class DsrController extends BaseController {
     public function changeStatus() {
         try {
             $id = filter_input(INPUT_POST, 'request_id', FILTER_VALIDATE_INT);
+            $request = $this->dsrService->getDetails($id);
+            $this->checkOwnershipOrPermission('manage_dsr', $request);
             $newStatus = trim($_POST['status'] ?? '');
             $comments = trim($_POST['comments'] ?? '');
 
@@ -62,6 +66,8 @@ class DsrController extends BaseController {
     public function delete() {
         try {
             $id = filter_input(INPUT_POST, 'request_id', FILTER_VALIDATE_INT);
+            $request = $this->dsrService->getDetails($id);
+            $this->checkOwnershipOrPermission('manage_dsr', $request);
             $this->dsrService->deleteRequest($id, $this->getUserId());
             ApiResponse::success('Request deleted successfully');
         } catch (\Exception $e) {
@@ -97,6 +103,7 @@ class DsrController extends BaseController {
             $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new \Exception("Invalid ID");
             $data = $this->dsrService->getDetails($id);
+            $this->checkOwnershipOrPermission('manage_dsr', $data);
             ApiResponse::success('Success', $data);
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());

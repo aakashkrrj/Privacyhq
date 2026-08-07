@@ -39,6 +39,8 @@ class IncidentController extends BaseController {
         try {
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new \Exception("Invalid request ID");
+            $incident = $this->incidentService->getIncident($id);
+            $this->checkOwnershipOrPermission('manage_incidents', $incident);
 
             $summary = trim($_POST['summary'] ?? '');
             $description = trim($_POST['description'] ?? '');
@@ -58,6 +60,8 @@ class IncidentController extends BaseController {
         try {
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
             if (!$id) throw new \Exception("Invalid request ID");
+            $incident = $this->incidentService->getIncident($id);
+            $this->checkOwnershipOrPermission('manage_incidents', $incident);
 
             $this->incidentService->deleteIncident($id, $this->getUserId());
             ApiResponse::success('Incident deleted successfully');
@@ -74,6 +78,7 @@ class IncidentController extends BaseController {
 
             $data = $this->incidentService->getIncident($id);
             if (!$data) throw new \Exception("Incident not found");
+            $this->checkOwnershipOrPermission('manage_incidents', $data);
 
             ApiResponse::success('Success', $data);
         } catch (\Exception $e) {
@@ -111,11 +116,13 @@ class IncidentController extends BaseController {
         $this->checkPermission('manage_incidents');
         try {
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-            $containment = trim($_POST['containment_actions'] ?? '');
-            $remediation = trim($_POST['remediation_notes'] ?? '');
             if (!$id) {
                 throw new \Exception("Invalid parameters");
             }
+            $incident = $this->incidentService->getIncident($id);
+            $this->checkOwnershipOrPermission('manage_incidents', $incident);
+            $containment = trim($_POST['containment_actions'] ?? '');
+            $remediation = trim($_POST['remediation_notes'] ?? '');
             $this->incidentService->remediateIncident($id, $containment, $remediation, $this->getUserId());
             ApiResponse::success('Remediation details updated successfully');
         } catch (\Exception $e) {
@@ -127,12 +134,14 @@ class IncidentController extends BaseController {
         $this->checkPermission('manage_incidents');
         try {
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-            $isEscalated = filter_input(INPUT_POST, 'is_escalated', FILTER_VALIDATE_BOOLEAN) || filter_input(INPUT_POST, 'is_escalated', FILTER_VALIDATE_INT);
-            $dpoNotified = filter_input(INPUT_POST, 'dpo_notified', FILTER_VALIDATE_BOOLEAN) || filter_input(INPUT_POST, 'dpo_notified', FILTER_VALIDATE_INT);
-            $regulatoryStatus = trim($_POST['regulatory_status'] ?? 'Not Required');
             if (!$id) {
                 throw new \Exception("Invalid parameters");
             }
+            $incident = $this->incidentService->getIncident($id);
+            $this->checkOwnershipOrPermission('manage_incidents', $incident);
+            $isEscalated = filter_input(INPUT_POST, 'is_escalated', FILTER_VALIDATE_BOOLEAN) || filter_input(INPUT_POST, 'is_escalated', FILTER_VALIDATE_INT);
+            $dpoNotified = filter_input(INPUT_POST, 'dpo_notified', FILTER_VALIDATE_BOOLEAN) || filter_input(INPUT_POST, 'dpo_notified', FILTER_VALIDATE_INT);
+            $regulatoryStatus = trim($_POST['regulatory_status'] ?? 'Not Required');
             $this->incidentService->escalateIncident($id, $isEscalated, $dpoNotified, $regulatoryStatus, $this->getUserId());
             ApiResponse::success('Escalation and notification updated successfully');
         } catch (\Exception $e) {

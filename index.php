@@ -37,7 +37,8 @@ $routes = [
     'more'                => 'pages/more.php',
     'my-assessments'      => 'pages/my-assessments.php',
     'perform-assessment'  => 'pages/perform-assessment.php',
-    'review-assessment'   => 'pages/review-assessment.php'
+    'review-assessment'   => 'pages/review-assessment.php',
+    'role-management'     => 'pages/role-management.php'
 ];
 
 $pagePermissions = [
@@ -62,7 +63,8 @@ $pagePermissions = [
     'more'                => 'view_dashboard',
     'my-assessments'      => 'view_dashboard',
     'perform-assessment'  => 'view_dashboard',
-    'review-assessment'   => 'view_dashboard'
+    'review-assessment'   => 'view_dashboard',
+    'role-management'     => 'manage_users'
 ];
 
 $reqPermission = $pagePermissions[$currentPage] ?? null;

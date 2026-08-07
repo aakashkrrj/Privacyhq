@@ -20,7 +20,14 @@ if (!$roleId || !$permissionId) {
     exit;
 }
 
-// Security: Prevent removing permissions from Super Admin (role ID 1)
+// Ensure role is active
+$stmtRole = $pdo->prepare("SELECT status FROM roles WHERE id = ?");
+$stmtRole->execute([$roleId]);
+$roleStatus = $stmtRole->fetchColumn();
+if ($roleStatus === 'disabled') {
+    echo json_encode(["success" => false, "message" => "Permissions cannot be modified on a disabled role."]);
+    exit;
+}
 if ($roleId == 1) {
     echo json_encode(["success" => false, "message" => "Super Admin permissions cannot be modified."]);
     exit;
@@ -34,10 +41,12 @@ try {
     if ($exists) {
         $stmtDel = $pdo->prepare("DELETE FROM role_permissions WHERE role_id = ? AND permission_id = ?");
         $stmtDel->execute([$roleId, $permissionId]);
+        log_audit_event($pdo, 'RBAC', 'Revoke Permission', $_SESSION['user_id'], $roleId, "Permission: $permissionId", null);
         echo json_encode(["success" => true, "status" => "removed", "message" => "Permission revoked from role successfully."]);
     } else {
         $stmtIns = $pdo->prepare("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)");
         $stmtIns->execute([$roleId, $permissionId]);
+        log_audit_event($pdo, 'RBAC', 'Grant Permission', $_SESSION['user_id'], $roleId, null, "Permission: $permissionId");
         echo json_encode(["success" => true, "status" => "added", "message" => "Permission granted to role successfully."]);
     }
     exit;
