@@ -110,6 +110,10 @@ while (($row = fgetcsv($handle)) !== false) {
 
 fclose($handle);
 
+if (function_exists('log_audit_event') && $successCount > 0) {
+    log_audit_event($pdo, 'Consent Management', 'Import CSV', $userId, null, null, "Imported {$successCount} consent records from CSV: {$fileName}");
+}
+
 Backend\Core\ApiResponse::success('Import processed', [
     'success_count' => $successCount,
     'errors' => $errors

@@ -66,7 +66,7 @@ async function loadRecords() {
     const status = document.getElementById('filter-status').value;
     const category = document.getElementById('filter-category').value;
 
-    const url = `backend/api/consent/list.php?p=${currentPage}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`;
+    const url = `backend/api/consent/list.php?p=${currentPage}&limit=${pageSize}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`;
     
     try {
         const res = await fetch(url);
@@ -150,16 +150,42 @@ async function loadRecords() {
             }
 
             // Pagination
-            const totalPages = Math.ceil(total / 10) || 1;
+            const totalPages = Math.ceil(total / pageSize) || 1;
+            const startItem = total > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+            const endItem = Math.min(currentPage * pageSize, total);
             const paginationDiv = document.getElementById('consentPagination');
+
             if (paginationDiv) {
+                let pageButtons = '';
+                const maxButtons = 5;
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+                if (endPage - startPage < maxButtons - 1) {
+                    startPage = Math.max(1, endPage - maxButtons + 1);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const activeClass = i === currentPage ? 'bg-blue-600 text-white font-bold' : 'bg-white text-gray-700 hover:bg-gray-50';
+                    pageButtons += `<button onclick="changePage(${i})" class="px-2.5 py-1 text-xs border rounded ${activeClass}">${i}</button>`;
+                }
+
                 paginationDiv.innerHTML = `
-                    <div class="text-xs text-gray-500">
-                        Showing page <b>${currentPage}</b> of <b>${totalPages}</b> (Total: ${total} records)
+                    <div class="flex items-center gap-3 text-xs text-gray-500">
+                        <span>Showing <b>${startItem}</b> - <b>${endItem}</b> of <b>${total}</b> records</span>
+                        <div class="flex items-center gap-1">
+                            <span>Per page:</span>
+                            <select onchange="changePageSize(this.value)" class="border rounded px-1.5 py-0.5 text-xs bg-white focus:outline-none">
+                                <option value="10" ${pageSize === 10 ? 'selected' : ''}>10</option>
+                                <option value="25" ${pageSize === 25 ? 'selected' : ''}>25</option>
+                                <option value="50" ${pageSize === 50 ? 'selected' : ''}>50</option>
+                                <option value="100" ${pageSize === 100 ? 'selected' : ''}>100</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-3 py-1 text-xs border rounded bg-white hover:bg-gray-50 disabled:opacity-50">Previous</button>
-                        <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-3 py-1 text-xs border rounded bg-white hover:bg-gray-50 disabled:opacity-50">Next</button>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-2.5 py-1 text-xs border rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50">Prev</button>
+                        ${pageButtons}
+                        <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-2.5 py-1 text-xs border rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50">Next</button>
                     </div>
                 `;
             }
@@ -169,7 +195,16 @@ async function loadRecords() {
     }
 }
 
+let pageSize = 10;
+
+function changePageSize(newSize) {
+    pageSize = parseInt(newSize) || 10;
+    currentPage = 1;
+    loadRecords();
+}
+
 function changePage(page) {
+    if (page < 1) return;
     currentPage = page;
     loadRecords();
 }
@@ -241,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Phase 2: Export Log
+    // Phase 2: Export Log (CSV & Excel)
     document.getElementById('btn-export-log').addEventListener('click', () => {
         const search = document.getElementById('filter-search').value;
         const status = document.getElementById('filter-status').value;
@@ -249,6 +284,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = `backend/api/consent/export.php?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`;
         window.location.href = url;
     });
+
+    const btnExcel = document.getElementById('btn-export-excel');
+    if (btnExcel) {
+        btnExcel.addEventListener('click', () => {
+            const search = document.getElementById('filter-search').value;
+            const status = document.getElementById('filter-status').value;
+            const category = document.getElementById('filter-category').value;
+            const url = `backend/api/consent/export-excel.php?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`;
+            window.location.href = url;
+        });
+    }
 
     // Phase 3: Generate Report
     document.getElementById('btn-generate-report').addEventListener('click', () => {

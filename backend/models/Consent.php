@@ -94,7 +94,7 @@ class Consent {
 
         // Fetch items
         $sql = "
-            SELECT c.id, c.status, c.source, c.collection_method, c.ip_address, c.user_agent, c.created_at, c.granted_at, c.expires_at, 
+            SELECT c.id, c.status, c.source, c.collection_method, c.ip_address, c.user_agent, c.created_at, c.granted_at, c.expires_at, c.updated_at, 
                    ds.identifier_hash as subject_email, cp.purpose_name as category
             FROM consents c
             LEFT JOIN data_subjects ds ON c.data_subject_id = ds.id
@@ -130,7 +130,7 @@ class Consent {
         $whereSql = "WHERE " . implode(" AND ", $whereClauses);
 
         $sql = "
-            SELECT c.id, c.status, c.source, c.collection_method, c.ip_address, c.user_agent, c.created_at, c.granted_at, c.expires_at, 
+            SELECT c.id, c.status, c.source, c.collection_method, c.ip_address, c.user_agent, c.created_at, c.granted_at, c.expires_at, c.updated_at, 
                    ds.identifier_hash as subject_email, cp.purpose_name as category
             FROM consents c
             LEFT JOIN data_subjects ds ON c.data_subject_id = ds.id

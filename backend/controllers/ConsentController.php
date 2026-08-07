@@ -54,8 +54,11 @@ class ConsentController extends BaseController {
             $statusFilter = trim($_GET['status'] ?? '');
             $categoryFilter = trim($_GET['category'] ?? '');
             $page = filter_input(INPUT_GET, 'p', FILTER_VALIDATE_INT) ?: 1;
+            $pageSize = filter_input(INPUT_GET, 'limit', FILTER_VALIDATE_INT) ?: 10;
+            if ($pageSize < 1) $pageSize = 10;
+            if ($pageSize > 100) $pageSize = 100;
 
-            $data = $this->consentService->getList($search, $statusFilter, $categoryFilter, $page);
+            $data = $this->consentService->getList($search, $statusFilter, $categoryFilter, $page, $pageSize);
             ApiResponse::success('Success', $data);
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());

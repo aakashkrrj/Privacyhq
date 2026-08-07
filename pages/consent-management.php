@@ -174,7 +174,7 @@ if (isset($conn) && $conn) {
     <!-- ================= SEARCH & FILTER ================= -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <h2 class="text-md font-semibold text-gray-700 mb-5">Search & Filter Consents</h2>
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <input
                 type="text"
                 id="filter-search"
@@ -397,21 +397,25 @@ if (isset($conn) && $conn) {
     <!-- ================= QUICK ACTIONS ================= -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
         <h2 class="text-md font-semibold text-gray-700 mb-5">Quick Actions</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
             <button id="btn-record-consent" class="bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-medium transition">
                 + Record Consent
             </button>
 
-            <button id="btn-export-log" class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition">
-                Export Log
+            <button id="btn-export-log" class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm">csv</span> Export CSV
             </button>
 
-            <button id="btn-generate-report" class="bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition">
-                Generate Report
+            <button id="btn-export-excel" class="bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm">table_chart</span> Export Excel
             </button>
 
-            <button id="btn-import-csv" class="bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-medium transition">
-                Import CSV
+            <button id="btn-generate-report" class="bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm">description</span> Report
+            </button>
+
+            <button id="btn-import-csv" class="bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm">upload_file</span> Import CSV
             </button>
         </div>
     </div>
