@@ -19,95 +19,79 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
-    fetch("../backend/api/settings/notification-preferences.php")
-
-        .then(res => res.json())
-
+    fetch("backend/api/settings/notification-preferences.php")
+        .then(res => {
+            if (!res.ok) {
+                throw new Error("HTTP error " + res.status);
+            }
+            return res.json();
+        })
         .then(result => {
-
-            if (!result.success) return;
-
+            if (!result.success || !result.data) return;
             const data = result.data;
-
-            document.getElementById(
-                "email_notifications"
-            ).checked = data.email_notifications == 1;
-
-            document.getElementById(
-                "in_app_notifications"
-            ).checked = data.in_app_notifications == 1;
-
-            document.getElementById(
-                "privacy_incident_alerts"
-            ).checked = data.privacy_incident_alerts == 1;
-
-            document.getElementById(
-                "consent_updates"
-            ).checked = data.consent_updates == 1;
-
-            document.getElementById(
-                "assessment_reminders"
-            ).checked = data.assessment_reminders == 1;
-
-            document.getElementById(
-                "risk_alerts"
-            ).checked = data.risk_alerts == 1;
-
-            document.getElementById(
+            const fields = [
+                "email_notifications",
+                "in_app_notifications",
+                "privacy_incident_alerts",
+                "consent_updates",
+                "assessment_reminders",
+                "risk_alerts",
                 "system_announcements"
-            ).checked = data.system_announcements == 1;
-
+            ];
+            fields.forEach(field => {
+                const el = document.getElementById(field);
+                if (el) {
+                    el.checked = (data[field] == 1 || data[field] === true);
+                }
+            });
+        })
+        .catch(err => {
+            console.error("Error loading notification preferences:", err);
         });
 
-    form.addEventListener("submit", function (e) {
-
-        e.preventDefault();
-
-        const button = form.querySelector("button");
-
-        button.disabled = true;
-
-        button.innerHTML = "Saving...";
-
-        fetch(
-            "../backend/api/settings/update-notification-preferences.php",
-            {
-                method: "POST",
-                body: new FormData(form),
-                credentials: "same-origin"
+    if (form) {
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            const button = form.querySelector("button[type='submit']");
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = "Saving...";
             }
-        )
 
-            .then(res => res.json())
-
-            .then(result => {
-
-                if (result.success) {
-
-                    showMessage(result.message, true);
-
-                } else {
-
-                    showMessage(result.message);
-
+            fetch(
+                "backend/api/settings/update-notification-preferences.php",
+                {
+                    method: "POST",
+                    body: new FormData(form),
+                    credentials: "same-origin"
                 }
-
-            })
-
-            .catch(() => {
-
-                showMessage("Something went wrong.");
-
-            })
-
-            .finally(() => {
-
-                button.disabled = false;
-
-                button.innerHTML = "Save Preferences";
-
-            });
-
-    });
+            )
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(errData => {
+                            throw new Error(errData.message || ("HTTP Error " + res.status));
+                        });
+                    }
+                    return res.json();
+                })
+                .then(result => {
+                    if (result.success) {
+                        showMessage(result.message || "Preferences updated successfully.", true);
+                    } else {
+                        showMessage(result.message || "Failed to update preferences.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Error saving notification preferences:", err);
+                    showMessage(err.message || "Something went wrong.");
+                })
+                .finally(() => {
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = "Save Preferences";
+                    }
+                });
+        });
+    }
 
 });

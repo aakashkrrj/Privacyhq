@@ -123,26 +123,13 @@ public function updateNotificationPreferences()
 {
     try {
 
-        $emailNotifications =
-            isset($_POST['email_notifications']) ? 1 : 0;
-
-        $inAppNotifications =
-            isset($_POST['in_app_notifications']) ? 1 : 0;
-
-        $privacyIncidentAlerts =
-            isset($_POST['privacy_incident_alerts']) ? 1 : 0;
-
-        $consentUpdates =
-            isset($_POST['consent_updates']) ? 1 : 0;
-
-        $assessmentReminders =
-            isset($_POST['assessment_reminders']) ? 1 : 0;
-
-        $riskAlerts =
-            isset($_POST['risk_alerts']) ? 1 : 0;
-
-        $systemAnnouncements =
-            isset($_POST['system_announcements']) ? 1 : 0;
+        $emailNotifications = (!empty($_POST['email_notifications']) && $_POST['email_notifications'] !== '0' && $_POST['email_notifications'] !== 'false') ? 1 : 0;
+        $inAppNotifications = (!empty($_POST['in_app_notifications']) && $_POST['in_app_notifications'] !== '0' && $_POST['in_app_notifications'] !== 'false') ? 1 : 0;
+        $privacyIncidentAlerts = (!empty($_POST['privacy_incident_alerts']) && $_POST['privacy_incident_alerts'] !== '0' && $_POST['privacy_incident_alerts'] !== 'false') ? 1 : 0;
+        $consentUpdates = (!empty($_POST['consent_updates']) && $_POST['consent_updates'] !== '0' && $_POST['consent_updates'] !== 'false') ? 1 : 0;
+        $assessmentReminders = (!empty($_POST['assessment_reminders']) && $_POST['assessment_reminders'] !== '0' && $_POST['assessment_reminders'] !== 'false') ? 1 : 0;
+        $riskAlerts = (!empty($_POST['risk_alerts']) && $_POST['risk_alerts'] !== '0' && $_POST['risk_alerts'] !== 'false') ? 1 : 0;
+        $systemAnnouncements = (!empty($_POST['system_announcements']) && $_POST['system_announcements'] !== '0' && $_POST['system_announcements'] !== 'false') ? 1 : 0;
 
         $this->settingsService->updateNotificationPreferences(
 

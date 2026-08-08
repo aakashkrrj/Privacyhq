@@ -14,7 +14,8 @@ class ApiBootstrap
      */
     public static function requireMethod($method)
     {
-        if ($_SERVER['REQUEST_METHOD'] !== strtoupper($method)) {
+        $currentMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        if (strtoupper($currentMethod) !== strtoupper($method)) {
             ApiResponse::error(
                 "Invalid request method. Expected " . strtoupper($method),
                 [],

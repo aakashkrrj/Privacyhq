@@ -101,61 +101,77 @@ public function changePassword($userId, $currentPassword, $newPassword)
         $userId
     ]);
 }
-/**
- * Get notification preferences
- */
-public function getNotificationPreferences($userId)
-{
-    $stmt = $this->pdo->prepare("
-        SELECT *
-        FROM notification_preferences
-        WHERE user_id = ?
-        LIMIT 1
-    ");
+    /**
+     * Get notification preferences
+     */
+    public function getNotificationPreferences($userId)
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT *
+            FROM notification_preferences
+            WHERE user_id = ?
+            LIMIT 1
+        ");
 
-    $stmt->execute([$userId]);
+        $stmt->execute([$userId]);
+        $pref = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-    return $stmt->fetch(\PDO::FETCH_ASSOC);
-}
-/**
- * Update notification preferences
- */
-public function updateNotificationPreferences(
-    $userId,
-    $emailNotifications,
-    $inAppNotifications,
-    $privacyIncidentAlerts,
-    $consentUpdates,
-    $assessmentReminders,
-    $riskAlerts,
-    $systemAnnouncements
-)
-{
-    $stmt = $this->pdo->prepare("
-        UPDATE notification_preferences
-        SET
-            email_notifications = ?,
-            in_app_notifications = ?,
-            privacy_incident_alerts = ?,
-            consent_updates = ?,
-            assessment_reminders = ?,
-            risk_alerts = ?,
-            system_announcements = ?,
-            updated_at = NOW()
-        WHERE user_id = ?
-    ");
+        if (!$pref) {
+            $init = $this->pdo->prepare("
+                INSERT INTO notification_preferences 
+                (user_id, email_notifications, in_app_notifications, privacy_incident_alerts, consent_updates, assessment_reminders, risk_alerts, system_announcements)
+                VALUES (?, 1, 1, 0, 0, 0, 1, 0)
+            ");
+            $init->execute([$userId]);
 
-    return $stmt->execute([
+            $stmt->execute([$userId]);
+            $pref = $stmt->fetch(\PDO::FETCH_ASSOC);
+        }
+
+        return $pref ?: [];
+    }
+
+    /**
+     * Update notification preferences
+     */
+    public function updateNotificationPreferences(
+        $userId,
         $emailNotifications,
         $inAppNotifications,
         $privacyIncidentAlerts,
         $consentUpdates,
         $assessmentReminders,
         $riskAlerts,
-        $systemAnnouncements,
-        $userId
-    ]);
-}
+        $systemAnnouncements
+    )
+    {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO notification_preferences (
+                user_id, email_notifications, in_app_notifications, privacy_incident_alerts,
+                consent_updates, assessment_reminders, risk_alerts, system_announcements, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE
+                email_notifications = VALUES(email_notifications),
+                in_app_notifications = VALUES(in_app_notifications),
+                privacy_incident_alerts = VALUES(privacy_incident_alerts),
+                consent_updates = VALUES(consent_updates),
+                assessment_reminders = VALUES(assessment_reminders),
+                risk_alerts = VALUES(risk_alerts),
+                system_announcements = VALUES(system_announcements),
+                updated_at = NOW()
+        ");
+
+        return $stmt->execute([
+            $userId,
+            $emailNotifications,
+            $inAppNotifications,
+            $privacyIncidentAlerts,
+            $consentUpdates,
+            $assessmentReminders,
+            $riskAlerts,
+            $systemAnnouncements
+        ]);
+    }
     /**
      * Update profile image
      */

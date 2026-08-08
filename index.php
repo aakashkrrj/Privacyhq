@@ -16,63 +16,91 @@ $currentPage = isset($_GET['page']) ? trim($_GET['page']) : 'dashboard';
 
 // Route Mappings
 $routes = [
-    'dashboard'           => 'pages/dashboard-main.php',
-    'consent'             => 'pages/consent-management.php',
-    'data-requests'       => 'pages/dsr-management.php',
-    'dsr-management'      => 'pages/dsr-management.php',
-    'assessments'         => 'pages/assessments.php',
-    'cookie-governance'   => 'pages/cookie-governance.php',
-    'data-discovery'      => 'pages/data-discovery.php',
-    'data-mapping'        => 'pages/data-mapping.php',
-    'incident-management' => 'pages/incident-management.php',
-    'vendor-risk'         => 'pages/vendor-risk.php',
-    'vendor-management'   => 'pages/vendor-management.php',
-    'risk-register'       => 'pages/risk-register.php',
-    'ropa'                => 'pages/ropa.php',
-    'policies'            => 'pages/policies.php',
-    'reports'             => 'pages/reports.php',
-    'settings'            => 'pages/settings.php',
-    'user-management'     => 'pages/user-management.php',
-    'audit-logs'          => 'pages/audit-logs.php',
-    'more'                => 'pages/more.php',
-    'my-assessments'      => 'pages/my-assessments.php',
-    'perform-assessment'  => 'pages/perform-assessment.php',
-    'review-assessment'   => 'pages/review-assessment.php',
-    'role-management'     => 'pages/role-management.php'
+    'dashboard'                => 'pages/dashboard-main.php',
+    'consent'                  => 'pages/consent-management.php',
+    'data-requests'            => 'pages/dsr-management.php',
+    'dsr-management'           => 'pages/dsr-management.php',
+    'assessments'              => 'pages/assessments.php',
+    'cookie-governance'        => 'pages/cookie-governance.php',
+    'data-discovery'           => 'pages/data-discovery.php',
+    'data-mapping'             => 'pages/data-mapping.php',
+    'incident-management'      => 'pages/incident-management.php',
+    'vendor-risk'              => 'pages/vendor-risk.php',
+    'vendor-management'        => 'pages/vendor-management.php',
+    'risk-register'            => 'pages/risk-register.php',
+    'ropa'                     => 'pages/ropa.php',
+    'policies'                 => 'pages/policies.php',
+    'reports'                  => 'pages/reports.php',
+    'settings'                 => 'pages/settings.php',
+    'user-management'          => 'pages/user-management.php',
+    'audit-logs'               => 'pages/audit-logs.php',
+    'more'                     => 'pages/more.php',
+    'my-assessments'           => 'pages/my-assessments.php',
+    'perform-assessment'       => 'pages/perform-assessment.php',
+    'review-assessment'        => 'pages/review-assessment.php',
+    'role-management'          => 'pages/role-management.php',
+    'edit-profile'             => 'pages/edit-profile.php',
+    'change-password'          => 'pages/change-password.php',
+    'notification-preferences' => 'pages/notification-preferences.php'
 ];
 
 $pagePermissions = [
-    'dashboard'           => 'view_dashboard',
-    'consent'             => 'manage_consents',
-    'data-requests'       => 'manage_dsr',
-    'dsr-management'      => 'manage_dsr',
-    'assessments'         => 'manage_assessments',
-    'cookie-governance'   => 'view_dashboard',
-    'data-discovery'      => 'view_dashboard',
-    'data-mapping'        => 'view_dashboard',
-    'incident-management' => 'manage_incidents',
-    'vendor-risk'         => 'manage_vendors',
-    'vendor-management'   => 'manage_vendors',
-    'risk-register'       => 'view_dashboard',
-    'ropa'                => 'manage_ropa',
-    'policies'            => 'manage_policies',
-    'reports'             => 'view_reports',
-    'settings'            => 'view_dashboard',
-    'user-management'     => 'manage_users',
-    'audit-logs'          => 'view_audit_logs',
-    'more'                => 'view_dashboard',
-    'my-assessments'      => 'view_dashboard',
-    'perform-assessment'  => 'view_dashboard',
-    'review-assessment'   => 'view_dashboard',
-    'role-management'     => 'manage_users'
+    'dashboard'                => 'view_dashboard',
+    'consent'                  => 'manage_consents',
+    'data-requests'            => 'manage_dsr',
+    'dsr-management'           => 'manage_dsr',
+    'assessments'              => 'manage_assessments',
+    'cookie-governance'        => 'view_dashboard',
+    'data-discovery'           => 'view_dashboard',
+    'data-mapping'             => 'view_dashboard',
+    'incident-management'      => 'manage_incidents',
+    'vendor-risk'              => 'manage_vendors',
+    'vendor-management'        => 'manage_vendors',
+    'risk-register'            => 'view_dashboard',
+    'ropa'                     => 'manage_ropa',
+    'policies'                 => 'manage_policies',
+    'reports'                  => 'view_reports',
+    'settings'                 => 'view_dashboard',
+    'user-management'          => 'manage_users',
+    'audit-logs'               => 'view_audit_logs',
+    'more'                     => 'view_dashboard',
+    'my-assessments'           => 'view_dashboard',
+    'perform-assessment'       => 'view_dashboard',
+    'review-assessment'        => 'view_dashboard',
+    'role-management'          => 'manage_users',
+    'edit-profile'             => 'view_dashboard',
+    'change-password'          => 'view_dashboard',
+    'notification-preferences' => 'view_dashboard'
 ];
 
 $reqPermission = $pagePermissions[$currentPage] ?? null;
-if ($reqPermission) {
+if ($reqPermission && function_exists('require_permission')) {
     require_permission($reqPermission);
 }
 
 $fileToInclude = isset($routes[$currentPage]) ? $routes[$currentPage] : 'pages/dashboard-main.php';
+
+// START NEW CODE - Notifications & Dynamic User Profile Context
+$current_user_id = (int)($_SESSION['user_id'] ?? 1);
+$notifications_list = [];
+$unread_notifications_count = 0;
+
+if (isset($conn) && !$conn->connect_error) {
+    $notif_stmt = $conn->prepare("SELECT id, title, message, type, is_read, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+    if ($notif_stmt) {
+        $notif_stmt->bind_param("i", $current_user_id);
+        $notif_stmt->execute();
+        $notif_res = $notif_stmt->get_result();
+        while ($n_row = $notif_res->fetch_assoc()) {
+            if (empty($n_row['is_read'])) {
+                $unread_notifications_count++;
+            }
+            $notifications_list[] = $n_row;
+        }
+        $notif_stmt->close();
+    }
+}
+// END NEW CODE
 ?>
 <!DOCTYPE html>
 <html class="light" lang="en">
@@ -194,22 +222,98 @@ $fileToInclude = isset($routes[$currentPage]) ? $routes[$currentPage] : 'pages/d
             <h1 class="font-display text-display text-primary leading-none">PrivacyHQ</h1>
         </a>
         <div class="flex items-center gap-md">
-            <button class="relative p-2 rounded-full hover:bg-surface-container-low transition-colors">
-                <span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
-                <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
-            </button>
-            <div class="hidden md:flex items-center gap-sm border-l border-outline-variant pl-md ml-base">
-                <div class="text-right">
-                    <p class="font-title-md text-on-surface leading-tight"><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin User') ?></p>
-                    <p class="font-caption text-outline"><?= htmlspecialchars($_SESSION['role_name'] ?? 'Super Admin') ?></p>
+            
+            <!-- START NEW CODE - Notification Bell & Dropdown -->
+            <div class="relative">
+                <button id="notifBellBtn" onclick="toggleNotifDropdown(event)" class="relative p-2 rounded-full hover:bg-surface-container-low transition-colors focus:outline-none" title="Notifications">
+                    <span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+                    <?php if ($unread_notifications_count > 0): ?>
+                        <span id="notifBadge" class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-error text-white text-[10px] font-bold rounded-full border-2 border-surface flex items-center justify-center px-1">
+                            <?= $unread_notifications_count ?>
+                        </span>
+                    <?php else: ?>
+                        <span id="notifBadge" class="hidden absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-error text-white text-[10px] font-bold rounded-full border-2 border-surface flex items-center justify-center px-1"></span>
+                    <?php endif; ?>
+                </button>
+
+                <!-- Notification Dropdown Menu -->
+                <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-surface-container-lowest border border-[#EDEBE9] rounded-xl shadow-lg z-50 overflow-hidden transition-all">
+                    <div class="p-3 bg-surface-container-low border-b border-[#EDEBE9] flex justify-between items-center">
+                        <span class="font-title-md font-semibold text-sm text-on-surface">Notifications</span>
+                        <?php if ($unread_notifications_count > 0): ?>
+                            <button onclick="markAllNotificationsRead(event)" class="text-xs text-primary font-medium hover:underline focus:outline-none">Mark all as read</button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="max-h-80 overflow-y-auto divide-y divide-[#EDEBE9]" id="notifListContainer">
+                        <?php if (!empty($notifications_list)): ?>
+                            <?php foreach ($notifications_list as $notif): ?>
+                                <div id="notif-item-<?= (int)$notif['id'] ?>" onclick="markNotifRead(<?= (int)$notif['id'] ?>)" class="p-3 hover:bg-surface-container-low transition-colors cursor-pointer flex items-start gap-2.5 <?= empty($notif['is_read']) ? 'bg-primary/5 font-medium' : 'opacity-75' ?>">
+                                    <span class="material-symbols-outlined text-base mt-0.5 <?= empty($notif['is_read']) ? 'text-primary' : 'text-outline' ?>">
+                                        <?= empty($notif['is_read']) ? 'mail' : 'drafts' ?>
+                                    </span>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between gap-1">
+                                            <p class="text-xs font-semibold text-on-surface truncate"><?= htmlspecialchars($notif['title']) ?></p>
+                                            <span class="text-[10px] text-outline whitespace-nowrap"><?= date('H:i, M d', strtotime($notif['created_at'])) ?></span>
+                                        </div>
+                                        <p class="text-xs text-on-surface-variant line-clamp-2 mt-0.5"><?= htmlspecialchars($notif['message']) ?></p>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="p-6 text-center text-outline">
+                                <span class="material-symbols-outlined text-3xl mb-1 text-outline/50">notifications_off</span>
+                                <p class="text-xs font-medium">No notifications found.</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="p-2 text-center bg-surface-container-low border-t border-[#EDEBE9]">
+                        <a href="index.php?page=notification-preferences" class="text-xs font-semibold text-primary hover:underline">View All Notifications</a>
+                    </div>
                 </div>
-                <div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center">
-                    <span class="material-symbols-outlined text-on-primary-fixed" data-icon="person">person</span>
-                </div>
-                <a href="logout.php" class="p-2 rounded-full hover:bg-surface-container-low transition-colors ml-2 flex items-center justify-center text-red-600 hover:text-red-700" title="Logout">
-                    <span class="material-symbols-outlined">logout</span>
-                </a>
             </div>
+            <!-- END NEW CODE - Notification Bell & Dropdown -->
+
+            <!-- START NEW CODE - Profile Avatar & Dropdown -->
+            <div class="relative hidden md:block">
+                <button id="profileDropdownBtn" onclick="toggleProfileDropdown(event)" class="flex items-center gap-sm border-l border-outline-variant pl-md ml-base hover:opacity-90 focus:outline-none transition-opacity">
+                    <div class="text-right">
+                        <p class="font-title-md text-on-surface leading-tight font-semibold"><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin User') ?></p>
+                        <p class="font-caption text-outline text-xs"><?= htmlspecialchars($_SESSION['role_name'] ?? 'Super Admin') ?></p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center border border-primary/20">
+                        <span class="material-symbols-outlined text-on-primary-fixed" data-icon="person">person</span>
+                    </div>
+                    <span class="material-symbols-outlined text-outline text-sm">expand_more</span>
+                </button>
+
+                <!-- Profile Menu Dropdown -->
+                <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-56 bg-surface-container-lowest border border-[#EDEBE9] rounded-xl shadow-lg z-50 overflow-hidden py-1">
+                    <div class="px-4 py-2 border-b border-[#EDEBE9] bg-surface-container-low">
+                        <p class="text-xs font-semibold text-on-surface"><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin User') ?></p>
+                        <p class="text-[11px] text-outline truncate"><?= htmlspecialchars($_SESSION['email'] ?? 'admin@privacyhq.com') ?></p>
+                    </div>
+                    <a href="index.php?page=edit-profile" class="flex items-center gap-2 px-4 py-2.5 text-xs text-on-surface hover:bg-surface-container-low transition-colors">
+                        <span class="material-symbols-outlined text-base text-primary">person</span>
+                        <span>My Profile</span>
+                    </a>
+                    <a href="index.php?page=edit-profile" class="flex items-center gap-2 px-4 py-2.5 text-xs text-on-surface hover:bg-surface-container-low transition-colors">
+                        <span class="material-symbols-outlined text-base text-secondary">edit</span>
+                        <span>Edit Profile</span>
+                    </a>
+                    <a href="index.php?page=notification-preferences" class="flex items-center gap-2 px-4 py-2.5 text-xs text-on-surface hover:bg-surface-container-low transition-colors">
+                        <span class="material-symbols-outlined text-base text-tertiary">notifications</span>
+                        <span>Notification Preferences</span>
+                    </a>
+                    <div class="border-t border-[#EDEBE9] my-1"></div>
+                    <a href="logout.php" class="flex items-center gap-2 px-4 py-2.5 text-xs text-red-600 font-medium hover:bg-red-50 transition-colors">
+                        <span class="material-symbols-outlined text-base">logout</span>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+            <!-- END NEW CODE - Profile Avatar & Dropdown -->
+
         </div>
     </header>
 
@@ -239,5 +343,77 @@ $fileToInclude = isset($routes[$currentPage]) ? $routes[$currentPage] : 'pages/d
     <div class="fixed top-0 right-0 -z-10 w-1/3 h-1/2 bg-gradient-to-bl from-primary/5 to-transparent blur-3xl pointer-events-none"></div>
     <div class="fixed bottom-0 left-0 -z-10 w-1/3 h-1/2 bg-gradient-to-tr from-secondary-container/5 to-transparent blur-3xl pointer-events-none"></div>
 
+    <!-- START NEW CODE - Interactive Dropdown Scripts -->
+    <script>
+    function toggleNotifDropdown(e) {
+        e.stopPropagation();
+        const dd = document.getElementById('notifDropdown');
+        const pdd = document.getElementById('profileDropdown');
+        if (pdd) pdd.classList.add('hidden');
+        if (dd) dd.classList.toggle('hidden');
+    }
+
+    function toggleProfileDropdown(e) {
+        e.stopPropagation();
+        const pdd = document.getElementById('profileDropdown');
+        const dd = document.getElementById('notifDropdown');
+        if (dd) dd.classList.add('hidden');
+        if (pdd) pdd.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', function(e) {
+        const dd = document.getElementById('notifDropdown');
+        const pdd = document.getElementById('profileDropdown');
+        if (dd && !dd.contains(e.target) && !e.target.closest('#notifBellBtn')) {
+            dd.classList.add('hidden');
+        }
+        if (pdd && !pdd.contains(e.target) && !e.target.closest('#profileDropdownBtn')) {
+            pdd.classList.add('hidden');
+        }
+    });
+
+    function markNotifRead(id) {
+        fetch('api/mark-notification-read.php?id=' + id, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const item = document.getElementById('notif-item-' + id);
+                    if (item) {
+                        item.classList.add('opacity-75');
+                        item.classList.remove('bg-primary/5', 'font-medium');
+                    }
+                    updateBadge(data.unread_count);
+                }
+            }).catch(err => console.error(err));
+    }
+
+    function markAllNotificationsRead(e) {
+        e.stopPropagation();
+        fetch('api/mark-notification-read.php?all=1', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const items = document.querySelectorAll('#notifListContainer > div');
+                    items.forEach(el => {
+                        el.classList.add('opacity-75');
+                        el.classList.remove('bg-primary/5', 'font-medium');
+                    });
+                    updateBadge(0);
+                }
+            }).catch(err => console.error(err));
+    }
+
+    function updateBadge(count) {
+        const badge = document.getElementById('notifBadge');
+        if (!badge) return;
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+    </script>
+    <!-- END NEW CODE - Interactive Dropdown Scripts -->
 </body>
 </html>
