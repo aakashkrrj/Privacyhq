@@ -4,7 +4,7 @@ $host = "127.0.0.1";
 $user = "root";
 $pass = "";
 $dbname = "privacyhq";
-$port = 3306;
+$port = 3307;
 
 $conn = new mysqli($host, $user, $pass, $dbname, $port);
 

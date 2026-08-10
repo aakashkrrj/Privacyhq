@@ -3,6 +3,17 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+$userId = $_SESSION['user_id'] ?? null;
+
+require_once __DIR__ . '/includes/db.php';
+
+if ($userId && isset($pdo)) {
+    if (function_exists('log_audit_event')) {
+        log_audit_event($pdo, 'User Management', 'User Logout', $userId, $userId, null, null);
+    }
+}
+
 $_SESSION = [];
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
