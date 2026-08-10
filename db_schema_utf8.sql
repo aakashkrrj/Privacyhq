@@ -439,6 +439,68 @@ CREATE TABLE `assessment_documents` (
   FOREIGN KEY (`assessment_id`) REFERENCES `privacy_assessments` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Table structure for table `tasks`
+--
+DROP TABLE IF EXISTS `tasks`;
+CREATE TABLE `tasks` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `module` varchar(50) NOT NULL,
+  `record_id` bigint(20) unsigned NOT NULL,
+  `task_type` varchar(50) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `assigned_to` bigint(20) unsigned NOT NULL,
+  `assigned_by` bigint(20) unsigned NOT NULL,
+  `priority` enum('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
+  `status` enum('Pending','In Progress','Completed','Escalated','Cancelled') NOT NULL DEFAULT 'Pending',
+  `parent_task_id` bigint(20) unsigned DEFAULT NULL,
+  `due_date` date DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `notifications`
+--
+DROP TABLE IF EXISTS `notifications`;
+CREATE TABLE `notifications` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `module` varchar(50) NOT NULL,
+  `record_id` bigint(20) unsigned NOT NULL,
+  `category` enum('Assignment','Reminder','Approval','Escalation','Comment','Mention','Deadline') NOT NULL DEFAULT 'Assignment',
+  `priority` enum('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
+  `title` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `activity_timeline`
+--
+DROP TABLE IF EXISTS `activity_timeline`;
+CREATE TABLE `activity_timeline` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `module` varchar(50) NOT NULL,
+  `record_id` bigint(20) unsigned NOT NULL,
+  `performed_by` bigint(20) unsigned NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `old_status` varchar(50) DEFAULT NULL,
+  `new_status` varchar(50) DEFAULT NULL,
+  `metadata_json` longtext DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`performed_by`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

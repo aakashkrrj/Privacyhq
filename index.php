@@ -41,11 +41,16 @@ $routes = [
     'role-management'          => 'pages/role-management.php',
     'edit-profile'             => 'pages/edit-profile.php',
     'change-password'          => 'pages/change-password.php',
-    'notification-preferences' => 'pages/notification-preferences.php'
+    'notification-preferences' => 'pages/notification-preferences.php',
+    'my-tasks'                 => 'pages/my-tasks.php',
+    'executive-dashboard'      => 'pages/executive-dashboard.php',
+    'search'                   => 'pages/search.php'
 ];
 
 $pagePermissions = [
     'dashboard'                => 'view_dashboard',
+    'executive-dashboard'      => 'view_dashboard',
+    'search'                   => 'view_dashboard',
     'consent'                  => 'manage_consents',
     'data-requests'            => 'manage_dsr',
     'dsr-management'           => 'manage_dsr',
@@ -68,6 +73,7 @@ $pagePermissions = [
     'perform-assessment'       => 'view_dashboard',
     'review-assessment'        => 'view_dashboard',
     'role-management'          => 'manage_users',
+    'my-tasks'                 => 'view_dashboard',
     'edit-profile'             => 'view_dashboard',
     'change-password'          => 'view_dashboard',
     'notification-preferences' => 'view_dashboard'
@@ -226,7 +232,7 @@ if (isset($conn) && !$conn->connect_error) {
             <!-- START NEW CODE - Notification Bell & Dropdown -->
             <div class="relative">
                 <button id="notifBellBtn" onclick="toggleNotifDropdown(event)" class="relative p-2 rounded-full hover:bg-surface-container-low transition-colors focus:outline-none" title="Notifications">
-                    <span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+                    <span class="material-symbols-outlined text-on-surface-variant pointer-events-none" data-icon="notifications">notifications</span>
                     <?php if ($unread_notifications_count > 0): ?>
                         <span id="notifBadge" class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-error text-white text-[10px] font-bold rounded-full border-2 border-surface flex items-center justify-center px-1">
                             <?= $unread_notifications_count ?>
@@ -240,9 +246,7 @@ if (isset($conn) && !$conn->connect_error) {
                 <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-surface-container-lowest border border-[#EDEBE9] rounded-xl shadow-lg z-50 overflow-hidden transition-all">
                     <div class="p-3 bg-surface-container-low border-b border-[#EDEBE9] flex justify-between items-center">
                         <span class="font-title-md font-semibold text-sm text-on-surface">Notifications</span>
-                        <?php if ($unread_notifications_count > 0): ?>
-                            <button onclick="markAllNotificationsRead(event)" class="text-xs text-primary font-medium hover:underline focus:outline-none">Mark all as read</button>
-                        <?php endif; ?>
+                        <button onclick="markAllNotificationsRead(event)" class="text-xs text-primary font-medium hover:underline focus:outline-none">Mark all as read</button>
                     </div>
                     <div class="max-h-80 overflow-y-auto divide-y divide-[#EDEBE9]" id="notifListContainer">
                         <?php if (!empty($notifications_list)): ?>
@@ -268,11 +272,10 @@ if (isset($conn) && !$conn->connect_error) {
                         <?php endif; ?>
                     </div>
                     <div class="p-2 text-center bg-surface-container-low border-t border-[#EDEBE9]">
-                        <a href="index.php?page=notification-preferences" class="text-xs font-semibold text-primary hover:underline">View All Notifications</a>
+                        <a href="index.php?page=my-tasks" class="text-xs font-semibold text-primary hover:underline">Go to Task Workspace</a>
                     </div>
                 </div>
             </div>
-            <!-- END NEW CODE - Notification Bell & Dropdown -->
 
             <!-- START NEW CODE - Profile Avatar & Dropdown -->
             <div class="relative hidden md:block">
@@ -339,6 +342,8 @@ if (isset($conn) && !$conn->connect_error) {
 
     <!-- Bottom Navigation Bar -->
     <?php include_once __DIR__ . '/includes/bottom-nav.php'; ?>
+
+    <script src="assets/js/notifications.js"></script>
 
     <div class="fixed top-0 right-0 -z-10 w-1/3 h-1/2 bg-gradient-to-bl from-primary/5 to-transparent blur-3xl pointer-events-none"></div>
     <div class="fixed bottom-0 left-0 -z-10 w-1/3 h-1/2 bg-gradient-to-tr from-secondary-container/5 to-transparent blur-3xl pointer-events-none"></div>

@@ -5,21 +5,19 @@ header('Content-Type: application/json');
 require_once "../includes/db.php";
 require_permission('manage_vendors');
 
-if ($conn->connect_error) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Database Connection Failed: ' . $conn->connect_error
-    ]);
-    exit();
-}
+require_once __DIR__ . '/../backend/models/Vendor.php';
+require_once __DIR__ . '/../backend/models/VendorAssessment.php';
+require_once __DIR__ . '/../backend/services/VendorService.php';
+require_once __DIR__ . '/../backend/services/WorkflowService.php';
+require_once __DIR__ . '/../backend/services/TaskService.php';
+require_once __DIR__ . '/../backend/services/NotificationService.php';
+require_once __DIR__ . '/../backend/services/ActivityService.php';
 
 // Check Request Method
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $vendor_name  = trim($_POST['vendor_name'] ?? '');
     $service_type = trim($_POST['service_type'] ?? '');
     $data_shared  = trim($_POST['data_shared'] ?? '');
-    $status       = 'Under Audit'; // Default initial status for vendor_assessments
-    $risk_score   = 15; // Default risk score
 
     if (empty($vendor_name) || empty($service_type) || empty($data_shared)) {
         echo json_encode([
@@ -29,40 +27,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // Prepare & Bind Insert Statement for vendors
-    $stmt = $conn->prepare("INSERT INTO vendors (name, service_type) VALUES (?, ?)");
-    $stmt->bind_param("ss", $vendor_name, $service_type);
+    try {
+        $vendorModel = new \Backend\Models\Vendor($pdo);
+        $vaModel = new \Backend\Models\VendorAssessment($pdo);
+        $vendorService = new \Backend\Services\VendorService($pdo, $vendorModel, $vaModel);
 
-    if ($stmt->execute()) {
-        $vendor_id = $stmt->insert_id;
-        $stmt->close();
+        $userId = $_SESSION['user_id'] ?? 1;
+        $vendorService->createVendor($vendor_name, $service_type, 'Pending', 'Low', $userId);
 
-        // Insert into vendor_assessments
-        $stmt_va = $conn->prepare("INSERT INTO vendor_assessments (vendor_id, risk_score, status) VALUES (?, ?, ?)");
-        $stmt_va->bind_param("iis", $vendor_id, $risk_score, $status);
-        if ($stmt_va->execute()) {
-            echo json_encode([
-                'status' => 'success',
-                'message' => 'Vendor onboarded successfully!'
-            ]);
-        } else {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Assessment Insert Error: ' . $stmt_va->error
-            ]);
-        }
-        $stmt_va->close();
-
-    } else {
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Vendor onboarded successfully!'
+        ]);
+    } catch (\Exception $e) {
         echo json_encode([
             'status' => 'error',
-            'message' => 'Database Insert Error: ' . $stmt->error
+            'message' => $e->getMessage()
         ]);
-        $stmt->close();
     }
 } else {
     echo json_encode([
         'status' => 'error',
-        'message' => 'Invalid Request Method.'
+        'message' => 'Invalid request method.'
     ]);
 }

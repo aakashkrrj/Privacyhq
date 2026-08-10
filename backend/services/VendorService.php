@@ -47,6 +47,18 @@ class VendorService {
             }
 
             $this->pdo->commit();
+
+            // Dispatch workflow event
+            if (class_exists('\Backend\Services\WorkflowService')) {
+                \Backend\Services\WorkflowService::dispatch('vendor.created', [
+                    'module' => 'Vendor',
+                    'record_id' => $vendorId,
+                    'name' => $name,
+                    'assigned_to' => 11, // DPO user ID
+                    'created_by' => $userId
+                ]);
+            }
+
             return $vendorId;
         } catch (\Exception $e) {
             $this->pdo->rollBack();

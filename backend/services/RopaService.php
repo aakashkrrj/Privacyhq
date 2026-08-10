@@ -25,6 +25,18 @@ class RopaService {
             }
 
             $this->pdo->commit();
+
+            // Dispatch workflow event
+            if (class_exists('\Backend\Services\WorkflowService')) {
+                \Backend\Services\WorkflowService::dispatch('ropa.created', [
+                    'module' => 'ROPA',
+                    'record_id' => $id,
+                    'activity_name' => $activityName,
+                    'assigned_to' => 11, // DPO user ID
+                    'created_by' => $userId
+                ]);
+            }
+
             return $id;
         } catch (\Exception $e) {
             $this->pdo->rollBack();

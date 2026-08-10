@@ -148,6 +148,39 @@
                 </a>
             <?php endif; ?>
 
+            <!-- My Tasks Workspace -->
+            <?php if (has_permission('view_dashboard')): ?>
+                <a href="index.php?page=my-tasks" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">task_alt</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">My Tasks</h3>
+                        <p class="text-sm text-gray-500">View and manage your assigned workflow tasks.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
+
+            <!-- Executive Dashboard -->
+            <?php if (has_permission('view_dashboard')): ?>
+                <a href="index.php?page=executive-dashboard" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">dashboard</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">Compliance Console</h3>
+                        <p class="text-sm text-gray-500">Aggregated KPIs, charts, and platform activities.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
+
+            <!-- Global Search -->
+            <?php if (has_permission('view_dashboard')): ?>
+                <a href="index.php?page=search" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                    <span class="material-symbols-outlined text-blue-700 text-3xl">search</span>
+                    <div>
+                        <h3 class="font-semibold text-lg">Global Search</h3>
+                        <p class="text-sm text-gray-500">Search across assessments, tasks, and data records.</p>
+                    </div>
+                </a>
+            <?php endif; ?>
+
             <!-- Audit Logs -->
             <?php if (has_permission('view_audit_logs')): ?>
                 <a href="index.php?page=audit-logs" class="bg-white border rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">

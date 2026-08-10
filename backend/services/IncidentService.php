@@ -32,6 +32,19 @@ class IncidentService {
             }
 
             $this->pdo->commit();
+
+            // Dispatch workflow event
+            if (class_exists('\Backend\Services\WorkflowService')) {
+                \Backend\Services\WorkflowService::dispatch('incident.created', [
+                    'module' => 'Incident',
+                    'record_id' => $incidentId,
+                    'summary' => $summary,
+                    'assigned_to' => 11, // Triage task assigned to DPO
+                    'created_by' => $userId,
+                    'priority' => $severity
+                ]);
+            }
+
             return $incidentId;
         } catch (\Exception $e) {
             $this->pdo->rollBack();
@@ -144,6 +157,19 @@ class IncidentService {
             }
 
             $this->pdo->commit();
+
+            // Dispatch workflow event if escalated
+            if ($isEscalated && class_exists('\Backend\Services\WorkflowService')) {
+                \Backend\Services\WorkflowService::dispatch('incident.escalated', [
+                    'module' => 'Incident',
+                    'record_id' => $id,
+                    'summary' => $existing['summary'] ?? 'Incident',
+                    'dpo_user_id' => 11, // Notify DPO
+                    'performed_by' => $userId,
+                    'priority' => 'Critical'
+                ]);
+            }
+
             return true;
         } catch (\Exception $e) {
             $this->pdo->rollBack();

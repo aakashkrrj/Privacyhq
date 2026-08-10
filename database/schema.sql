@@ -200,3 +200,53 @@ CREATE TABLE IF NOT EXISTS assessment_documents (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (assessment_id) REFERENCES privacy_assessments (id) ON DELETE CASCADE
 );
+
+-- 16. Centralized Tasks Table
+CREATE TABLE IF NOT EXISTS tasks (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    module VARCHAR(50) NOT NULL,
+    record_id BIGINT UNSIGNED NOT NULL,
+    task_type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    assigned_to BIGINT UNSIGNED NOT NULL,
+    assigned_by BIGINT UNSIGNED NOT NULL,
+    priority ENUM('Low', 'Medium', 'High', 'Critical') NOT NULL DEFAULT 'Medium',
+    status ENUM('Pending', 'In Progress', 'Completed', 'Escalated', 'Cancelled') NOT NULL DEFAULT 'Pending',
+    parent_task_id BIGINT UNSIGNED DEFAULT NULL,
+    due_date DATE,
+    completed_at TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (assigned_to) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_by) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- 17. Centralized Notifications Table
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    module VARCHAR(50) NOT NULL,
+    record_id BIGINT UNSIGNED NOT NULL,
+    category ENUM('Assignment', 'Reminder', 'Approval', 'Escalation', 'Comment', 'Mention', 'Deadline') NOT NULL DEFAULT 'Assignment',
+    priority ENUM('Low', 'Medium', 'High', 'Critical') NOT NULL DEFAULT 'Medium',
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- 18. Centralized Activity Timeline Table
+CREATE TABLE IF NOT EXISTS activity_timeline (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    module VARCHAR(50) NOT NULL,
+    record_id BIGINT UNSIGNED NOT NULL,
+    performed_by BIGINT UNSIGNED NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    old_status VARCHAR(50) DEFAULT NULL,
+    new_status VARCHAR(50) DEFAULT NULL,
+    metadata_json LONGTEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (performed_by) REFERENCES users (id) ON DELETE CASCADE
+);
