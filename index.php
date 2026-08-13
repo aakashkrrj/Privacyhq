@@ -55,7 +55,7 @@ $pagePermissions = [
     'data-requests'            => 'manage_dsr',
     'dsr-management'           => 'manage_dsr',
     'assessments'              => 'manage_assessments',
-    'cookie-governance'        => 'view_dashboard',
+    'cookie-governance'        => 'view_cookie_governance',
     'data-discovery'           => 'view_dashboard',
     'data-mapping'             => 'view_dashboard',
     'incident-management'      => 'manage_incidents',
@@ -440,8 +440,12 @@ if (isset($conn) && !$conn->connect_error) {
                         <p class="font-title-md text-on-surface leading-tight font-semibold"><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin User') ?></p>
                         <p class="font-caption text-outline text-xs"><?= htmlspecialchars($_SESSION['role_name'] ?? 'Super Admin') ?></p>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center border border-primary/20">
-                        <span class="material-symbols-outlined text-on-primary-fixed" data-icon="person">person</span>
+                    <div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center border border-primary/20 overflow-hidden">
+                        <?php 
+                        $profileUrl = getProfileImageUrl($_SESSION['profile_image'] ?? null); 
+                        $defaultAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80';
+                        ?>
+                        <img id="headerAvatarImg" src="<?= htmlspecialchars($profileUrl) ?><?= ($profileUrl !== $defaultAvatar) ? '?t=' . time() : '' ?>" class="w-full h-full object-cover" alt="Profile" onerror="this.src='<?= $defaultAvatar ?>';">
                     </div>
                     <span class="material-symbols-outlined text-outline text-sm">expand_more</span>
                 </button>

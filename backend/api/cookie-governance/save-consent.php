@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../services/ScannerAbstraction.php';
 require_once __DIR__ . '/../../services/CookieGovernanceService.php';
 require_once __DIR__ . '/../../controllers/CookieGovernanceController.php';
 
-ApiBootstrap::requireMethod('GET');
+ApiBootstrap::requireMethod('POST');
 
 $consentModel = new \Backend\Models\Consent($pdo);
 $subjectModel = new \Backend\Models\DataSubject($pdo);
@@ -21,4 +21,4 @@ $consentService = new \Backend\Services\ConsentService($pdo, $consentModel, $sub
 $service = new \Backend\Services\CookieGovernanceService($pdo, $consentService);
 $controller = new \Backend\Controllers\CookieGovernanceController($service);
 
-$controller->getDashboard();
+$controller->saveConsentPreferences();

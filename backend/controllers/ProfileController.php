@@ -37,7 +37,7 @@ class ProfileController extends BaseController {
                     throw new \Exception("Invalid profile image type. Allowed types: JPEG, PNG, GIF, WebP.");
                 }
 
-                $uploadsDir = __DIR__ . '/../../../uploads';
+                $uploadsDir = __DIR__ . '/../../uploads';
                 if (!is_dir($uploadsDir)) {
                     mkdir($uploadsDir, 0777, true);
                 }

@@ -157,13 +157,24 @@ if (session_status() === PHP_SESSION_NONE) {
             </a>
         <?php endif; ?>
 
-        <!-- Incident Management -->
+         <!-- Incident Management -->
         <?php if (has_permission('manage_incidents')): ?>
             <a href="index.php?page=incident-management" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
                 <span class="material-symbols-outlined text-primary text-3xl">notification_important</span>
                 <div>
                     <h3 class="font-semibold text-lg text-on-surface">Incidents</h3>
                     <p class="text-sm text-on-surface-variant">Track and remediate privacy incidents.</p>
+                </div>
+            </a>
+        <?php endif; ?>
+
+        <!-- Cookie Governance -->
+        <?php if (has_permission('view_cookie_governance')): ?>
+            <a href="index.php?page=cookie-governance" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                <span class="material-symbols-outlined text-primary text-3xl">cookie</span>
+                <div>
+                    <h3 class="font-semibold text-lg text-on-surface">Cookie Governance</h3>
+                    <p class="text-sm text-on-surface-variant">Manage cookie consent, scanning, and banners.</p>
                 </div>
             </a>
         <?php endif; ?>

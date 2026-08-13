@@ -1,17 +1,21 @@
 <?php
 namespace Backend\Models;
 
-/*
- Placeholder implementation.
-
- The current application contains no database schema
- for Cookie Governance.
-
- Replace this model with database queries when
- cookie management is implemented.
-*/
 class CookieGovernance {
+    private $pdo;
+
+    public function __construct(\PDO $pdo = null) {
+        if ($pdo) {
+            $this->pdo = $pdo;
+        } else {
+            // Load globally configured DB connection
+            global $pdo;
+            $this->pdo = $pdo;
+        }
+    }
+
     public function getPlaceholderDataset() {
+        // Fallback placeholder mock dataset for backward compatibility / testing
         return [
             'metrics' => [
                 'total_cookies' => 148,

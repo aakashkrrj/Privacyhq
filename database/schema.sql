@@ -250,3 +250,84 @@ CREATE TABLE IF NOT EXISTS activity_timeline (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (performed_by) REFERENCES users (id) ON DELETE CASCADE
 );
+
+-- 19. Cookie Domains
+CREATE TABLE IF NOT EXISTS cookie_domains (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    domain_name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 20. Cookie Scan Runs
+CREATE TABLE IF NOT EXISTS cookie_scan_runs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    domain_id INT NOT NULL,
+    status ENUM('Pending', 'Running', 'Completed', 'Failed') DEFAULT 'Pending',
+    error_message TEXT,
+    results_summary JSON,
+    started_at TIMESTAMP NULL,
+    completed_at TIMESTAMP NULL,
+    FOREIGN KEY (domain_id) REFERENCES cookie_domains(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 21. Cookie & Tracker Inventory
+CREATE TABLE IF NOT EXISTS cookie_inventory (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    domain_id INT NOT NULL,
+    scan_run_id INT,
+    name VARCHAR(255) NOT NULL,
+    value_pattern VARCHAR(255),
+    domain_source VARCHAR(255),
+    category ENUM('Essential', 'Functional', 'Performance', 'Analytics', 'Advertising') DEFAULT 'Essential',
+    party_type ENUM('First-Party', 'Third-Party') DEFAULT 'First-Party',
+    technology_type ENUM('cookie', 'pixel', 'tag', 'tracking technology') DEFAULT 'cookie',
+    description TEXT,
+    expiry VARCHAR(100),
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (domain_id) REFERENCES cookie_domains(id) ON DELETE CASCADE,
+    FOREIGN KEY (scan_run_id) REFERENCES cookie_scan_runs(id) ON DELETE SET NULL,
+    INDEX (domain_id),
+    INDEX (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 22. Cookie Banner Configurations
+CREATE TABLE IF NOT EXISTS cookie_banner_configs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    domain_id INT NOT NULL UNIQUE,
+    banner_title VARCHAR(255) DEFAULT 'Cookie Consent Preferences',
+    banner_text TEXT,
+    language VARCHAR(50) DEFAULT 'en',
+    categories_presented VARCHAR(255) DEFAULT 'Essential,Functional,Performance,Analytics,Advertising',
+    accept_all_text VARCHAR(100) DEFAULT 'Accept All',
+    reject_all_text VARCHAR(100) DEFAULT 'Reject Non-Essential',
+    preferences_text VARCHAR(100) DEFAULT 'Manage Preferences',
+    branding_color VARCHAR(50) DEFAULT '#005faa',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (domain_id) REFERENCES cookie_domains(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Seed Cookie Governance permissions
+INSERT INTO permissions (permission_name, module, description) VALUES 
+('view_cookie_governance', 'Cookie Governance', 'View cookie governance dashboard'),
+('manage_cookie_sources', 'Cookie Governance', 'Manage cookie websites and domains'),
+('run_cookie_scans', 'Cookie Governance', 'Execute cookie scans on registered domains'),
+('classify_cookies', 'Cookie Governance', 'Adjust category classification for cookies'),
+('manage_cookie_banner', 'Cookie Governance', 'Configure cookie preference banner'),
+('view_cookie_reports', 'Cookie Governance', 'Export and view cookie reports')
+ON DUPLICATE KEY UPDATE permission_name=VALUES(permission_name);
+
+-- Grant to Super Admin (1), DPO (2), Assessor (3)
+INSERT INTO role_permissions (role_id, permission_id) 
+SELECT 1, id FROM permissions WHERE permission_name IN ('view_cookie_governance','manage_cookie_sources','run_cookie_scans','classify_cookies','manage_cookie_banner','view_cookie_reports')
+ON DUPLICATE KEY UPDATE role_id=role_id;
+INSERT INTO role_permissions (role_id, permission_id) 
+SELECT 2, id FROM permissions WHERE permission_name IN ('view_cookie_governance','manage_cookie_sources','run_cookie_scans','classify_cookies','manage_cookie_banner','view_cookie_reports')
+ON DUPLICATE KEY UPDATE role_id=role_id;
+INSERT INTO role_permissions (role_id, permission_id) 
+SELECT 3, id FROM permissions WHERE permission_name IN ('view_cookie_governance','manage_cookie_sources','run_cookie_scans','classify_cookies','manage_cookie_banner','view_cookie_reports')
+ON DUPLICATE KEY UPDATE role_id=role_id;

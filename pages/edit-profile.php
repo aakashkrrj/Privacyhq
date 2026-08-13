@@ -359,7 +359,7 @@ function loadProfile()
         if(user.profile_image)
         {
             document.getElementById("profilePreview").src =
-                "../" + user.profile_image;
+                user.profile_image;
         }
 
     })

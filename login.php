@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: $user['email'];
                 $_SESSION['permissions'] = $perms;
+                $_SESSION['profile_image'] = $user['profile_image'] ?? null;
 
                 // Update last login
                 $stmtLogin = $pdo->prepare("UPDATE users SET last_login_at = NOW() WHERE id = ?");

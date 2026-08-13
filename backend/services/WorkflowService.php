@@ -203,6 +203,20 @@ class WorkflowService {
                 'title' => '{title}',
                 'message' => '{message}'
             ]
+        ],
+
+        // Cookie Governance workflow events
+        'cookie.scan.completed' => [
+            'timeline' => 'Cookie discovery scan completed for domain: {domain}. Cookies found: {cookies_found}.'
+        ],
+        'cookie.scan.failed' => [
+            'timeline' => 'Cookie discovery scan failed for domain. Error: {error}.'
+        ],
+        'cookie.classification.review_required' => [
+            'timeline' => 'Cookie classification changed: {cookie_name} moved from {old_category} to {new_category}.'
+        ],
+        'cookie.consent.changed' => [
+            'timeline' => 'Data subject cookie consent preferences changed for {subject_email}.'
         ]
     ];
 

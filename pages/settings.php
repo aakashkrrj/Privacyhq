@@ -28,7 +28,11 @@ $roleId = $_SESSION['role_id'] ?? 0;
 <section class="mb-lg animate-in fade-in slide-in-from-top-4 duration-500">
     <div class="flex items-center gap-md p-md bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm">
         <div class="relative">
-            <img id="settingsAvatar" class="w-16 h-16 rounded-full object-cover border-2 border-primary" src="<?= htmlspecialchars($profileImage) ?>" alt="Avatar">
+            <?php 
+            $profileUrl = getProfileImageUrl($user['profile_image'] ?? null); 
+            $defaultAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80';
+            ?>
+            <img id="settingsAvatar" class="w-16 h-16 rounded-full object-cover border-2 border-primary" src="<?= htmlspecialchars($profileUrl) ?><?= ($profileUrl !== $defaultAvatar) ? '?t=' . time() : '' ?>" alt="Avatar" onerror="this.src='<?= $defaultAvatar ?>';">
             <div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-surface rounded-full"></div>
         </div>
         <div class="flex-grow">
@@ -276,17 +280,21 @@ function submitProfileUpdate(e) {
             document.getElementById('settingsFullName').textContent = firstName + ' ' + lastName;
             document.getElementById('settingsDesignation').textContent = designation;
             if (res.data && res.data.profile_image) {
-                document.getElementById('settingsAvatar').src = res.data.profile_image;
-                const headerAv = document.querySelector('header img') || document.querySelector('header span[data-icon="person"]');
-                if (headerAv) {
-                    if (headerAv.tagName === 'IMG') {
-                        headerAv.src = res.data.profile_image;
-                    } else {
-                        const img = document.createElement('img');
-                        img.className = "w-10 h-10 rounded-full object-cover border border-primary/20";
-                        img.src = res.data.profile_image;
-                        headerAv.parentNode.replaceChild(img, headerAv);
-                    }
+                const newImgUrl = res.data.profile_image + '?t=' + new Date().getTime();
+                document.getElementById('settingsAvatar').src = newImgUrl;
+                
+                const headerImg = document.getElementById('headerAvatarImg');
+                const headerIcon = document.getElementById('headerAvatarIcon');
+                
+                if (headerImg) {
+                    headerImg.src = newImgUrl;
+                } else if (headerIcon) {
+                    const img = document.createElement('img');
+                    img.id = "headerAvatarImg";
+                    img.className = "w-full h-full object-cover";
+                    img.src = newImgUrl;
+                    img.alt = "Profile";
+                    headerIcon.parentNode.replaceChild(img, headerIcon);
                 }
             }
         } else {
