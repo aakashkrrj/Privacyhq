@@ -25,8 +25,18 @@ class AssessmentService
 
         $id = $this->assessmentModel->create($processingActivityId, $templateId, $title, $assignedTo, $reviewerId, $priority, $dueDate, $creatorId);
         
-        // Write audit log
-        log_audit_event($this->pdo, 'Assessment', 'Create', $creatorId, $id, null, "Created assessment: $title");
+        // Dispatch workflow event
+        if (class_exists('\Backend\Services\WorkflowService')) {
+            \Backend\Services\WorkflowService::dispatch('assessment.assigned', [
+                'module' => 'Assessment',
+                'record_id' => $id,
+                'title' => $title,
+                'assigned_to' => $assignedTo,
+                'created_by' => $creatorId,
+                'priority' => $priority,
+                'due_date' => $dueDate
+            ]);
+        }
 
         return $id;
     }
@@ -119,8 +129,20 @@ class AssessmentService
         // Update status to 'Submitted'
         $this->assessmentModel->updateStatus($assessmentId, 'Submitted');
 
-        // Write audit log
-        log_audit_event($this->pdo, 'Assessment', 'Submit', $userId, $assessmentId, 'In Progress', 'Submitted');
+        // Dispatch workflow event
+        if (class_exists('\Backend\Services\WorkflowService')) {
+            \Backend\Services\WorkflowService::dispatch('assessment.submitted', [
+                'module' => 'Assessment',
+                'record_id' => $assessmentId,
+                'title' => $assessment['title'],
+                'reviewer_id' => $assessment['reviewer_id'],
+                'assigned_to' => $assessment['assigned_to'],
+                'priority' => $assessment['priority'],
+                'due_date' => $assessment['due_date'],
+                'old_status' => 'In Progress',
+                'new_status' => 'Submitted'
+            ]);
+        }
 
         return true;
     }
@@ -237,8 +259,19 @@ class AssessmentService
             ]);
         }
 
-        // Write audit log
-        log_audit_event($this->pdo, 'Assessment', 'Approve', $userId, $assessmentId, 'Under Review', 'Approved');
+        // Dispatch workflow event
+        if (class_exists('\Backend\Services\WorkflowService')) {
+            \Backend\Services\WorkflowService::dispatch('assessment.approved', [
+                'module' => 'Assessment',
+                'record_id' => $assessmentId,
+                'title' => $assessment['title'],
+                'assigned_to' => $assessment['assigned_to'],
+                'reviewer_id' => $assessment['reviewer_id'],
+                'reviewer_email' => $_SESSION['user_name'] ?? 'Reviewer',
+                'old_status' => 'Under Review',
+                'new_status' => 'Approved'
+            ]);
+        }
 
         return true;
     }
@@ -257,10 +290,27 @@ class AssessmentService
             throw new \Exception("Access Denied: You are not designated as reviewer for this assessment.");
         }
 
+        // Update status to 'Rejected'
         $this->assessmentModel->updateStatus($assessmentId, 'Rejected');
 
         if (!empty($noteText)) {
             $this->assessmentModel->addNote($assessmentId, $noteText, $userId);
+        }
+
+        // Dispatch workflow event
+        if (class_exists('\Backend\Services\WorkflowService')) {
+            \Backend\Services\WorkflowService::dispatch('assessment.rejected', [
+                'module' => 'Assessment',
+                'record_id' => $assessmentId,
+                'title' => $assessment['title'],
+                'assigned_to' => $assessment['assigned_to'],
+                'reviewer_id' => $assessment['reviewer_id'],
+                'reviewer_email' => $_SESSION['user_name'] ?? 'Reviewer',
+                'priority' => $assessment['priority'],
+                'due_date' => $assessment['due_date'],
+                'old_status' => 'Under Review',
+                'new_status' => 'Rejected'
+            ]);
         }
 
         // Write audit log

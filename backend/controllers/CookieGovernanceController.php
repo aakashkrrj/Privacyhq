@@ -13,9 +13,35 @@ class CookieGovernanceController extends BaseController {
     }
 
     public function index() {
+        $this->getDashboard();
+    }
+
+    public function getDashboard() {
         try {
             $data = $this->cookieService->getDashboard();
             ApiResponse::success('Success', $data);
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function listDomains() {
+        try {
+            $data = $this->cookieService->getDomains();
+            ApiResponse::success('Success', $data);
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function addDomain() {
+        try {
+            $domain = $_POST['domain_name'] ?? null;
+            $desc = $_POST['description'] ?? '';
+            $userId = $this->getUserId();
+
+            $domainId = $this->cookieService->addDomain($domain, $desc, $userId);
+            ApiResponse::success('Website domain registered successfully', ['domain_id' => $domainId]);
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
         }
@@ -31,8 +57,8 @@ class CookieGovernanceController extends BaseController {
             $provider = trim($_GET['provider'] ?? '');
             $sortBy = trim($_GET['sort_by'] ?? 'id');
             $sortOrder = trim($_GET['sort_order'] ?? 'DESC');
-            $page = (int)($_GET['p'] ?? 1) ?: 1;
-            $pageSize = (int)($_GET['limit'] ?? 10) ?: 10;
+            $page = (int)($_GET['p'] ?? ($_GET['page'] ?? 1)) ?: 1;
+            $pageSize = (int)($_GET['limit'] ?? ($_GET['page_size'] ?? 10)) ?: 10;
 
             $data = $this->cookieService->getCookies($search, $category, $partyType, $status, $riskLevel, $provider, $sortBy, $sortOrder, $page, $pageSize);
             ApiResponse::success('Success', $data);
@@ -123,6 +149,24 @@ class CookieGovernanceController extends BaseController {
         }
     }
 
+    public function updateClassification() {
+        try {
+            $cookieId = $_POST['cookie_id'] ?? null;
+            $category = $_POST['category'] ?? null;
+            $description = $_POST['description'] ?? '';
+            $userId = $this->getUserId();
+
+            if (empty($cookieId) || empty($category)) {
+                throw new \Exception("Cookie ID and Category classification are required.");
+            }
+
+            $this->cookieService->updateClassification($cookieId, $category, $description, $userId);
+            ApiResponse::success('Cookie classification updated successfully.');
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
     public function scanner() {
         try {
             $action = trim($_POST['action'] ?? ($_GET['action'] ?? 'status'));
@@ -138,6 +182,10 @@ class CookieGovernanceController extends BaseController {
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
         }
+    }
+
+    public function scan() {
+        $this->scanner();
     }
 
     public function banner() {
@@ -157,6 +205,14 @@ class CookieGovernanceController extends BaseController {
         }
     }
 
+    public function getBannerConfig() {
+        $this->banner();
+    }
+
+    public function saveBannerConfig() {
+        $this->banner();
+    }
+
     public function consent() {
         try {
             $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -174,6 +230,10 @@ class CookieGovernanceController extends BaseController {
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
         }
+    }
+
+    public function saveConsentPreferences() {
+        $this->consent();
     }
 
     public function export() {

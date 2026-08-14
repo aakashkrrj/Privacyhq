@@ -89,7 +89,7 @@ async function loadVendors() {
                                 </span>
                             </td>
                             <td class="px-lg py-md text-center">
-                                <button onclick="triggerDpiaForVendor(${v.id}, '${escapeHtml(v.vendor_name)}')" class="text-primary hover:underline">
+                                <button onclick="triggerDpiaForVendor(${v.id}, ${JSON.stringify(v.vendor_name).replace(/"/g, '&quot;')})" class="text-primary hover:underline">
                                     <span class="material-symbols-outlined align-middle">fact_check</span> Assess
                                 </button>
                             </td>
@@ -243,30 +243,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Onboard Header Button & Modal Toggles
     document.getElementById('btn-onboard-header')?.addEventListener('click', openVendorModal);
+    document.getElementById('btn-add-vendor')?.addEventListener('click', openVendorModal);
     document.getElementById('closeVendorModal')?.addEventListener('click', closeVendorModal);
     document.getElementById('cancelVendorModal')?.addEventListener('click', closeVendorModal);
 
     // Save Vendor AJAX Submit
-    document.getElementById('vendorForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const fd = new FormData(this);
-        fd.append('csrf_token', G_CSRF_TOKEN); // ensure token is added
-        
-        try {
-            const res = await fetch('backend/api/vendors/create.php', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data.success) {
-                alert(data.message || 'Vendor onboarded successfully!');
-                closeVendorModal();
-                loadVendors();
-                loadKpis();
+    const vendorForm = document.getElementById('vendorForm');
+    if (vendorForm) {
+        vendorForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('vendorForm submit fired');
+            
+            const fd = new FormData(this);
+            // Check if csrf_token already exists in FormData, if so, override or make sure it has G_CSRF_TOKEN
+            if (fd.has('csrf_token')) {
+                fd.set('csrf_token', G_CSRF_TOKEN);
             } else {
-                alert(data.message || 'Failed to onboard vendor.');
+                fd.append('csrf_token', G_CSRF_TOKEN);
             }
-        } catch (e) {
-            alert('Network error onboarding vendor.');
-        }
-    });
+            
+            console.log('Sending onboard vendor request...');
+            try {
+                const res = await fetch('backend/api/vendors/create.php', { method: 'POST', body: fd });
+                console.log('HTTP status received:', res.status);
+                
+                let data;
+                const text = await res.text();
+                try {
+                    data = JSON.parse(text);
+                } catch (jsonErr) {
+                    throw new Error('Invalid JSON response: ' + text);
+                }
+                
+                if (data.success || data.status === 'success') {
+                    alert(data.message || 'Vendor onboarded successfully!');
+                    closeVendorModal();
+                    loadVendors();
+                    loadKpis();
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to onboard vendor.'));
+                }
+            } catch (err) {
+                console.error('Submit error:', err);
+                alert('Request failed: ' + err.message);
+            }
+        });
+        console.log('vendorForm submit handler attached successfully');
+    } else {
+        console.error('vendorForm element not found');
+    }
 
     // Start Assessment Trigger
     document.getElementById('btn-start-assessment').addEventListener('click', openAssessmentModal);

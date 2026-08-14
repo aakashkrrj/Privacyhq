@@ -4,8 +4,13 @@ namespace Backend\Models;
 class CookieGovernance {
     private $pdo;
 
-    public function __construct(\PDO $pdo) {
-        $this->pdo = $pdo;
+    public function __construct(\PDO $pdo = null) {
+        if ($pdo) {
+            $this->pdo = $pdo;
+        } else {
+            global $pdo;
+            $this->pdo = $pdo;
+        }
     }
 
     // 1. Dashboard Metrics & Analytics
@@ -24,7 +29,7 @@ class CookieGovernance {
             FROM cookies
             WHERE deleted_at IS NULL
         ";
-        $counts = $this->pdo->query($sql)->fetch(\PDO::FETCH_ASSOC);
+        $counts = $this->pdo ? $this->pdo->query($sql)->fetch(\PDO::FETCH_ASSOC) : [];
 
         $total = (int)($counts['total_cookies'] ?? 0);
         $active = (int)($counts['active_count'] ?? 0);
@@ -37,7 +42,7 @@ class CookieGovernance {
             LEFT JOIN cookies ck ON ck.category_id = c.id AND ck.deleted_at IS NULL
             GROUP BY c.id, c.name
         ";
-        $catRows = $this->pdo->query($catSql)->fetchAll(\PDO::FETCH_ASSOC);
+        $catRows = $this->pdo ? $this->pdo->query($catSql)->fetchAll(\PDO::FETCH_ASSOC) : [];
 
         $categories = [
             'Necessary' => 0,
@@ -52,12 +57,15 @@ class CookieGovernance {
 
         // Recent Scan Summary
         $scanSql = "SELECT * FROM cookie_scans ORDER BY id DESC LIMIT 1";
-        $recentScan = $this->pdo->query($scanSql)->fetch(\PDO::FETCH_ASSOC) ?: [
-            'domain' => 'privacyhq.com',
-            'status' => 'completed',
-            'cookies_found' => $total,
-            'last_scan_at' => date('Y-m-d H:i:s')
-        ];
+        $recentScan = $this->pdo ? $this->pdo->query($scanSql)->fetch(\PDO::FETCH_ASSOC) : null;
+        if (!$recentScan) {
+            $recentScan = [
+                'domain' => 'privacyhq.com',
+                'status' => 'completed',
+                'cookies_found' => $total,
+                'last_scan_at' => date('Y-m-d H:i:s')
+            ];
+        }
 
         // Opt-In Rate from Consent Logs
         $consentSql = "
@@ -66,7 +74,7 @@ class CookieGovernance {
                 SUM(IF(consent_choice IN ('accept_all', 'custom'), 1, 0)) as opt_ins
             FROM cookie_consent_logs
         ";
-        $consentData = $this->pdo->query($consentSql)->fetch(\PDO::FETCH_ASSOC);
+        $consentData = $this->pdo ? $this->pdo->query($consentSql)->fetch(\PDO::FETCH_ASSOC) : [];
         $totalConsents = (int)($consentData['total_consents'] ?? 0);
         $optIns = (int)($consentData['opt_ins'] ?? 0);
         $optInRate = $totalConsents > 0 ? round(($optIns / $totalConsents) * 100, 1) . '%' : '100%';
@@ -79,7 +87,7 @@ class CookieGovernance {
             WHERE ck.deleted_at IS NULL
             ORDER BY ck.id DESC LIMIT 5
         ";
-        $recentCookies = $this->pdo->query($recentCookiesSql)->fetchAll(\PDO::FETCH_ASSOC);
+        $recentCookies = $this->pdo ? $this->pdo->query($recentCookiesSql)->fetchAll(\PDO::FETCH_ASSOC) : [];
 
         return [
             'metrics' => [
@@ -98,6 +106,45 @@ class CookieGovernance {
             ],
             'recent_scan' => $recentScan,
             'recent_cookies' => $recentCookies
+        ];
+    }
+
+    public function getPlaceholderDataset() {
+        return [
+            'metrics' => [
+                'total_cookies' => 148,
+                'uncategorized' => 8,
+                'opt_in_rate' => '82.4%',
+                'configured_banners' => '3 Domains'
+            ],
+            'categories' => [
+                'Necessary' => 42,
+                'Analytics' => 28,
+                'Preferences' => 18,
+                'Advertising' => 12
+            ],
+            'recent_scan' => [
+                'domain' => 'privacyhq.com',
+                'status' => 'Completed',
+                'cookies_found' => 148,
+                'last_scan' => 'Today 11:45 AM'
+            ],
+            'inventory' => [
+                [
+                    'name' => '_ga',
+                    'domain' => 'example.com',
+                    'category' => 'Analytics',
+                    'type' => 'First-Party',
+                    'duration' => '2 Years'
+                ],
+                [
+                    'name' => '_fbp',
+                    'domain' => 'example.com',
+                    'category' => 'Advertising',
+                    'type' => 'Third-Party',
+                    'duration' => '90 Days'
+                ]
+            ]
         ];
     }
 

@@ -3,7 +3,13 @@
 // Enterprise Cookie Governance, Scanner, Categories & Consent Center UI
 include_once __DIR__ . '/../includes/bottom-nav.php';
 
-$csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrfToken = htmlspecialchars($_SESSION['csrf_token']);
 ?>
 <div class="space-y-6 max-w-7xl mx-auto p-4 md:p-6">
     <!-- Header Section -->
@@ -21,6 +27,9 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
             </button>
             <button onclick="openBannerModal()" class="inline-flex items-center justify-center px-4 py-2 text-xs md:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm">
                 Consent Banner
+            </button>
+            <button onclick="openPreferenceCenterModal()" class="inline-flex items-center justify-center px-4 py-2 text-xs md:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm">
+                Preference Center
             </button>
             <div class="relative group">
                 <button class="inline-flex items-center justify-center px-3 py-2 text-xs md:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm">

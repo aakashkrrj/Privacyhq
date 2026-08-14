@@ -4,10 +4,20 @@ namespace Backend\Services;
 class CookieGovernanceService {
     private $pdo;
     private $cookieModel;
+    private $consentService;
 
-    public function __construct(\PDO $pdo, $cookieModel) {
+    public function __construct(\PDO $pdo, $cookieModel = null, $consentService = null) {
         $this->pdo = $pdo;
-        $this->cookieModel = $cookieModel;
+        if ($cookieModel instanceof \Backend\Models\CookieGovernance) {
+            $this->cookieModel = $cookieModel;
+            $this->consentService = $consentService;
+        } else if ($cookieModel instanceof \Backend\Services\ConsentService) {
+            $this->consentService = $cookieModel;
+            $this->cookieModel = new \Backend\Models\CookieGovernance($pdo);
+        } else {
+            $this->cookieModel = new \Backend\Models\CookieGovernance($pdo);
+            $this->consentService = $consentService;
+        }
     }
 
     public function getDashboard() {
@@ -313,5 +323,77 @@ class CookieGovernanceService {
             echo '</tbody></table><script>window.print();</script></body></html>';
             exit;
         }
+    }
+
+    // Domain & Scan Extensions
+    public function addDomain($domainName, $description, $userId = 1) {
+        if (empty($domainName)) {
+            throw new \Exception("Domain name cannot be empty.");
+        }
+        $domainName = strtolower(trim(parse_url($domainName, PHP_URL_HOST) ?: $domainName));
+
+        try {
+            $this->pdo->beginTransaction();
+
+            $stmt = $this->pdo->prepare("INSERT INTO cookie_domains (domain_name, description) VALUES (?, ?)");
+            $stmt->execute([$domainName, $description]);
+            $domainId = $this->pdo->lastInsertId();
+
+            $stmtBanner = $this->pdo->prepare("
+                INSERT INTO cookie_banner_configs (domain, banner_title, banner_text) 
+                VALUES (?, 'Cookie Consent Preferences', 'We use cookies to enhance your experience. Configure your preferences below.')
+            ");
+            $stmtBanner->execute([$domainName]);
+
+            if (function_exists('log_audit_event')) {
+                log_audit_event($this->pdo, 'Cookie Governance', 'Add Website', $userId, $domainId, null, json_encode($domainName));
+            }
+
+            $this->pdo->commit();
+            return $domainId;
+        } catch (\Exception $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    public function getDomains() {
+        try {
+            $stmt = $this->pdo->query("
+                SELECT d.*, 
+                       (SELECT COUNT(*) FROM cookies WHERE domain = d.domain_name AND deleted_at IS NULL) as cookie_count,
+                       (SELECT status FROM cookie_scans WHERE domain = d.domain_name ORDER BY id DESC LIMIT 1) as last_scan_status,
+                       (SELECT updated_at FROM cookie_scans WHERE domain = d.domain_name ORDER BY id DESC LIMIT 1) as last_scan_time
+                FROM cookie_domains d
+                ORDER BY d.domain_name ASC
+            ");
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    public function updateClassification($cookieId, $category, $description, $userId = 1) {
+        $existing = $this->cookieModel->getCookieById($cookieId);
+        if (!$existing) {
+            throw new \Exception("Cookie record not found.");
+        }
+
+        $stmtCat = $this->pdo->prepare("SELECT id FROM cookie_categories WHERE name = ? LIMIT 1");
+        $stmtCat->execute([$category]);
+        $catId = $stmtCat->fetchColumn() ?: 5;
+
+        $stmtUpdate = $this->pdo->prepare("UPDATE cookies SET category_id = ?, purpose = ? WHERE id = ?");
+        $stmtUpdate->execute([$catId, $description, $cookieId]);
+
+        if (function_exists('log_audit_event')) {
+            log_audit_event($this->pdo, 'Cookie Governance', 'Classification Changed', $userId, $cookieId, json_encode($existing['category_name']), json_encode($category));
+        }
+
+        return true;
+    }
+
+    public function saveConsentPreferences($email, $categories, $userId = 1, $ipAddress = null, $userAgent = null) {
+        return $this->logConsent('custom', $categories, $userId, $ipAddress, $userAgent);
     }
 }

@@ -21,8 +21,8 @@ class VendorController extends BaseController {
             $dpaStatus = trim($_POST['dpa_status'] ?? '');
             $riskLevel = trim($_POST['risk_level'] ?? '');
 
-            $this->vendorService->createVendor($name, $category, $dpaStatus, $riskLevel, $this->getUserId());
-            ApiResponse::success('Vendor added successfully');
+            $vendorId = $this->vendorService->createVendor($name, $category, $dpaStatus, $riskLevel, $this->getUserId());
+            ApiResponse::success('Vendor created successfully', ['vendor_id' => $vendorId]);
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
         }

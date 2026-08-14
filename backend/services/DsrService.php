@@ -52,6 +52,19 @@ class DsrService {
             $this->createNotification($userId, "New DSR Request Created ({$request['request_id_code']})", "A new {$requestType} request was submitted for {$email}.", 'info');
 
             $this->pdo->commit();
+
+            // Dispatch workflow event
+            if (class_exists('\Backend\Services\WorkflowService')) {
+                \Backend\Services\WorkflowService::dispatch('dsr.created', [
+                    'module' => 'DSR',
+                    'record_id' => $requestId,
+                    'subject_email' => $email,
+                    'assigned_to' => 11, // DPO user ID
+                    'created_by' => $userId,
+                    'priority' => $priority
+                ]);
+            }
+
             return $requestId;
         } catch (\Exception $e) {
             $this->pdo->rollBack();
@@ -129,6 +142,34 @@ class DsrService {
             }
 
             $this->pdo->commit();
+
+            // Dispatch workflow events based on new status
+            if (class_exists('\Backend\Services\WorkflowService')) {
+                if ($newStatus === 'Verified') {
+                    \Backend\Services\WorkflowService::dispatch('dsr.verified', [
+                        'module' => 'DSR',
+                        'record_id' => $id,
+                        'subject_email' => $existing['subject_email'] ?? 'Subject',
+                        'assigned_to' => 11,
+                        'created_by' => $userId,
+                        'priority' => $existing['priority'] ?? 'Medium',
+                        'old_status' => $existing['status'],
+                        'new_status' => $newStatus
+                    ]);
+                } elseif ($newStatus === 'Completed') {
+                    \Backend\Services\WorkflowService::dispatch('dsr.completed', [
+                        'module' => 'DSR',
+                        'record_id' => $id,
+                        'subject_email' => $existing['subject_email'] ?? 'Subject',
+                        'assigned_to' => 11,
+                        'created_by' => $userId,
+                        'priority' => $existing['priority'] ?? 'Medium',
+                        'old_status' => $existing['status'],
+                        'new_status' => $newStatus
+                    ]);
+                }
+            }
+
             return true;
         } catch (\Exception $e) {
             $this->pdo->rollBack();

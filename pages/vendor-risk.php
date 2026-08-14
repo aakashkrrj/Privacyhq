@@ -1,3 +1,9 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$csrfToken = $_SESSION['csrf_token'] ?? '';
+?>
 <!-- ===========================================================
     VENDOR RISK MANAGEMENT
     PART 1 : PAGE HEADER + EXECUTIVE DASHBOARD

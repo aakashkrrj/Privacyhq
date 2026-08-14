@@ -439,6 +439,143 @@ CREATE TABLE `assessment_documents` (
   FOREIGN KEY (`assessment_id`) REFERENCES `privacy_assessments` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Table structure for table `tasks`
+--
+DROP TABLE IF EXISTS `tasks`;
+CREATE TABLE `tasks` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `module` varchar(50) NOT NULL,
+  `record_id` bigint(20) unsigned NOT NULL,
+  `task_type` varchar(50) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `assigned_to` bigint(20) unsigned NOT NULL,
+  `assigned_by` bigint(20) unsigned NOT NULL,
+  `priority` enum('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
+  `status` enum('Pending','In Progress','Completed','Escalated','Cancelled') NOT NULL DEFAULT 'Pending',
+  `parent_task_id` bigint(20) unsigned DEFAULT NULL,
+  `due_date` date DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `notifications`
+--
+DROP TABLE IF EXISTS `notifications`;
+CREATE TABLE `notifications` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `module` varchar(50) NOT NULL,
+  `record_id` bigint(20) unsigned NOT NULL,
+  `category` enum('Assignment','Reminder','Approval','Escalation','Comment','Mention','Deadline') NOT NULL DEFAULT 'Assignment',
+  `priority` enum('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
+  `title` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `activity_timeline`
+--
+DROP TABLE IF EXISTS `activity_timeline`;
+CREATE TABLE `activity_timeline` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `module` varchar(50) NOT NULL,
+  `record_id` bigint(20) unsigned NOT NULL,
+  `performed_by` bigint(20) unsigned NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `old_status` varchar(50) DEFAULT NULL,
+  `new_status` varchar(50) DEFAULT NULL,
+  `metadata_json` longtext DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `cookie_domains`
+--
+DROP TABLE IF EXISTS `cookie_domains`;
+CREATE TABLE `cookie_domains` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `domain_name` varchar(255) NOT NULL UNIQUE,
+  `description` text,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `cookie_scan_runs`
+--
+DROP TABLE IF EXISTS `cookie_scan_runs`;
+CREATE TABLE `cookie_scan_runs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `domain_id` int(11) NOT NULL,
+  `status` enum('Pending','Running','Completed','Failed') DEFAULT 'Pending',
+  `error_message` text,
+  `results_summary` json,
+  `started_at` timestamp NULL DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`domain_id`) REFERENCES `cookie_domains` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `cookie_inventory`
+--
+DROP TABLE IF EXISTS `cookie_inventory`;
+CREATE TABLE `cookie_inventory` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `domain_id` int(11) NOT NULL,
+  `scan_run_id` int(11) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  `value_pattern` varchar(255) DEFAULT NULL,
+  `domain_source` varchar(255) DEFAULT NULL,
+  `category` enum('Essential','Functional','Performance','Analytics','Advertising') DEFAULT 'Essential',
+  `party_type` enum('First-Party','Third-Party') DEFAULT 'First-Party',
+  `technology_type` enum('cookie','pixel','tag','tracking technology') DEFAULT 'cookie',
+  `description` text,
+  `expiry` varchar(100) DEFAULT NULL,
+  `status` enum('active','inactive') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`domain_id`) REFERENCES `cookie_domains` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`scan_run_id`) REFERENCES `cookie_scan_runs` (`id`) ON DELETE SET NULL,
+  INDEX (`domain_id`),
+  INDEX (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `cookie_banner_configs`
+--
+DROP TABLE IF EXISTS `cookie_banner_configs`;
+CREATE TABLE `cookie_banner_configs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `domain_id` int(11) NOT NULL UNIQUE,
+  `banner_title` varchar(255) DEFAULT 'Cookie Consent Preferences',
+  `banner_text` text,
+  `language` varchar(50) DEFAULT 'en',
+  `categories_presented` varchar(255) DEFAULT 'Essential,Functional,Performance,Analytics,Advertising',
+  `accept_all_text` varchar(100) DEFAULT 'Accept All',
+  `reject_all_text` varchar(100) DEFAULT 'Reject Non-Essential',
+  `preferences_text` varchar(100) DEFAULT 'Manage Preferences',
+  `branding_color` varchar(50) DEFAULT '#005faa',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`domain_id`) REFERENCES `cookie_domains` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -450,3 +587,25 @@ CREATE TABLE `assessment_documents` (
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2026-07-29 15:44:02
+
+
+-- Seed Cookie Governance permissions
+INSERT INTO permissions (permission_name, module, description) VALUES 
+('view_cookie_governance', 'Cookie Governance', 'View cookie governance dashboard'),
+('manage_cookie_sources', 'Cookie Governance', 'Manage cookie websites and domains'),
+('run_cookie_scans', 'Cookie Governance', 'Execute cookie scans on registered domains'),
+('classify_cookies', 'Cookie Governance', 'Adjust category classification for cookies'),
+('manage_cookie_banner', 'Cookie Governance', 'Configure cookie preference banner'),
+('view_cookie_reports', 'Cookie Governance', 'Export and view cookie reports')
+ON DUPLICATE KEY UPDATE permission_name=VALUES(permission_name);
+
+-- Grant to Super Admin (1), DPO (2), Assessor (3)
+INSERT INTO role_permissions (role_id, permission_id) 
+SELECT 1, id FROM permissions WHERE permission_name IN ('view_cookie_governance','manage_cookie_sources','run_cookie_scans','classify_cookies','manage_cookie_banner','view_cookie_reports')
+ON DUPLICATE KEY UPDATE role_id=role_id;
+INSERT INTO role_permissions (role_id, permission_id) 
+SELECT 2, id FROM permissions WHERE permission_name IN ('view_cookie_governance','manage_cookie_sources','run_cookie_scans','classify_cookies','manage_cookie_banner','view_cookie_reports')
+ON DUPLICATE KEY UPDATE role_id=role_id;
+INSERT INTO role_permissions (role_id, permission_id) 
+SELECT 3, id FROM permissions WHERE permission_name IN ('view_cookie_governance','manage_cookie_sources','run_cookie_scans','classify_cookies','manage_cookie_banner','view_cookie_reports')
+ON DUPLICATE KEY UPDATE role_id=role_id;

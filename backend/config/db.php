@@ -4,10 +4,14 @@ $host = "127.0.0.1";
 $user = "root";
 $pass = "";
 $dbname = "privacyhq";
+
 $port = 3306;
-
-$conn = new mysqli($host, $user, $pass, $dbname, $port);
-
+mysqli_report(MYSQLI_REPORT_OFF);
+$conn = @new mysqli($host, $user, $pass, $dbname, 3306);
+if ($conn->connect_error) {
+    $conn = @new mysqli($host, $user, $pass, $dbname, 3307);
+    $port = 3307;
+}
 
 try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass);
@@ -178,4 +182,25 @@ if (!function_exists('require_ownership_or_permission')) {
     }
 }
 
+if (!function_exists('getProfileImageUrl')) {
+    function getProfileImageUrl($dbPath) {
+        $defaultAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80';
+        if (empty($dbPath)) {
+            return $defaultAvatar;
+        }
+        // Normalize any absolute Windows paths to relative uploads paths if present
+        $cleanPath = str_replace('\\', '/', $dbPath);
+        if (preg_match('/uploads\/(.+)/i', $cleanPath, $matches)) {
+            $relativePath = 'uploads/' . $matches[1];
+        } else {
+            $relativePath = $cleanPath;
+        }
+        
+        $fullLocalPath = 'd:/New folder/governance/' . $relativePath;
+        if (file_exists($fullLocalPath) && is_readable($fullLocalPath)) {
+            return $relativePath;
+        }
+        return $defaultAvatar;
+    }
+}
 ?>

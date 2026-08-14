@@ -25,6 +25,18 @@ class PolicyService {
             }
 
             $this->pdo->commit();
+
+            // Dispatch workflow event
+            if (class_exists('\Backend\Services\WorkflowService')) {
+                \Backend\Services\WorkflowService::dispatch('policy.created', [
+                    'module' => 'Policy',
+                    'record_id' => $id,
+                    'title' => $name,
+                    'approver_id' => 11, // DPO user ID
+                    'created_by' => $userId
+                ]);
+            }
+
             return $id;
         } catch (\Exception $e) {
             $this->pdo->rollBack();

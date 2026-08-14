@@ -34,6 +34,19 @@ class RiskRegisterService {
             }
 
             $this->pdo->commit();
+
+            // Dispatch workflow event
+            if (class_exists('\Backend\Services\WorkflowService')) {
+                \Backend\Services\WorkflowService::dispatch('risk.created', [
+                    'module' => 'Risk',
+                    'record_id' => $riskId,
+                    'title' => $title,
+                    'assigned_to' => 11, // DPO user ID
+                    'created_by' => $userId,
+                    'priority' => 'High'
+                ]);
+            }
+
             return $riskId;
         } catch (\Exception $e) {
             $this->pdo->rollBack();
