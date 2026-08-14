@@ -179,5 +179,16 @@ if (session_status() === PHP_SESSION_NONE) {
             </a>
         <?php endif; ?>
 
+        <!-- Data Discovery -->
+        <?php if (has_permission('view_dashboard')): ?>
+            <a href="index.php?page=data-discovery" class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition">
+                <span class="material-symbols-outlined text-primary text-3xl">travel_explore</span>
+                <div>
+                    <h3 class="font-semibold text-lg text-on-surface">Data Discovery</h3>
+                    <p class="text-sm text-on-surface-variant">Discover, classify, and monitor personal and sensitive data.</p>
+                </div>
+            </a>
+        <?php endif; ?>
+
     </div>
 </div>
