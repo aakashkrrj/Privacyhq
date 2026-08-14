@@ -16,6 +16,8 @@ $query = "
     SELECT 
         pa.id, 
         pa.title, 
+        pa.assigned_to,
+        pa.reviewer_id,
         COALESCE(pa.priority, 'Medium') AS priority,
         pa.due_date,
         u_ass.email AS assessor_email,
@@ -51,7 +53,8 @@ $total_assessments = count($assessment_list);
 $under_review_count = 0;
 $high_risk_count = 0;
 foreach ($assessment_list as $row) {
-    if (($row['status'] ?? '') === 'Under Review' || ($row['status'] ?? '') === 'Submitted') {
+    $st = $row['status'] ?? '';
+    if ($st === 'Under Review' || $st === 'Submitted' || $st === 'Pending Review' || $st === 'In Progress') {
         $under_review_count++;
     }
     if (($row['risk_level'] ?? '') === 'High') {
@@ -90,20 +93,21 @@ foreach ($assessment_list as $row) {
 
     <!-- Active Assessments Table -->
     <div class="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
-        <div class="p-md border-b border-outline-variant bg-surface-container-low">
+        <div class="p-md border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
             <h2 class="font-semibold text-on-surface text-title-md">All Privacy Assessments</h2>
+            <span class="text-caption text-on-surface-variant">Click table headers to sort</span>
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table id="assessmentTable" class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-surface-container-low text-on-surface-variant font-semibold text-label-md uppercase border-b border-outline-variant">
-                        <th class="p-md">ID</th>
-                        <th class="p-md">Title</th>
-                        <th class="p-md">Assessor</th>
-                        <th class="p-md">Reviewer</th>
-                        <th class="p-md">Due Date</th>
-                        <th class="p-md">Priority</th>
-                        <th class="p-md">Status</th>
+                    <tr class="bg-surface-container-low text-on-surface-variant font-semibold text-label-md uppercase border-b border-outline-variant select-none">
+                        <th class="p-md cursor-pointer hover:bg-surface-container-high" onclick="sortAssessmentTable(0)">ID ↕</th>
+                        <th class="p-md cursor-pointer hover:bg-surface-container-high" onclick="sortAssessmentTable(1)">Title ↕</th>
+                        <th class="p-md cursor-pointer hover:bg-surface-container-high" onclick="sortAssessmentTable(2)">Assessor ↕</th>
+                        <th class="p-md cursor-pointer hover:bg-surface-container-high" onclick="sortAssessmentTable(3)">Reviewer ↕</th>
+                        <th class="p-md cursor-pointer hover:bg-surface-container-high" onclick="sortAssessmentTable(4)">Due Date ↕</th>
+                        <th class="p-md cursor-pointer hover:bg-surface-container-high" onclick="sortAssessmentTable(5)">Priority ↕</th>
+                        <th class="p-md cursor-pointer hover:bg-surface-container-high" onclick="sortAssessmentTable(6)">Status ↕</th>
                         <th class="p-md text-right">Actions</th>
                     </tr>
                 </thead>
@@ -142,7 +146,7 @@ foreach ($assessment_list as $row) {
                                     $statusVal = $item['status'] ?? 'Draft';
                                     $statusClass = match($statusVal) {
                                         'Approved' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                        'Submitted', 'Under Review' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                        'Submitted', 'Under Review', 'Pending Review', 'In Progress' => 'bg-blue-50 text-blue-700 border-blue-200',
                                         'Rejected' => 'bg-red-50 text-red-700 border-red-200',
                                         default => 'bg-surface-container-low text-on-surface-variant border-outline-variant',
                                     };
@@ -151,7 +155,7 @@ foreach ($assessment_list as $row) {
                                         <?= htmlspecialchars($statusVal) ?>
                                     </span>
                                 </td>
-                                <td class="p-md text-right space-x-base">
+                                <td class="p-md text-right space-x-base whitespace-nowrap">
                                     <?php
                                     $currentUserId = $_SESSION['user_id'] ?? 1;
                                     $currentUserRole = $_SESSION['role_id'] ?? 1;
@@ -159,10 +163,14 @@ foreach ($assessment_list as $row) {
                                     <?php if ($statusVal !== 'Approved'): ?>
                                         <a href="index.php?page=perform-assessment&id=<?= $item['id'] ?>" class="text-primary hover:underline font-semibold" title="Fill Answers">Perform</a>
                                     <?php endif; ?>
-                                    <?php if (in_array($statusVal, ['Submitted', 'Under Review']) && ($currentUserRole == 1 || ($item['reviewer_email'] ?? '') === ($_SESSION['user_email'] ?? ''))): ?>
+                                    <?php if (in_array($statusVal, ['Submitted', 'Under Review', 'Pending Review']) && ($currentUserRole == 1 || ($item['reviewer_email'] ?? '') === ($_SESSION['user_email'] ?? ''))): ?>
                                         <span class="text-outline">|</span>
                                         <a href="index.php?page=review-assessment&id=<?= $item['id'] ?>" class="text-amber-600 hover:underline font-semibold" title="Review Submission">Review</a>
                                     <?php endif; ?>
+                                    <span class="text-outline">|</span>
+                                    <button type="button" onclick="editAssessment(<?= $item['id'] ?>); return false;" class="text-indigo-600 hover:underline font-semibold">Edit</button>
+                                    <span class="text-outline">|</span>
+                                    <button type="button" onclick="deleteAssessment(<?= $item['id'] ?>); return false;" class="text-red-600 hover:underline font-semibold">Delete</button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -173,7 +181,7 @@ foreach ($assessment_list as $row) {
     </div>
 </div>
 
-<!-- Modal: New Assessment Creation -->
+<!-- Modal 1: New Assessment Creation -->
 <div id="assessmentModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-surface shadow-xl rounded-xl w-full max-w-md overflow-hidden border border-outline-variant">
         <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
@@ -225,4 +233,251 @@ foreach ($assessment_list as $row) {
     </div>
 </div>
 
-<script src="assets/js/assessments.js"></script>
+<!-- Modal 2: Edit Assessment Details -->
+<div id="editAssessmentModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-surface shadow-xl rounded-xl w-full max-w-md overflow-hidden border border-outline-variant">
+        <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+            <h3 class="font-bold text-on-surface text-title-md">Edit Assessment Details</h3>
+            <button onclick="closeEditAssessmentModal()" class="text-on-surface-variant hover:text-on-surface text-xl font-bold">&times;</button>
+        </div>
+        <form id="editAssessmentForm" class="p-md space-y-md">
+            <input type="hidden" name="id" id="edit_id">
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="edit_title">Assessment Title</label>
+                <input type="text" name="title" id="edit_title" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="edit_assigned_to">Assign Assessor</label>
+                <select name="assigned_to" id="edit_assigned_to" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                    <option value="">Select Assessor...</option>
+                    <?php foreach ($allUsers as $u): ?>
+                        <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['first_name'] ? $u['first_name'] . ' ' . $u['last_name'] . ' (' . $u['email'] . ')' : $u['email']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="edit_reviewer_id">Assign Reviewer</label>
+                <select name="reviewer_id" id="edit_reviewer_id" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                    <option value="">Select Reviewer...</option>
+                    <?php foreach ($allUsers as $u): ?>
+                        <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['first_name'] ? $u['first_name'] . ' ' . $u['last_name'] . ' (' . $u['email'] . ')' : $u['email']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-sm">
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="edit_priority">Priority</label>
+                    <select name="priority" id="edit_priority" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="edit_due_date">Due Date</label>
+                    <input type="date" name="due_date" id="edit_due_date" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                </div>
+            </div>
+            <div class="flex justify-end gap-sm pt-2">
+                <button type="button" onclick="closeEditAssessmentModal()" class="px-md py-2 text-body-md text-on-surface-variant border border-outline-variant rounded-lg hover:bg-surface-container-low">Cancel</button>
+                <button type="submit" class="px-md py-2 text-body-md text-white bg-primary rounded-lg hover:opacity-90">Update DPIA</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function() {
+    window.openAssessmentModal = function() {
+        const form = document.getElementById('assessmentForm');
+        if (form) form.reset();
+        const modal = document.getElementById('assessmentModal');
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    window.closeAssessmentModal = function() {
+        const modal = document.getElementById('assessmentModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.closeEditAssessmentModal = function() {
+        const modal = document.getElementById('editAssessmentModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.populateEditModal = function(item) {
+        if (!item) return;
+        const editId = document.getElementById('edit_id');
+        if (editId) editId.value = item.id || '';
+
+        const editTitle = document.getElementById('edit_title');
+        if (editTitle) editTitle.value = item.title || '';
+
+        const assignedSelect = document.getElementById('edit_assigned_to');
+        if (assignedSelect) assignedSelect.value = item.assigned_to || '';
+
+        const reviewerSelect = document.getElementById('edit_reviewer_id');
+        if (reviewerSelect) reviewerSelect.value = item.reviewer_id || '';
+
+        const editPriority = document.getElementById('edit_priority');
+        if (editPriority) editPriority.value = item.priority || 'Medium';
+
+        const editDueDate = document.getElementById('edit_due_date');
+        if (editDueDate) editDueDate.value = item.due_date || '';
+
+        const modal = document.getElementById('editAssessmentModal');
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    window.editAssessment = function(id) {
+        if (!id) return;
+        fetch('backend/api/assessment/get.php?id=' + encodeURIComponent(id))
+            .then(response => {
+                if (!response.ok) throw new Error('HTTP error ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success' || data.success) {
+                    const item = data.data ? (data.data.assessment || data.data) : data;
+                    window.populateEditModal(item);
+                } else {
+                    alert('Error loading assessment details: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                console.error('Failed to fetch assessment details:', err);
+                alert('Failed to load assessment details.');
+            });
+    };
+
+    window.openEditAssessmentModal = function(data) {
+        if (typeof data === 'number' || (typeof data === 'string' && !data.trim().startsWith('{'))) {
+            window.editAssessment(data);
+            return;
+        }
+
+        let item = data;
+        if (typeof data === 'string') {
+            try {
+                item = JSON.parse(data);
+            } catch (e) {
+                console.error('Invalid JSON passed to openEditAssessmentModal:', e);
+                return;
+            }
+        }
+        window.populateEditModal(item);
+    };
+
+    window.deleteAssessment = function(id) {
+        if (!id) return;
+        if (!confirm('Are you sure you want to delete this DPIA assessment?')) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('id', id);
+
+        fetch('backend/api/assessment/delete.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('HTTP error ' + response.status);
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success' || data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting assessment: ' + (data.message || 'Action failed'));
+            }
+        })
+        .catch(err => {
+            console.error('Delete request failed:', err);
+            alert('Failed to delete assessment. System error.');
+        });
+    };
+
+    let sortDirections = {};
+    window.sortAssessmentTable = function(columnIndex) {
+        const table = document.getElementById('assessmentTable');
+        if (!table) return;
+
+        const tbody = table.querySelector('tbody');
+        if (!tbody) return;
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        if (rows.length === 1 && rows[0].cells.length <= 1) return;
+
+        const dir = sortDirections[columnIndex] === 'asc' ? 'desc' : 'asc';
+        sortDirections[columnIndex] = dir;
+
+        rows.sort((a, b) => {
+            const cellA = a.cells[columnIndex]?.textContent.trim().toLowerCase() || '';
+            const cellB = b.cells[columnIndex]?.textContent.trim().toLowerCase() || '';
+
+            if (!isNaN(cellA) && !isNaN(cellB) && cellA !== '' && cellB !== '') {
+                return dir === 'asc' ? Number(cellA) - Number(cellB) : Number(cellB) - Number(cellA);
+            }
+            return dir === 'asc' ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+    };
+})();
+
+document.addEventListener('DOMContentLoaded', function() {
+    const createForm = document.getElementById('assessmentForm');
+    if (createForm) {
+        createForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch('backend/api/assessment/create.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success' || data.success) {
+                    window.closeAssessmentModal();
+                    location.reload();
+                } else {
+                    alert('Error creating assessment: ' + (data.message || 'Action failed'));
+                }
+            })
+            .catch(err => {
+                console.error('Create request failed:', err);
+                alert('Failed to save assessment. System error.');
+            });
+        });
+    }
+
+    const editForm = document.getElementById('editAssessmentForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch('backend/api/assessment/update.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success' || data.success) {
+                    window.closeEditAssessmentModal();
+                    location.reload();
+                } else {
+                    alert('Error updating assessment: ' + (data.message || 'Action failed'));
+                }
+            })
+            .catch(err => {
+                console.error('Update request failed:', err);
+                alert('Failed to update assessment. System error.');
+            });
+        });
+    }
+});
+</script>
+<script src="assets/js/assessments.js?v=<?= time() ?>"></script>

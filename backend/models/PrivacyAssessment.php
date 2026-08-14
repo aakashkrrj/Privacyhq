@@ -124,8 +124,8 @@ class PrivacyAssessment
                 q.help_text,
                 q.placeholder,
                 q.options_json,
-                q.weight_yes,
-                q.weight_no,
+                COALESCE(q.weight_yes, 0) AS weight_yes,
+                COALESCE(q.weight_no, 0) AS weight_no,
                 q.score_options_json,
                 q.risk_category_id
             FROM assessment_sections s
@@ -135,6 +135,28 @@ class PrivacyAssessment
         ");
         $stmt->execute([$templateId]);
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Update full assessment details
+     */
+    public function update($id, $title, $assignedTo, $reviewerId, $priority, $dueDate)
+    {
+        $stmt = $this->pdo->prepare("
+            UPDATE privacy_assessments 
+            SET title = ?, assigned_to = ?, reviewer_id = ?, priority = ?, due_date = ?, updated_at = NOW()
+            WHERE id = ? AND deleted_at IS NULL
+        ");
+        return $stmt->execute([$title, $assignedTo, $reviewerId, $priority, $dueDate, $id]);
+    }
+
+    /**
+     * Soft delete assessment
+     */
+    public function delete($id)
+    {
+        $stmt = $this->pdo->prepare("UPDATE privacy_assessments SET deleted_at = NOW() WHERE id = ?");
+        return $stmt->execute([$id]);
     }
 
     /**

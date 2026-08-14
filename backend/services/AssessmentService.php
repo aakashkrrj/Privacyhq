@@ -41,6 +41,40 @@ class AssessmentService
         return $id;
     }
 
+    public function updateAssessment($id, $title, $assignedTo, $reviewerId, $priority, $dueDate, $updaterId)
+    {
+        if (empty($id) || empty($title)) {
+            throw new \Exception("Assessment ID and Title are required.");
+        }
+        $existing = $this->assessmentModel->getById($id);
+        if (!$existing) {
+            throw new \Exception("Assessment not found.");
+        }
+
+        $res = $this->assessmentModel->update($id, $title, $assignedTo, $reviewerId, $priority, $dueDate);
+        if (function_exists('log_audit_event')) {
+            log_audit_event($this->pdo, 'Assessment', 'Update', $updaterId, $id, json_encode(['title' => $existing['title']]), json_encode(['title' => $title]));
+        }
+        return $res;
+    }
+
+    public function deleteAssessment($id, $updaterId)
+    {
+        if (empty($id)) {
+            throw new \Exception("Assessment ID is required.");
+        }
+        $existing = $this->assessmentModel->getById($id);
+        if (!$existing) {
+            throw new \Exception("Assessment not found.");
+        }
+
+        $res = $this->assessmentModel->delete($id);
+        if (function_exists('log_audit_event')) {
+            log_audit_event($this->pdo, 'Assessment', 'Delete', $updaterId, $id, json_encode(['title' => $existing['title']]), null);
+        }
+        return $res;
+    }
+
     /**
      * Get list of assessments with record-level security checks
      */

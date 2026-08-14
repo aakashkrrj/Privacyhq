@@ -50,6 +50,50 @@ class AssessmentController extends BaseController
     }
 
     /**
+     * Update assessment details
+     */
+    public function update()
+    {
+        $this->checkPermission('manage_assessments');
+        try {
+            $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT) ?: (int)($_POST['id'] ?? 0);
+            $title = trim($_POST['title'] ?? '');
+            $assignedTo = filter_input(INPUT_POST, 'assigned_to', FILTER_VALIDATE_INT) ?: ((int)($_POST['assigned_to'] ?? 0) ?: null);
+            $reviewerId = filter_input(INPUT_POST, 'reviewer_id', FILTER_VALIDATE_INT) ?: ((int)($_POST['reviewer_id'] ?? 0) ?: null);
+            $priority = trim($_POST['priority'] ?? 'Medium');
+            $dueDate = trim($_POST['due_date'] ?? '');
+
+            if (!$id) {
+                throw new \Exception("Invalid Assessment ID.");
+            }
+
+            $this->assessmentService->updateAssessment($id, $title, $assignedTo, $reviewerId, $priority, $dueDate, $this->getUserId());
+            ApiResponse::success('Assessment updated successfully!');
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    /**
+     * Delete assessment (soft delete)
+     */
+    public function delete()
+    {
+        $this->checkPermission('manage_assessments');
+        try {
+            $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT) ?: (int)($_POST['id'] ?? 0);
+            if (!$id) {
+                throw new \Exception("Invalid Assessment ID.");
+            }
+
+            $this->assessmentService->deleteAssessment($id, $this->getUserId());
+            ApiResponse::success('Assessment deleted successfully!');
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    /**
      * List assessments for logged-in user
      */
     public function listAssessments()
@@ -76,7 +120,7 @@ class AssessmentController extends BaseController
     {
         $this->checkPermission('view_dashboard');
         try {
-            $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+            $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: (int)($_GET['id'] ?? 0);
             if (!$id) {
                 throw new \Exception("Invalid assessment ID.");
             }
