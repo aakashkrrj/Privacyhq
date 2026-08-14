@@ -1,96 +1,73 @@
 <?php
-// pages/vendor-management.php
-// Pure Frontend View - NO SQL LOGIC
-include_once __DIR__ . '/../includes/bottom-nav.php';
+// governance/pages/vendor-management.php
+require_once __DIR__ . '/../includes/db.php';
 
-// Session variables for JS
+// Authenticated check
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$userId = $_SESSION['user_id'] ?? 0;
+if (!$userId) {
+    header('Location: login.php');
+    exit;
+}
+
 $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
 ?>
-<div class="p-6 max-w-7xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
+
+<div class="space-y-lg max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-md">
         <div>
-            <h2 class="text-3xl font-bold text-on-surface">Vendor Risk Management</h2>
-            <p class="text-on-surface-variant mt-1">Manage and assess third-party vendor risks</p>
+            <h1 class="text-display font-display text-primary leading-tight">Vendor Management & Inventory</h1>
+            <p class="text-body-md text-on-surface-variant">Monitor third-party vendor risks, Data Processing Agreements (DPA), and compliance status.</p>
+        </div>
+        <div class="flex flex-wrap gap-sm">
+            <button onclick="openVendorModal()" class="inline-flex items-center justify-center px-4 py-2.5 text-title-md font-semibold text-white bg-primary rounded-xl hover:opacity-90 transition shadow-sm">
+                + Add Vendor
+            </button>
+            <button onclick="exportVendors('csv')" class="inline-flex items-center justify-center px-4 py-2.5 text-title-md font-semibold text-on-surface bg-surface border border-outline-variant rounded-xl hover:bg-surface-container-high transition shadow-sm">
+                Export CSV
+            </button>
+            <button onclick="exportVendors('pdf')" class="inline-flex items-center justify-center px-4 py-2.5 text-title-md font-semibold text-on-surface bg-surface border border-outline-variant rounded-xl hover:bg-surface-container-high transition shadow-sm">
+                Print Report
+            </button>
         </div>
     </div>
 
-    <!-- Add Vendor Form -->
-    <div class="bg-surface-container-lowest rounded-xl border border-[#EDEBE9] p-6 shadow-sm mb-6">
-        <h5 class="fw-bold mb-3">+ Add New Vendor</h5>
-        <form id="addVendorForm">
-            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Vendor Name</label>
-                    <input type="text" name="vendor_name" class="form-control" placeholder="e.g., AWS, Salesforce..." required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Service Category</label>
-                    <select name="category" class="form-select" required>
-                        <option value="Cloud Storage">Cloud Storage</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Analytics">Analytics</option>
-                        <option value="HR / Payroll">HR / Payroll</option>
-                        <option value="Software">Software</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">DPA Status</label>
-                    <select name="dpa_status" class="form-select">
-                        <option value="Pending">Pending Signature</option>
-                        <option value="Signed">Signed / Executed</option>
-                        <option value="Not Required">Not Required</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Inherent Risk Level</label>
-                    <select name="risk_level" class="form-select">
-                        <option value="Low">Low</option>
-                        <option value="Medium">Medium</option>
-                        <option value="High">High</option>
-                        <option value="Critical">Critical</option>
-                    </select>
-                </div>
-                <div class="col-12">
-                    <label class="form-label fw-semibold">Data Shared / Processed</label>
-                    <textarea name="data_shared" class="form-control" rows="2" placeholder="e.g., Customer email, payment tokens..."></textarea>
-                </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary fw-semibold">Save Vendor</button>
-                </div>
-            </div>
-        </form>
+    <!-- Stats KPI Telemetry Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-md">
+        <div class="p-md bg-surface rounded-xl border border-outline-variant shadow-sm">
+            <span class="text-caption font-semibold uppercase tracking-wider text-on-surface-variant">Total Vendors</span>
+            <div class="mt-base text-display font-bold text-on-surface" id="kpi-total">...</div>
+        </div>
+        <div class="p-md bg-surface rounded-xl border border-outline-variant shadow-sm">
+            <span class="text-caption font-semibold uppercase tracking-wider text-emerald-600">Active</span>
+            <div class="mt-base text-display font-bold text-emerald-600" id="kpi-active">...</div>
+        </div>
+        <div class="p-md bg-surface rounded-xl border border-outline-variant shadow-sm">
+            <span class="text-caption font-semibold uppercase tracking-wider text-amber-600">Pending DPA</span>
+            <div class="mt-base text-display font-bold text-amber-600" id="kpi-pending">...</div>
+        </div>
+        <div class="p-md bg-surface rounded-xl border border-outline-variant shadow-sm">
+            <span class="text-caption font-semibold uppercase tracking-wider text-red-600">High Risk</span>
+            <div class="mt-base text-display font-bold text-red-600" id="kpi-high">...</div>
+        </div>
+        <div class="p-md bg-surface rounded-xl border border-outline-variant shadow-sm">
+            <span class="text-caption font-semibold uppercase tracking-wider text-red-800">Critical Risk</span>
+            <div class="mt-base text-display font-bold text-red-800" id="kpi-critical">...</div>
+        </div>
     </div>
 
-    <!-- Vendor Table -->
-    <div class="card p-4 border-0 shadow-sm">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-surface-container-lowest rounded-xl border p-5">
-                <h4 class="text-sm text-on-surface-variant">Total Vendors</h4>
-                <p class="text-3xl font-bold" id="kpi-total">...</p>
-            </div>
-            <div class="bg-surface-container-lowest rounded-xl border p-5">
-                <h4 class="text-sm text-on-surface-variant">High Risk</h4>
-                <p class="text-3xl font-bold text-red-600" id="kpi-high">...</p>
-            </div>
-            <div class="bg-surface-container-lowest rounded-xl border p-5">
-                <h4 class="text-sm text-on-surface-variant">Pending DPA</h4>
-                <p class="text-3xl font-bold text-yellow-600" id="kpi-pending">...</p>
-            </div>
-            <div class="bg-surface-container-lowest rounded-xl border p-5">
-                <h4 class="text-sm text-on-surface-variant">Critical</h4>
-                <p class="text-3xl font-bold text-red-700" id="kpi-critical">...</p>
-            </div>
-        </div>
-
-        <h5 class="text-2xl font-bold text-on-surface mb-4">Vendor Inventory</h5>
-        
-        <!-- Search and Filters -->
-        <form id="searchForm">
-            <div class="flex gap-4 mb-5 flex-wrap">
-                <input type="text" id="filter-search" class="border rounded-xl px-4 py-3 flex-1" placeholder="Search Vendor by name, type, or status...">
-                <select id="filter-category" class="border rounded-xl px-4 py-3">
+    <!-- Main Vendor Inventory Table Card -->
+    <div class="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+        <div class="p-md border-b border-outline-variant bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-md">
+            <h2 class="font-semibold text-on-surface text-title-md">Third-Party Vendor Inventory</h2>
+            
+            <!-- Filters -->
+            <form id="searchForm" class="flex flex-wrap items-center gap-sm">
+                <input type="text" id="filter-search" class="border border-outline-variant rounded-lg px-3 py-2 text-body-md focus:border-primary focus:outline-none bg-surface" placeholder="Search vendor name, contact, data...">
+                <select id="filter-category" class="border border-outline-variant rounded-lg px-3 py-2 text-body-md focus:border-primary focus:outline-none bg-surface">
                     <option value="">All Categories</option>
                     <option value="Cloud Storage">Cloud Storage</option>
                     <option value="Marketing">Marketing</option>
@@ -99,61 +76,73 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
                     <option value="Software">Software</option>
                     <option value="Other">Other</option>
                 </select>
-                <select id="filter-risk" class="border rounded-xl px-4 py-3">
-                    <option value="">All Risks</option>
+                <select id="filter-risk" class="border border-outline-variant rounded-lg px-3 py-2 text-body-md focus:border-primary focus:outline-none bg-surface">
+                    <option value="">All Risk Levels</option>
                     <option value="Critical">Critical</option>
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
                 </select>
-                <button type="submit" class="btn btn-secondary px-4">Search</button>
-            </div>
-        </form>
+                <select id="filter-status" class="border border-outline-variant rounded-lg px-3 py-2 text-body-md focus:border-primary focus:outline-none bg-surface">
+                    <option value="">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Under Review">Under Review</option>
+                    <option value="Pending Review">Pending Review</option>
+                </select>
+                <button type="submit" class="px-4 py-2 bg-primary text-white text-body-md font-semibold rounded-lg hover:opacity-90 transition">Search</button>
+                <button type="button" onclick="clearFilters()" class="px-3 py-2 border border-outline-variant text-on-surface text-body-md font-semibold rounded-lg hover:bg-surface-container-high transition">Clear</button>
+            </form>
+        </div>
 
-        <div class="table-responsive">
-            <table class="w-full border-collapse">
-                <thead class="bg-surface-container-low">
-                    <tr>
-                        <th>Vendor Name</th>
-                        <th>Category</th>
-                        <th>DPA Status</th>
-                        <th>Risk Level</th>
-                        <th>Data Shared</th>
-                        <th class="text-right">Actions</th>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-surface-container-low text-on-surface-variant font-semibold text-label-md uppercase border-b border-outline-variant select-none">
+                        <th class="p-md">ID</th>
+                        <th class="p-md">Vendor Name</th>
+                        <th class="p-md">Category</th>
+                        <th class="p-md">Contact</th>
+                        <th class="p-md">DPA Status</th>
+                        <th class="p-md">Risk Level</th>
+                        <th class="p-md">Status</th>
+                        <th class="p-md text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="vendorTableBody">
-                    <tr><td colspan="6" class="text-center py-8 text-gray-500">Loading...</td></tr>
+                <tbody id="vendorTableBody" class="divide-y divide-outline-variant text-body-md text-on-surface">
+                    <tr><td colspan="8" class="text-center py-8 text-on-surface-variant">Loading vendor inventory...</td></tr>
                 </tbody>
             </table>
         </div>
-        
-        <!-- Pagination Controls -->
-        <div id="paginationControls" class="flex justify-between items-center mt-4 border-t pt-4 hidden">
-            <span class="text-sm text-gray-600" id="pageInfo"></span>
-            <div class="flex gap-2">
-                <button id="btnPrev" class="px-3 py-1 border rounded bg-white text-gray-700 hover:bg-gray-50">Previous</button>
-                <button id="btnNext" class="px-3 py-1 border rounded bg-white text-gray-700 hover:bg-gray-50">Next</button>
+
+        <!-- Pagination Bar -->
+        <div id="paginationControls" class="p-md border-t border-outline-variant flex justify-between items-center bg-surface-container-low hidden">
+            <span class="text-caption text-on-surface-variant" id="pageInfo">Showing page 1</span>
+            <div class="flex gap-sm">
+                <button id="btnPrev" class="px-3 py-1.5 border border-outline-variant text-body-md font-semibold rounded-lg bg-surface hover:bg-surface-container-high">Previous</button>
+                <button id="btnNext" class="px-3 py-1.5 border border-outline-variant text-body-md font-semibold rounded-lg bg-surface hover:bg-surface-container-high">Next</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Edit Vendor Modal -->
-<div id="editVendorModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <h5 class="fw-bold mb-3">Edit Vendor</h5>
-        <form id="editVendorForm">
+<!-- Modal 1: Add Vendor -->
+<div id="addVendorModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-surface shadow-xl rounded-xl w-full max-w-xl overflow-hidden border border-outline-variant">
+        <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+            <h3 class="font-bold text-on-surface text-title-md">Add Third-Party Vendor</h3>
+            <button onclick="closeVendorModal()" class="text-on-surface-variant hover:text-on-surface text-xl font-bold">&times;</button>
+        </div>
+        <form id="addVendorForm" class="p-md space-y-md">
             <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-            <input type="hidden" name="vendor_id" id="edit_vendor_id">
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Vendor Name</label>
-                    <input type="text" name="vendor_name" id="edit_vendor_name" class="form-control" required>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Vendor Name *</label>
+                    <input type="text" name="vendor_name" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="e.g., Amazon Web Services">
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Service Category</label>
-                    <select name="category" id="edit_category" class="form-select" required>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Service Category *</label>
+                    <select name="category" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
                         <option value="Cloud Storage">Cloud Storage</option>
                         <option value="Marketing">Marketing</option>
                         <option value="Analytics">Analytics</option>
@@ -162,207 +151,148 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
                         <option value="Other">Other</option>
                     </select>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">DPA Status</label>
-                    <select name="dpa_status" id="edit_dpa_status" class="form-select">
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Contact Name</label>
+                    <input type="text" name="contact_name" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="e.g. Jane Doe">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Contact Email</label>
+                    <input type="email" name="contact_email" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="e.g. privacy@vendor.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">DPA Status</label>
+                    <select name="dpa_status" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
                         <option value="Pending">Pending Signature</option>
                         <option value="Signed">Signed / Executed</option>
                         <option value="Not Required">Not Required</option>
                     </select>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Inherent Risk Level</label>
-                    <select name="risk_level" id="edit_risk_level" class="form-select">
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Inherent Risk Level</label>
+                    <select name="risk_level" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
                         <option value="Low">Low</option>
                         <option value="Medium">Medium</option>
                         <option value="High">High</option>
                         <option value="Critical">Critical</option>
                     </select>
                 </div>
-                <div class="col-12 flex gap-3 justify-end mt-4">
-                    <button type="button" onclick="closeEditModal()" class="btn btn-light fw-semibold border">Cancel</button>
-                    <button type="submit" class="btn btn-primary fw-semibold">Update Vendor</button>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Vendor Status</label>
+                    <select name="status" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="Pending Review">Pending Review</option>
+                    </select>
                 </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Next Review Date</label>
+                    <input type="date" name="next_assessment_date" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none">
+                </div>
+                <div class="col-span-1 md:col-span-2">
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Data Shared / Processed</label>
+                    <textarea name="data_shared" rows="2" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="Describe customer PII, telemetry, or data elements shared..."></textarea>
+                </div>
+            </div>
+            <div class="border-t border-outline-variant pt-md flex justify-end gap-sm">
+                <button type="button" onclick="closeVendorModal()" class="px-4 py-2.5 text-body-md text-on-surface border border-outline-variant rounded-xl hover:bg-surface-container-high font-semibold">Cancel</button>
+                <button type="submit" class="px-4 py-2.5 text-body-md text-white bg-primary rounded-xl hover:opacity-90 font-semibold">Save Vendor</button>
             </div>
         </form>
     </div>
 </div>
 
-<script>
-let currentPage = 1;
+<!-- Modal 2: Edit Vendor -->
+<div id="editVendorModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-surface shadow-xl rounded-xl w-full max-w-xl overflow-hidden border border-outline-variant">
+        <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+            <h3 class="font-bold text-on-surface text-title-md">Edit Vendor Record</h3>
+            <button onclick="closeEditVendorModal()" class="text-on-surface-variant hover:text-on-surface text-xl font-bold">&times;</button>
+        </div>
+        <form id="editVendorForm" class="p-md space-y-md">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            <input type="hidden" name="vendor_id" id="edit_vendor_id">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Vendor Name *</label>
+                    <input type="text" name="vendor_name" id="edit_vendor_name" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Service Category *</label>
+                    <select name="category" id="edit_category" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                        <option value="Cloud Storage">Cloud Storage</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Analytics">Analytics</option>
+                        <option value="HR / Payroll">HR / Payroll</option>
+                        <option value="Software">Software</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Contact Name</label>
+                    <input type="text" name="contact_name" id="edit_contact_name" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Contact Email</label>
+                    <input type="email" name="contact_email" id="edit_contact_email" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">DPA Status</label>
+                    <select name="dpa_status" id="edit_dpa_status" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                        <option value="Pending">Pending Signature</option>
+                        <option value="Signed">Signed / Executed</option>
+                        <option value="Not Required">Not Required</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Inherent Risk Level</label>
+                    <select name="risk_level" id="edit_risk_level" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                        <option value="Critical">Critical</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Vendor Status</label>
+                    <select name="status" id="edit_status" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="Pending Review">Pending Review</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Next Review Date</label>
+                    <input type="date" name="next_assessment_date" id="edit_next_assessment_date" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none">
+                </div>
+                <div class="col-span-1 md:col-span-2">
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Data Shared / Processed</label>
+                    <textarea name="data_shared" id="edit_data_shared" rows="2" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none"></textarea>
+                </div>
+            </div>
+            <div class="border-t border-outline-variant pt-md flex justify-end gap-sm">
+                <button type="button" onclick="closeEditVendorModal()" class="px-4 py-2.5 text-body-md text-on-surface border border-outline-variant rounded-xl hover:bg-surface-container-high font-semibold">Cancel</button>
+                <button type="submit" class="px-4 py-2.5 text-body-md text-white bg-primary rounded-xl hover:opacity-90 font-semibold">Update Vendor</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-}
+<!-- Modal 3: View Vendor Details -->
+<div id="viewVendorModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-surface shadow-xl rounded-xl w-full max-w-lg overflow-hidden border border-outline-variant">
+        <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+            <h3 class="font-bold text-on-surface text-title-md">Vendor Profile & Risk Overview</h3>
+            <button onclick="closeViewVendorModal()" class="text-on-surface-variant hover:text-on-surface text-xl font-bold">&times;</button>
+        </div>
+        <div class="p-md max-h-[75vh] overflow-y-auto" id="viewVendorContent">
+            <div class="text-center py-6 text-on-surface-variant text-body-md">Loading vendor information...</div>
+        </div>
+        <div class="p-md border-t border-outline-variant flex justify-end bg-surface-container-low">
+            <button onclick="closeViewVendorModal()" class="px-4 py-2 text-body-md text-on-surface border border-outline-variant rounded-lg hover:bg-surface-container-high font-semibold">Close</button>
+        </div>
+    </div>
+</div>
 
-async function loadKpis() {
-    try {
-        const res = await fetch('backend/api/vendors/kpis.php');
-        const data = await res.json();
-        if (data.status === 'success' && data.data) {
-            document.getElementById('kpi-total').innerText = data.data.total || 0;
-            document.getElementById('kpi-high').innerText = data.data.high_risk || 0;
-            document.getElementById('kpi-pending').innerText = data.data.pending_dpa || 0;
-            document.getElementById('kpi-critical').innerText = data.data.critical_risk || 0;
-        }
-    } catch (e) {
-        console.error('Failed to load KPIs', e);
-    }
-}
-
-async function loadVendors() {
-    const search = document.getElementById('filter-search').value;
-    const category = document.getElementById('filter-category').value;
-    const risk = document.getElementById('filter-risk').value;
-
-    const url = `backend/api/vendors/list.php?p=${currentPage}&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&risk_level=${encodeURIComponent(risk)}`;
-    
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
-        const tbody = document.getElementById('vendorTableBody');
-        
-        if (data.status === 'success') {
-            tbody.innerHTML = '';
-            const items = data.data.items;
-            const total = data.data.total;
-            
-            if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No vendors found.</td></tr>';
-            } else {
-                items.forEach(v => {
-                    const dpaClass = v.dpa_status === 'Signed' ? 'bg-green-100 text-green-700' : (v.dpa_status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700');
-                    const riskClass = v.risk_level === 'Critical' ? 'bg-red-100 text-red-700' : (v.risk_level === 'High' ? 'bg-red-100 text-red-700' : (v.risk_level === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'));
-                    
-                    const row = `
-                        <tr class="border-b hover:bg-gray-50 transition">
-                            <td class="py-4"><strong>${escapeHtml(v.vendor_name)}</strong></td>
-                            <td>${escapeHtml(v.category)}</td>
-                            <td><span class="inline-flex px-3 py-1 rounded-full text-sm font-semibold ${dpaClass}">${escapeHtml(v.dpa_status)}</span></td>
-                            <td><span class="inline-flex px-3 py-1 rounded-full text-sm font-semibold ${riskClass}">${escapeHtml(v.risk_level)}</span></td>
-                            <td class="text-gray-600">${escapeHtml(v.data_shared)}</td>
-                            <td class="text-right">
-                                <button type="button" onclick="editVendor(${v.id}, '${escapeHtml(v.vendor_name)}', '${escapeHtml(v.category)}', '${escapeHtml(v.dpa_status)}', '${escapeHtml(v.risk_level)}')" class="text-blue-600 hover:text-blue-800 font-semibold text-sm px-2">Edit</button>
-                                <button type="button" onclick="deleteVendor(${v.id})" class="text-red-600 hover:text-red-800 font-semibold text-sm px-2">Delete</button>
-                            </td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += row;
-                });
-            }
-
-            // Pagination
-            const totalPages = Math.ceil(total / 10);
-            const controls = document.getElementById('paginationControls');
-            if (totalPages > 1) {
-                controls.classList.remove('hidden');
-                document.getElementById('pageInfo').innerText = `Showing page ${currentPage} of ${totalPages}`;
-                document.getElementById('btnPrev').style.display = currentPage > 1 ? 'block' : 'none';
-                document.getElementById('btnNext').style.display = currentPage < totalPages ? 'block' : 'none';
-            } else {
-                controls.classList.add('hidden');
-            }
-        }
-    } catch (e) {
-        console.error('Failed to load vendors', e);
-    }
-}
-
-document.getElementById('searchForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    currentPage = 1;
-    loadVendors();
-});
-
-document.getElementById('filter-category').addEventListener('change', () => { currentPage = 1; loadVendors(); });
-document.getElementById('filter-risk').addEventListener('change', () => { currentPage = 1; loadVendors(); });
-
-document.getElementById('btnPrev').addEventListener('click', () => {
-    if (currentPage > 1) {
-        currentPage--;
-        loadVendors();
-    }
-});
-
-document.getElementById('btnNext').addEventListener('click', () => {
-    currentPage++;
-    loadVendors();
-});
-
-async function submitApi(formId, endpoint) {
-    const form = document.getElementById(formId);
-    const formData = new FormData(form);
-    try {
-        const res = await fetch(endpoint, { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.status === 'success') {
-            loadVendors();
-            loadKpis();
-            if (formId === 'addVendorForm') form.reset();
-            if (formId === 'editVendorForm') closeEditModal();
-        } else {
-            alert(data.message || 'Error occurred');
-        }
-    } catch (e) {
-        alert('Request failed');
-    }
-}
-
-document.getElementById('addVendorForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    submitApi('addVendorForm', 'backend/api/vendors/create.php');
-});
-
-document.getElementById('editVendorForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    submitApi('editVendorForm', 'backend/api/vendors/update.php');
-});
-
-function editVendor(id, name, category, dpa, risk) {
-    document.getElementById('edit_vendor_id').value = id;
-    document.getElementById('edit_vendor_name').value = name;
-    document.getElementById('edit_category').value = category;
-    document.getElementById('edit_dpa_status').value = (dpa === 'Signed') ? 'Signed' : 'Pending';
-    document.getElementById('edit_risk_level').value = risk;
-    document.getElementById('editVendorModal').classList.remove('hidden');
-}
-
-function closeEditModal() {
-    document.getElementById('editVendorModal').classList.add('hidden');
-}
-
-async function deleteVendor(id) {
-    if (confirm('Are you sure you want to delete this vendor?')) {
-        const fd = new FormData();
-        fd.append('vendor_id', id);
-        fd.append('csrf_token', '<?= $csrfToken ?>');
-        
-        try {
-            const res = await fetch('backend/api/vendors/delete.php', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data.status === 'success') {
-                loadVendors();
-                loadKpis();
-            } else {
-                alert(data.message || 'Error occurred');
-            }
-        } catch (e) {
-            alert('Request failed');
-        }
-    }
-}
-
-// Initial load
-document.addEventListener('DOMContentLoaded', () => {
-    loadKpis();
-    loadVendors();
-});
-</script>
+<script src="assets/js/vendor-management.js?v=<?= time() ?>"></script>

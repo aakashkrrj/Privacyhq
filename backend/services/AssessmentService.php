@@ -234,19 +234,20 @@ class AssessmentService
             }
         }
 
-        // Determine Risk Matrix mapping
-        // Low: 1, Medium: 2, High: 3
-        $riskMatrixId = 1;
-        if ($totalScore >= 6) {
-            $riskMatrixId = 3;
+        // Determine Risk Level
+        $riskLevel = 'Low';
+        if ($totalScore >= 10) {
+            $riskLevel = 'Critical';
+        } elseif ($totalScore >= 6) {
+            $riskLevel = 'High';
         } elseif ($totalScore >= 3) {
-            $riskMatrixId = 2;
+            $riskLevel = 'Medium';
         }
 
-        // Save calculated score in assessment_risks as inherent risk matrix mapping
-        // Status transitions are handled by callers (submitAssessment, approveAssessment)
+        // Persist calculated score and level in DB
+        $this->assessmentModel->updateCalculatedRisk($assessmentId, $totalScore, $riskLevel);
 
-        return $totalScore;
+        return ['score' => $totalScore, 'risk_level' => $riskLevel];
     }
 
     /**
@@ -351,5 +352,93 @@ class AssessmentService
         log_audit_event($this->pdo, 'Assessment', 'Reject', $userId, $assessmentId, 'Under Review', 'Rejected');
 
         return true;
+    }
+
+    public function getDashboard()
+    {
+        return $this->assessmentModel->getDashboardMetrics();
+    }
+
+    public function getHistory($assessmentId)
+    {
+        return $this->assessmentModel->getHistory($assessmentId);
+    }
+
+    public function exportAssessment($assessmentId, $format = 'csv')
+    {
+        $data = $this->getAssessmentDetail($assessmentId, 1, 1);
+        $assessment = $data['assessment'];
+        $questions = $data['questions'];
+        $responses = $data['responses'];
+        $findings = $data['findings'];
+
+        $filename = 'DPIA_Assessment_' . $assessmentId . '_' . date('Y-m-d');
+
+        if ($format === 'csv' || $format === 'excel') {
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename=' . $filename . '.csv');
+            $out = fopen('php://output', 'w');
+
+            // Metadata
+            fputcsv($out, ['DPIA Assessment Report', 'ID: ' . $assessmentId]);
+            fputcsv($out, ['Title', $assessment['title']]);
+            fputcsv($out, ['Status', $assessment['status']]);
+            fputcsv($out, ['Assessor', $assessment['assessor_email']]);
+            fputcsv($out, ['Reviewer', $assessment['reviewer_email']]);
+            fputcsv($out, ['Due Date', $assessment['due_date']]);
+            fputcsv($out, ['Calculated Risk Score', $assessment['risk_score'] ?? 0]);
+            fputcsv($out, ['Calculated Risk Level', $assessment['calculated_risk_level'] ?? 'Low']);
+            fputcsv($out, []);
+
+            // Responses
+            fputcsv($out, ['Section', 'Question ID', 'Question Text', 'Response']);
+            foreach ($questions as $q) {
+                fputcsv($out, [
+                    $q['section_name'],
+                    $q['question_id'],
+                    $q['question_text'],
+                    $responses[$q['question_id']] ?? '[No Response]'
+                ]);
+            }
+
+            fputcsv($out, []);
+            fputcsv($out, ['Risk Findings Ledger']);
+            fputcsv($out, ['Category', 'Description', 'Severity Matrix ID']);
+            foreach ($findings as $f) {
+                fputcsv($out, [
+                    $f['category_name'] ?? 'General',
+                    $f['description'],
+                    $f['inherent_risk_matrix_id']
+                ]);
+            }
+
+            fclose($out);
+            exit;
+        } else {
+            // PDF / Print View
+            header('Content-Type: text/html; charset=utf-8');
+            echo '<!DOCTYPE html><html><head><title>DPIA Assessment #' . $assessmentId . '</title><style>body{font-family:sans-serif;padding:20px;} table{width:100%;border-collapse:collapse;margin-top:20px;} th,td{border:1px solid #ccc;padding:8px;font-size:12px;text-align:left;} th{background:#f3f4f6;} .header{border-bottom:2px solid #333;padding-bottom:10px;margin-bottom:20px;}</style></head><body>';
+            echo '<div class="header"><h2>PrivacyHQ - DPIA Impact Assessment Report</h2>';
+            echo '<p><strong>Title:</strong> ' . htmlspecialchars($assessment['title']) . ' | <strong>Status:</strong> ' . htmlspecialchars($assessment['status']) . '</p>';
+            echo '<p><strong>Assessor:</strong> ' . htmlspecialchars($assessment['assessor_email']) . ' | <strong>Due Date:</strong> ' . htmlspecialchars($assessment['due_date'] ?? 'N/A') . '</p>';
+            echo '<p><strong>Calculated Risk Level:</strong> <span style="color:red;font-weight:bold;">' . htmlspecialchars($assessment['calculated_risk_level'] ?? 'Low') . ' (Score: ' . ($assessment['risk_score'] ?? 0) . ')</span></p></div>';
+
+            echo '<h3>Questionnaire Responses</h3><table><thead><tr><th>Section</th><th>Question</th><th>Response</th></tr></thead><tbody>';
+            foreach ($questions as $q) {
+                echo '<tr><td>' . htmlspecialchars($q['section_name']) . '</td><td>' . htmlspecialchars($q['question_text']) . '</td><td><strong>' . htmlspecialchars($responses[$q['question_id']] ?? '[No Response]') . '</strong></td></tr>';
+            }
+            echo '</tbody></table>';
+
+            if (!empty($findings)) {
+                echo '<h3 style="margin-top:30px;">Risk Findings</h3><table><thead><tr><th>Category</th><th>Description</th></tr></thead><tbody>';
+                foreach ($findings as $f) {
+                    echo '<tr><td>' . htmlspecialchars($f['category_name'] ?? 'General') . '</td><td>' . htmlspecialchars($f['description']) . '</td></tr>';
+                }
+                echo '</tbody></table>';
+            }
+
+            echo '<script>window.print();</script></body></html>';
+            exit;
+        }
     }
 }

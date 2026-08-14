@@ -39,7 +39,9 @@ class PrivacyAssessment
             $creatorId
         ]);
 
-        return $this->pdo->lastInsertId();
+        $id = $this->pdo->lastInsertId();
+        $this->addStatusHistory($id, null, $statusId, $creatorId, 'Initial DPIA assessment creation');
+        return $id;
     }
 
     /**
@@ -195,8 +197,13 @@ class PrivacyAssessment
     /**
      * Update status
      */
-    public function updateStatus($assessmentId, $statusName)
+    public function updateStatus($assessmentId, $statusName, $changedBy = null, $reason = null)
     {
+        // Get previous status ID
+        $prevStmt = $this->pdo->prepare("SELECT status_id FROM privacy_assessments WHERE id = ?");
+        $prevStmt->execute([$assessmentId]);
+        $prevStatusId = $prevStmt->fetchColumn();
+
         // Get status ID
         $stmtStatus = $this->pdo->prepare("SELECT id FROM assessment_statuses WHERE status_name = ? LIMIT 1");
         $stmtStatus->execute([$statusName]);
@@ -213,7 +220,16 @@ class PrivacyAssessment
             SET status_id = ?, updated_at = NOW() {$completedAtClause}
             WHERE id = ?
         ");
-        return $stmt->execute([$statusId, $assessmentId]);
+        $res = $stmt->execute([$statusId, $assessmentId]);
+
+        if ($res) {
+            if (!$changedBy && session_status() !== PHP_SESSION_NONE) {
+                $changedBy = $_SESSION['user_id'] ?? 1;
+            }
+            $this->addStatusHistory($assessmentId, $prevStatusId, $statusId, $changedBy ?: 1, $reason);
+        }
+
+        return $res;
     }
 
     /**
@@ -317,5 +333,109 @@ class PrivacyAssessment
             WHERE id = ?
         ");
         return $stmt->execute([$assignedTo, $reviewerId, $dueDate, $priority, $assessmentId]);
+    }
+
+    /**
+     * Get Dashboard Telemetry Metrics
+     */
+    public function getDashboardMetrics()
+    {
+        $sql = "
+            SELECT 
+                COUNT(*) AS total,
+                SUM(IF(ast.status_name = 'Draft' OR ast.status_name = 'Assigned', 1, 0)) AS draft_count,
+                SUM(IF(ast.status_name = 'Submitted' OR ast.status_name = 'Under Review' OR ast.status_name = 'Pending Review', 1, 0)) AS pending_count,
+                SUM(IF(ast.status_name = 'Approved', 1, 0)) AS approved_count,
+                SUM(IF(ast.status_name = 'Rejected', 1, 0)) AS rejected_count,
+                SUM(IF(pa.due_date < CURRENT_DATE AND ast.status_name != 'Approved', 1, 0)) AS overdue_count
+            FROM privacy_assessments pa
+            LEFT JOIN assessment_statuses ast ON pa.status_id = ast.id
+            WHERE pa.deleted_at IS NULL
+        ";
+        $counts = $this->pdo->query($sql)->fetch(\PDO::FETCH_ASSOC);
+
+        // Risk distribution
+        $riskSql = "
+            SELECT 
+                COALESCE(calculated_risk_level, 'Low') AS risk_level,
+                COUNT(*) AS cnt
+            FROM privacy_assessments
+            WHERE deleted_at IS NULL
+            GROUP BY calculated_risk_level
+        ";
+        $riskRows = $this->pdo->query($riskSql)->fetchAll(\PDO::FETCH_ASSOC);
+        $riskDist = ['Low' => 0, 'Medium' => 0, 'High' => 0, 'Critical' => 0];
+        foreach ($riskRows as $rr) {
+            $lvl = ucfirst(strtolower($rr['risk_level']));
+            if (isset($riskDist[$lvl])) {
+                $riskDist[$lvl] = (int)$rr['cnt'];
+            }
+        }
+
+        // Recent Assessments
+        $recent = $this->pdo->query("
+            SELECT pa.id, pa.title, pa.priority, pa.due_date, pa.calculated_risk_level AS risk_level, ast.status_name AS status
+            FROM privacy_assessments pa
+            LEFT JOIN assessment_statuses ast ON pa.status_id = ast.id
+            WHERE pa.deleted_at IS NULL
+            ORDER BY pa.id DESC LIMIT 5
+        ")->fetchAll(\PDO::FETCH_ASSOC);
+
+        return [
+            'total' => (int)($counts['total'] ?? 0),
+            'draft' => (int)($counts['draft_count'] ?? 0),
+            'pending' => (int)($counts['pending_count'] ?? 0),
+            'approved' => (int)($counts['approved_count'] ?? 0),
+            'rejected' => (int)($counts['rejected_count'] ?? 0),
+            'overdue' => (int)($counts['overdue_count'] ?? 0),
+            'risk_distribution' => $riskDist,
+            'recent' => $recent
+        ];
+    }
+
+    /**
+     * Add entry to assessment status history
+     */
+    public function addStatusHistory($assessmentId, $prevStatusId, $newStatusId, $changedBy, $reason = null)
+    {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO assessment_status_history (assessment_id, previous_status_id, new_status_id, changed_by, reason, changed_at)
+            VALUES (?, ?, ?, ?, ?, NOW())
+        ");
+        return $stmt->execute([$assessmentId, $prevStatusId, $newStatusId, $changedBy, $reason]);
+    }
+
+    /**
+     * Fetch chronological history for assessment
+     */
+    public function getHistory($assessmentId)
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT h.*, 
+                   ast_old.status_name AS old_status, 
+                   ast_new.status_name AS new_status,
+                   u.email, u.first_name, u.last_name
+            FROM assessment_status_history h
+            LEFT JOIN assessment_statuses ast_old ON h.previous_status_id = ast_old.id
+            LEFT JOIN assessment_statuses ast_new ON h.new_status_id = ast_new.id
+            LEFT JOIN users u ON h.changed_by = u.id
+            WHERE h.assessment_id = ?
+            ORDER BY h.id DESC
+        ");
+        $stmt->execute([$assessmentId]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Update calculated risk score & risk level
+     */
+    public function updateCalculatedRisk($assessmentId, $riskScore, $riskLevel)
+    {
+        $stmt = $this->pdo->prepare("
+            UPDATE privacy_assessments 
+            SET risk_score = ?, calculated_risk_level = ?, updated_at = NOW()
+            WHERE id = ? AND deleted_at IS NULL
+        ");
+        return $stmt->execute([(int)$riskScore, $riskLevel, $assessmentId]);
     }
 }

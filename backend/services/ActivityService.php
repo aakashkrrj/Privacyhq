@@ -12,13 +12,17 @@ class ActivityService {
      * Log an activity to the timeline.
      */
     public function logActivity($module, $recordId, $performedBy, $action, $oldStatus = null, $newStatus = null, array $metadata = []) {
-        $metadataJson = json_encode($metadata);
-        $stmt = $this->pdo->prepare("
-            INSERT INTO activity_timeline (module, record_id, performed_by, action, old_status, new_status, metadata_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([$module, $recordId, $performedBy, $action, $oldStatus, $newStatus, $metadataJson]);
-        return $this->pdo->lastInsertId();
+        try {
+            $metadataJson = json_encode($metadata);
+            $stmt = $this->pdo->prepare("
+                INSERT INTO activity_timeline (module, record_id, performed_by, action, old_status, new_status, metadata_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$module, $recordId, $performedBy, $action, $oldStatus, $newStatus, $metadataJson]);
+            return $this->pdo->lastInsertId();
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**

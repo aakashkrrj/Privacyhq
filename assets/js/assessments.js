@@ -18,6 +18,58 @@ function closeEditAssessmentModal() {
     if (modal) modal.classList.add('hidden');
 }
 
+function openHistoryModal(id) {
+    const modal = document.getElementById('historyModal');
+    const content = document.getElementById('historyModalContent');
+    if (!modal || !content) return;
+
+    content.innerHTML = `<div class="text-center py-6 text-gray-500 text-xs"><span class="material-symbols-outlined animate-spin text-xl text-primary block mb-1">sync</span>Loading assessment history...</div>`;
+    modal.classList.remove('hidden');
+
+    fetch(`backend/api/assessment/history.php?id=${id}`)
+        .then(res => res.json())
+        .then(data => {
+            const items = data.data || [];
+            if (items.length === 0) {
+                content.innerHTML = `<div class="text-center py-6 text-gray-500 text-xs">No historical state transitions logged yet.</div>`;
+                return;
+            }
+
+            let html = '<div class="space-y-3">';
+            items.forEach(h => {
+                const user = (h.first_name ? h.first_name + ' ' + h.last_name : h.email) || 'System User';
+                html += `
+                    <div class="p-3 bg-surface-container-low rounded-lg border border-outline-variant text-xs">
+                        <div class="flex justify-between font-semibold text-on-surface mb-1">
+                            <span>${escapeHtml(user)}</span>
+                            <span class="text-on-surface-variant font-mono text-[11px]">${escapeHtml(h.changed_at || '')}</span>
+                        </div>
+                        <div class="text-on-surface-variant">
+                            Status changed: <span class="font-bold text-primary">${escapeHtml(h.old_status || 'Start')} &rarr; ${escapeHtml(h.new_status || 'Current')}</span>
+                        </div>
+                        ${h.reason ? `<div class="mt-1 text-gray-600 italic">"${escapeHtml(h.reason)}"</div>` : ''}
+                    </div>
+                `;
+            });
+            html += '</div>';
+            content.innerHTML = html;
+        })
+        .catch(err => {
+            console.error('Failed to load history:', err);
+            content.innerHTML = `<div class="text-center py-6 text-red-600 text-xs">Failed to load history logs.</div>`;
+        });
+}
+
+function closeHistoryModal() {
+    const modal = document.getElementById('historyModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function exportAssessment(id, format = 'csv') {
+    const url = `backend/api/assessment/export.php?id=${id}&format=${format}`;
+    window.open(url, '_blank');
+}
+
 function populateEditModal(item) {
     if (!item) return;
     const editId = document.getElementById('edit_id');
@@ -125,7 +177,6 @@ function sortAssessmentTable(columnIndex) {
     if (!tbody) return;
     const rows = Array.from(tbody.querySelectorAll('tr'));
     
-    // Check if empty state row
     if (rows.length === 1 && rows[0].cells.length <= 1) return;
 
     const dir = sortDirections[columnIndex] === 'asc' ? 'desc' : 'asc';
@@ -144,21 +195,39 @@ function sortAssessmentTable(columnIndex) {
     rows.forEach(row => tbody.appendChild(row));
 }
 
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // Global Export to Window Object to prevent ReferenceError
 window.openAssessmentModal = openAssessmentModal;
 window.closeAssessmentModal = closeAssessmentModal;
 window.openEditAssessmentModal = openEditAssessmentModal;
 window.closeEditAssessmentModal = closeEditAssessmentModal;
+window.openHistoryModal = openHistoryModal;
+window.closeHistoryModal = closeHistoryModal;
+window.exportAssessment = exportAssessment;
 window.editAssessment = editAssessment;
 window.deleteAssessment = deleteAssessment;
 window.sortAssessmentTable = sortAssessmentTable;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Create Assessment Form Handler
     const createForm = document.getElementById('assessmentForm');
     if (createForm) {
         createForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving...';
+            }
+
             const formData = new FormData(this);
 
             fetch('backend/api/assessment/create.php', {
@@ -175,20 +244,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     location.reload();
                 } else {
                     alert('Error creating assessment: ' + (data.message || 'Action failed'));
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Save & Assign';
+                    }
                 }
             })
             .catch(err => {
                 console.error('Create request failed:', err);
                 alert('Failed to save assessment. System error.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Save & Assign';
+                }
             });
         });
     }
 
-    // Edit Assessment Form Handler
     const editForm = document.getElementById('editAssessmentForm');
     if (editForm) {
         editForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Updating...';
+            }
+
             const formData = new FormData(this);
 
             fetch('backend/api/assessment/update.php', {
@@ -205,11 +287,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     location.reload();
                 } else {
                     alert('Error updating assessment: ' + (data.message || 'Action failed'));
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Update Assessment';
+                    }
                 }
             })
             .catch(err => {
                 console.error('Update request failed:', err);
                 alert('Failed to update assessment. System error.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Update Assessment';
+                }
             });
         });
     }

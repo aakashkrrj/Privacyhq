@@ -168,6 +168,10 @@ foreach ($assessment_list as $row) {
                                         <a href="index.php?page=review-assessment&id=<?= $item['id'] ?>" class="text-amber-600 hover:underline font-semibold" title="Review Submission">Review</a>
                                     <?php endif; ?>
                                     <span class="text-outline">|</span>
+                                    <button type="button" onclick="openHistoryModal(<?= $item['id'] ?>); return false;" class="text-blue-600 hover:underline font-semibold" title="View History Log">History</button>
+                                    <span class="text-outline">|</span>
+                                    <button type="button" onclick="exportAssessment(<?= $item['id'] ?>, 'csv'); return false;" class="text-emerald-600 hover:underline font-semibold" title="Export CSV">Export</button>
+                                    <span class="text-outline">|</span>
                                     <button type="button" onclick="editAssessment(<?= $item['id'] ?>); return false;" class="text-indigo-600 hover:underline font-semibold">Edit</button>
                                     <span class="text-outline">|</span>
                                     <button type="button" onclick="deleteAssessment(<?= $item['id'] ?>); return false;" class="text-red-600 hover:underline font-semibold">Delete</button>
@@ -283,6 +287,22 @@ foreach ($assessment_list as $row) {
                 <button type="submit" class="px-md py-2 text-body-md text-white bg-primary rounded-lg hover:opacity-90">Update DPIA</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Modal 3: View Assessment History Log -->
+<div id="historyModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-surface shadow-xl rounded-xl w-full max-w-lg overflow-hidden border border-outline-variant">
+        <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+            <h3 class="font-bold text-on-surface text-title-md">Assessment Workflow History Log</h3>
+            <button onclick="closeHistoryModal()" class="text-on-surface-variant hover:text-on-surface text-xl font-bold">&times;</button>
+        </div>
+        <div class="p-md max-h-[70vh] overflow-y-auto" id="historyModalContent">
+            <div class="text-center py-6 text-on-surface-variant text-body-md">Loading history logs...</div>
+        </div>
+        <div class="p-md border-t border-outline-variant flex justify-end bg-surface-container-low">
+            <button onclick="closeHistoryModal()" class="px-4 py-2 text-body-md text-on-surface border border-outline-variant rounded-lg hover:bg-surface-container-high font-semibold">Close</button>
+        </div>
     </div>
 </div>
 

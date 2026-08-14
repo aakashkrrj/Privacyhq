@@ -145,7 +145,7 @@ class AssessmentController extends BaseController
     {
         $this->checkPermission('view_dashboard');
         try {
-            $id = filter_input(INPUT_POST, 'assessment_id', FILTER_VALIDATE_INT);
+            $id = filter_input(INPUT_POST, 'assessment_id', FILTER_VALIDATE_INT) ?: (int)($_POST['assessment_id'] ?? 0);
             if (!$id) {
                 throw new \Exception("Invalid assessment ID.");
             }
@@ -175,7 +175,7 @@ class AssessmentController extends BaseController
     {
         $this->checkPermission('view_dashboard');
         try {
-            $id = filter_input(INPUT_POST, 'assessment_id', FILTER_VALIDATE_INT);
+            $id = filter_input(INPUT_POST, 'assessment_id', FILTER_VALIDATE_INT) ?: (int)($_POST['assessment_id'] ?? 0);
             if (!$id) {
                 throw new \Exception("Invalid assessment ID.");
             }
@@ -200,7 +200,7 @@ class AssessmentController extends BaseController
     {
         $this->checkPermission('view_dashboard');
         try {
-            $id = filter_input(INPUT_POST, 'assessment_id', FILTER_VALIDATE_INT);
+            $id = filter_input(INPUT_POST, 'assessment_id', FILTER_VALIDATE_INT) ?: (int)($_POST['assessment_id'] ?? 0);
             if (!$id) {
                 throw new \Exception("Invalid assessment ID.");
             }
@@ -227,7 +227,7 @@ class AssessmentController extends BaseController
     {
         $this->checkPermission('view_dashboard');
         try {
-            $id = filter_input(INPUT_POST, 'assessment_id', FILTER_VALIDATE_INT);
+            $id = filter_input(INPUT_POST, 'assessment_id', FILTER_VALIDATE_INT) ?: (int)($_POST['assessment_id'] ?? 0);
             if (!$id) {
                 throw new \Exception("Invalid assessment ID.");
             }
@@ -254,7 +254,7 @@ class AssessmentController extends BaseController
     {
         $this->checkPermission('view_dashboard');
         try {
-            $id = filter_input(INPUT_POST, 'assessment_id', FILTER_VALIDATE_INT);
+            $id = filter_input(INPUT_POST, 'assessment_id', FILTER_VALIDATE_INT) ?: (int)($_POST['assessment_id'] ?? 0);
             if (!$id) {
                 throw new \Exception("Invalid assessment ID.");
             }
@@ -291,6 +291,47 @@ class AssessmentController extends BaseController
             $stmt->execute([$id, $filePath, $userId]);
 
             ApiResponse::success('Evidence uploaded successfully!', ['file_path' => $filePath]);
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function getDashboard()
+    {
+        $this->checkPermission('view_dashboard');
+        try {
+            $data = $this->assessmentService->getDashboard();
+            ApiResponse::success('Success', $data);
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function getHistory()
+    {
+        $this->checkPermission('view_dashboard');
+        try {
+            $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: (int)($_GET['id'] ?? 0);
+            if (!$id) {
+                throw new \Exception("Invalid Assessment ID.");
+            }
+            $data = $this->assessmentService->getHistory($id);
+            ApiResponse::success('Success', $data);
+        } catch (\Exception $e) {
+            ApiResponse::error($e->getMessage());
+        }
+    }
+
+    public function export()
+    {
+        $this->checkPermission('view_dashboard');
+        try {
+            $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: (int)($_GET['id'] ?? 0);
+            $format = strtolower(trim($_GET['format'] ?? 'csv'));
+            if (!$id) {
+                throw new \Exception("Invalid Assessment ID.");
+            }
+            $this->assessmentService->exportAssessment($id, $format);
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
         }

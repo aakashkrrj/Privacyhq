@@ -287,20 +287,24 @@ class WorkflowService {
             }
 
             if ($assignedTo) {
-                $taskTitle = $parseTemplate($taskConf['title']);
-                $taskDesc = $parseTemplate($taskConf['description']);
-                $taskType = $taskConf['type'];
-                $dueDate = $payload['due_date'] ?? date('Y-m-d', strtotime('+7 days'));
+                try {
+                    $taskTitle = $parseTemplate($taskConf['title']);
+                    $taskDesc = $parseTemplate($taskConf['description']);
+                    $taskType = $taskConf['type'];
+                    $dueDate = $payload['due_date'] ?? date('Y-m-d', strtotime('+7 days'));
 
-                $taskService = new TaskService(self::$pdo);
-                $taskId = $taskService->createTask($module, $recordId, $taskType, $taskTitle, $taskDesc, $assignedTo, $assignedBy, $priority, $dueDate);
-                
-                // Dispatch notification for task assignment
-                $notifyTitle = 'New Task Assigned';
-                $notifyMsg = "You have been assigned the task: " . $taskTitle;
-                
-                $notifyService = new NotificationService(self::$pdo);
-                $notifyService->createNotification($assignedTo, $module, $recordId, 'Assignment', $priority, $notifyTitle, $notifyMsg);
+                    $taskService = new TaskService(self::$pdo);
+                    $taskId = $taskService->createTask($module, $recordId, $taskType, $taskTitle, $taskDesc, $assignedTo, $assignedBy, $priority, $dueDate);
+                    
+                    // Dispatch notification for task assignment
+                    $notifyTitle = 'New Task Assigned';
+                    $notifyMsg = "You have been assigned the task: " . $taskTitle;
+                    
+                    $notifyService = new NotificationService(self::$pdo);
+                    $notifyService->createNotification($assignedTo, $module, $recordId, 'Assignment', $priority, $notifyTitle, $notifyMsg);
+                } catch (\Throwable $te) {
+                    // Log or ignore non-blocking task creation failure
+                }
             }
         }
 
