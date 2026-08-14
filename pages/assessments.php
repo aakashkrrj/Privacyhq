@@ -16,7 +16,7 @@ $query = "
     SELECT 
         pa.id, 
         pa.title, 
-        pa.priority,
+        COALESCE(pa.priority, 'Medium') AS priority,
         pa.due_date,
         u_ass.email AS assessor_email,
         u_ass.first_name AS assessor_first,
@@ -51,10 +51,10 @@ $total_assessments = count($assessment_list);
 $under_review_count = 0;
 $high_risk_count = 0;
 foreach ($assessment_list as $row) {
-    if ($row['status'] === 'Under Review' || $row['status'] === 'Submitted') {
+    if (($row['status'] ?? '') === 'Under Review' || ($row['status'] ?? '') === 'Submitted') {
         $under_review_count++;
     }
-    if ($row['risk_level'] === 'High') {
+    if (($row['risk_level'] ?? '') === 'High') {
         $high_risk_count++;
     }
 }
@@ -118,27 +118,29 @@ foreach ($assessment_list as $row) {
                                 <td class="p-md font-mono text-on-surface-variant">#<?= $item['id'] ?></td>
                                 <td class="p-md font-semibold text-on-surface"><?= htmlspecialchars($item['title']) ?></td>
                                 <td class="p-md text-on-surface-variant">
-                                    <?= htmlspecialchars($item['assessor_first'] ? $item['assessor_first'] . ' ' . $item['assessor_last'] : $item['assessor_email']) ?>
+                                    <?= htmlspecialchars(($item['assessor_first'] ?? '') ? $item['assessor_first'] . ' ' . $item['assessor_last'] : ($item['assessor_email'] ?? 'Unassigned')) ?>
                                 </td>
                                 <td class="p-md text-on-surface-variant">
-                                    <?= htmlspecialchars($item['reviewer_first'] ? $item['reviewer_first'] . ' ' . $item['reviewer_last'] : $item['reviewer_email']) ?>
+                                    <?= htmlspecialchars(($item['reviewer_first'] ?? '') ? $item['reviewer_first'] . ' ' . $item['reviewer_last'] : ($item['reviewer_email'] ?? 'Unassigned')) ?>
                                 </td>
                                 <td class="p-md font-mono text-caption text-on-surface-variant"><?= htmlspecialchars($item['due_date'] ?? 'N/A') ?></td>
                                 <td class="p-md">
                                     <?php
-                                    $prioClass = match($item['priority']) {
+                                    $prioVal = $item['priority'] ?? 'Medium';
+                                    $prioClass = match($prioVal) {
                                         'High' => 'bg-red-50 text-red-700 border-red-200',
                                         'Low' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                         default => 'bg-amber-50 text-amber-700 border-amber-200',
                                     };
                                     ?>
                                     <span class="px-2 py-0.5 text-caption font-semibold rounded-full border <?= $prioClass ?>">
-                                        <?= htmlspecialchars($item['priority']) ?>
+                                        <?= htmlspecialchars($prioVal) ?>
                                     </span>
                                 </td>
                                 <td class="p-md">
                                     <?php
-                                    $statusClass = match($item['status']) {
+                                    $statusVal = $item['status'] ?? 'Draft';
+                                    $statusClass = match($statusVal) {
                                         'Approved' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                         'Submitted', 'Under Review' => 'bg-blue-50 text-blue-700 border-blue-200',
                                         'Rejected' => 'bg-red-50 text-red-700 border-red-200',
@@ -146,7 +148,7 @@ foreach ($assessment_list as $row) {
                                     };
                                     ?>
                                     <span class="px-2 py-0.5 text-caption font-semibold rounded-full border <?= $statusClass ?>">
-                                        <?= htmlspecialchars($item['status']) ?>
+                                        <?= htmlspecialchars($statusVal) ?>
                                     </span>
                                 </td>
                                 <td class="p-md text-right space-x-base">
@@ -154,10 +156,10 @@ foreach ($assessment_list as $row) {
                                     $currentUserId = $_SESSION['user_id'] ?? 1;
                                     $currentUserRole = $_SESSION['role_id'] ?? 1;
                                     ?>
-                                    <?php if ($item['status'] !== 'Approved'): ?>
+                                    <?php if ($statusVal !== 'Approved'): ?>
                                         <a href="index.php?page=perform-assessment&id=<?= $item['id'] ?>" class="text-primary hover:underline font-semibold" title="Fill Answers">Perform</a>
                                     <?php endif; ?>
-                                    <?php if (in_array($item['status'], ['Submitted', 'Under Review']) && ($currentUserRole == 1 || $item['reviewer_email'] === $_SESSION['user_email'])): ?>
+                                    <?php if (in_array($statusVal, ['Submitted', 'Under Review']) && ($currentUserRole == 1 || ($item['reviewer_email'] ?? '') === ($_SESSION['user_email'] ?? ''))): ?>
                                         <span class="text-outline">|</span>
                                         <a href="index.php?page=review-assessment&id=<?= $item['id'] ?>" class="text-amber-600 hover:underline font-semibold" title="Review Submission">Review</a>
                                     <?php endif; ?>

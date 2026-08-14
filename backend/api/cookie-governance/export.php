@@ -11,4 +11,4 @@ $model = new \Backend\Models\CookieGovernance($pdo);
 $service = new \Backend\Services\CookieGovernanceService($pdo, $model);
 $controller = new \Backend\Controllers\CookieGovernanceController($service);
 
-$controller->index();
+$controller->export();

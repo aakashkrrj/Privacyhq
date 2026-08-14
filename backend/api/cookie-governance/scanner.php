@@ -5,10 +5,13 @@ require_once __DIR__ . '/../../models/CookieGovernance.php';
 require_once __DIR__ . '/../../services/CookieGovernanceService.php';
 require_once __DIR__ . '/../../controllers/CookieGovernanceController.php';
 
-ApiBootstrap::requireMethod('GET');
-
 $model = new \Backend\Models\CookieGovernance($pdo);
 $service = new \Backend\Services\CookieGovernanceService($pdo, $model);
 $controller = new \Backend\Controllers\CookieGovernanceController($service);
 
-$controller->index();
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+if ($method === 'POST') {
+    ApiBootstrap::requireCsrf();
+}
+
+$controller->scanner();
