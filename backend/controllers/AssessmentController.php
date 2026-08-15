@@ -28,9 +28,8 @@ class AssessmentController extends BaseController
             $priority = trim($_POST['priority'] ?? 'Medium');
             $dueDate = trim($_POST['due_date'] ?? '');
             
-            // Default template and processing activity
-            $templateId = 1;
-            $processingActivityId = 1;
+            $templateId = filter_input(INPUT_POST, 'template_id', FILTER_VALIDATE_INT) ?: 1;
+            $processingActivityId = filter_input(INPUT_POST, 'processing_activity_id', FILTER_VALIDATE_INT) ?: 1;
 
             $id = $this->assessmentService->createAssessment(
                 $processingActivityId,

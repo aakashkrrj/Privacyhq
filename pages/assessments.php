@@ -10,6 +10,11 @@ require_permission('manage_assessments');
 // Fetch all users for selection
 $allUsers = $pdo->query("SELECT id, email, first_name, last_name FROM users WHERE deleted_at IS NULL AND status = 'active' ORDER BY email ASC")->fetchAll(PDO::FETCH_ASSOC);
 
+// Fetch all templates and processing activities
+$allTemplates = $pdo->query("SELECT id, template_name, assessment_type_id FROM assessment_templates WHERE deleted_at IS NULL ORDER BY template_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$allActivities = $pdo->query("SELECT id, activity_name FROM processing_activities WHERE deleted_at IS NULL ORDER BY activity_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$allTypes = $pdo->query("SELECT id, type_name FROM assessment_types WHERE deleted_at IS NULL ORDER BY type_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+
 // Fetch dynamic assessments list (Super Admin and DPO see all)
 $assessment_list = [];
 $query = "
@@ -198,6 +203,35 @@ foreach ($assessment_list as $row) {
                 <input type="text" name="title" id="title" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="e.g. AI Customer Support DPIA">
             </div>
             <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="assessment_type">Assessment Type</label>
+                <select name="assessment_type" id="assessment_type" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                    <option value="">Select Type...</option>
+                    <?php foreach ($allTypes as $t): ?>
+                        <?php if (in_array($t['type_name'], ['PIA', 'DPIA'])): ?>
+                            <option value="<?= $t['id'] ?>"><?= htmlspecialchars($t['type_name']) ?></option>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="template_id">Assessment Template</label>
+                <select name="template_id" id="template_id" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                    <option value="">Select Template...</option>
+                    <?php foreach ($allTemplates as $t): ?>
+                        <option value="<?= $t['id'] ?>" data-type-id="<?= $t['assessment_type_id'] ?>"><?= htmlspecialchars($t['template_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="processing_activity_id">Processing Activity / Project</label>
+                <select name="processing_activity_id" id="processing_activity_id" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                    <option value="">Select Processing Activity...</option>
+                    <?php foreach ($allActivities as $act): ?>
+                        <option value="<?= $act['id'] ?>"><?= htmlspecialchars($act['activity_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
                 <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1" for="assigned_to">Assign Assessor</label>
                 <select name="assigned_to" id="assigned_to" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
                     <option value="">Select Assessor...</option>
@@ -231,7 +265,7 @@ foreach ($assessment_list as $row) {
             </div>
             <div class="flex justify-end gap-sm pt-2">
                 <button type="button" onclick="closeAssessmentModal()" class="px-md py-2 text-body-md text-on-surface-variant border border-outline-variant rounded-lg hover:bg-surface-container-low">Cancel</button>
-                <button type="submit" class="px-md py-2 text-body-md text-white bg-primary rounded-lg hover:opacity-90">Create DPIA</button>
+                <button type="submit" class="px-md py-2 text-body-md text-white bg-primary rounded-lg hover:opacity-90">Create Assessment</button>
             </div>
         </form>
     </div>
@@ -447,6 +481,31 @@ foreach ($assessment_list as $row) {
 })();
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Dynamic Template Filtering based on selected Assessment Type
+    const typeSelect = document.getElementById('assessment_type');
+    if (typeSelect) {
+        typeSelect.addEventListener('change', function() {
+            const selectedTypeId = this.value;
+            const templateSelect = document.getElementById('template_id');
+            if (!templateSelect) return;
+
+            const options = templateSelect.querySelectorAll('option');
+            options.forEach(opt => {
+                if (opt.value === '') {
+                    opt.style.display = 'block';
+                    return;
+                }
+                const typeId = opt.getAttribute('data-type-id');
+                if (selectedTypeId === '' || typeId == selectedTypeId) {
+                    opt.style.display = 'block';
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+            templateSelect.value = '';
+        });
+    }
+
     const createForm = document.getElementById('assessmentForm');
     if (createForm) {
         createForm.addEventListener('submit', function(e) {
