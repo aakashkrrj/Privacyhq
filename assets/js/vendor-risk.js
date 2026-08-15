@@ -1,4 +1,5 @@
-// assets/js/vendor-risk.js
+// governance/assets/js/vendor-risk.js
+// Vendor Risk Management Frontend Controller
 
 let currentPage = 1;
 
@@ -8,90 +9,122 @@ function escapeHtml(text) {
     return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
-// 1. Load Metrics & KPIs
-async function loadKpis() {
+// 1. Load Live Dashboard Telemetry
+async function loadRiskDashboard() {
     try {
-        const res = await fetch('backend/api/vendors/kpis.php');
+        const res = await fetch('backend/api/vendor-risk/dashboard.php');
         const data = await res.json();
-        if (data.success && data.data) {
-            const kpis = data.data;
-            document.getElementById('kpi-total-vendors').innerText = kpis.total || 0;
-            document.getElementById('kpi-compliant').innerText = (parseInt(kpis.total) - parseInt(kpis.pending_dpa) - parseInt(kpis.high_risk) - parseInt(kpis.critical_risk)) || 0;
-            document.getElementById('kpi-high-risk').innerText = (parseInt(kpis.high_risk) + parseInt(kpis.critical_risk)) || 0;
-            
-            // Calculate Average Score
-            const total = parseInt(kpis.total) || 1;
-            const criticalCount = parseInt(kpis.critical_risk) || 0;
-            const highCount = parseInt(kpis.high_risk) || 0;
-            const pendingCount = parseInt(kpis.pending_dpa) || 0;
-            
-            // Basic score formula: start at 100%, deduct risk classifications
-            let avgScore = 100 - Math.round(((criticalCount * 30) + (highCount * 15) + (pendingCount * 5)) / total);
-            if (avgScore < 0) avgScore = 0;
-            if (avgScore > 100) avgScore = 100;
+        if ((data.status === 'success' || data.success) && data.data) {
+            const d = data.data;
+            const kpiTotal = document.getElementById('kpi-total-vendors');
+            const kpiCompliant = document.getElementById('kpi-compliant');
+            const kpiHigh = document.getElementById('kpi-high-risk');
+            const kpiAvgScore = document.getElementById('kpi-avg-score');
+            const kpiAvgBar = document.getElementById('kpi-avg-bar');
 
-            document.getElementById('kpi-avg-score').innerText = avgScore + '%';
-            document.getElementById('kpi-avg-bar').style.width = avgScore + '%';
+            if (kpiTotal) kpiTotal.innerText = d.total_vendors || 0;
+            if (kpiCompliant) kpiCompliant.innerText = d.compliant_count || 0;
+            if (kpiHigh) kpiHigh.innerText = (d.high_risk + d.critical_risk) || 0;
+
+            const avgScore = d.avg_risk_score || 0;
+            if (kpiAvgScore) kpiAvgScore.innerText = avgScore + '%';
+            if (kpiAvgBar) kpiAvgBar.style.width = Math.min(100, Math.max(0, avgScore)) + '%';
+
+            // Category breakdown scores
+            if (d.categories) {
+                const catPrivacy = document.getElementById('cat-privacy-score');
+                const catSecurity = document.getElementById('cat-security-score');
+                const catOperational = document.getElementById('cat-operational-score');
+                const catLegal = document.getElementById('cat-legal-score');
+
+                if (catPrivacy) catPrivacy.innerText = (d.categories.privacy || 0) + '%';
+                if (catSecurity) catSecurity.innerText = (d.categories.security || 0) + '%';
+                if (catOperational) catOperational.innerText = (d.categories.operational || 0) + '%';
+                if (catLegal) catLegal.innerText = (d.categories.legal || 0) + '%';
+            }
         }
     } catch (e) {
-        console.error('Failed to load vendor KPIs', e);
+        console.error('Failed to load vendor risk dashboard telemetry', e);
     }
 }
 
-// 2. Load Paginated Vendors List
-async function loadVendors() {
-    const search = document.getElementById('filter-search').value;
-    const risk = document.getElementById('filter-risk').value;
-    const status = document.getElementById('filter-status').value;
+// 2. Load Paginated Vendor Risk List
+async function loadRiskVendors() {
+    const search = document.getElementById('filter-search')?.value || '';
+    const category = document.getElementById('filter-category')?.value || '';
+    const risk = document.getElementById('filter-risk')?.value || '';
+    const compliance = document.getElementById('filter-compliance')?.value || '';
 
-    const url = `backend/api/vendors/list.php?p=${currentPage}&search=${encodeURIComponent(search)}&risk_level=${encodeURIComponent(risk)}&status=${encodeURIComponent(status)}`;
+    const url = `backend/api/vendor-risk/list.php?p=${currentPage}&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&risk_level=${encodeURIComponent(risk)}&compliance_status=${encodeURIComponent(compliance)}`;
     
+    const tbody = document.getElementById('vendorTableBody');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="9" class="px-lg py-md text-center text-gray-500"><span class="material-symbols-outlined animate-spin text-xl text-primary block mb-1">sync</span>Loading vendor risk inventory...</td></tr>';
+    }
+
     try {
         const res = await fetch(url);
         const data = await res.json();
-        const tbody = document.getElementById('vendorTableBody');
         
-        if (data.success && data.data) {
+        if ((data.status === 'success' || data.success) && data.data) {
+            if (!tbody) return;
             tbody.innerHTML = '';
             const items = data.data.items || [];
             const total = data.data.total || 0;
             
             if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-lg py-md text-center text-gray-500">No vendors found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="px-lg py-md text-center text-gray-500">No vendor risk records found.</td></tr>';
             } else {
                 items.forEach(v => {
-                    let riskClass = 'bg-green-100 text-green-700';
-                    if (v.risk_level === 'Critical' || v.risk_level === 'High') {
-                        riskClass = 'bg-red-100 text-red-700';
+                    let riskBadge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                    if (v.risk_level === 'Critical') {
+                        riskBadge = 'bg-red-100 text-red-800 border-red-300 font-bold';
+                    } else if (v.risk_level === 'High') {
+                        riskBadge = 'bg-red-50 text-red-700 border-red-200';
                     } else if (v.risk_level === 'Medium') {
-                        riskClass = 'bg-yellow-100 text-yellow-700';
+                        riskBadge = 'bg-amber-50 text-amber-700 border-amber-200';
                     }
 
-                    let dpaClass = 'bg-green-100 text-green-700';
-                    if (v.dpa_status !== 'Compliant') {
-                        dpaClass = 'bg-yellow-100 text-yellow-700';
+                    let compBadge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                    if (v.compliance_status === 'Non-Compliant' || v.compliance_status === 'Critical Audit') {
+                        compBadge = 'bg-red-50 text-red-700 border-red-200';
+                    } else if (v.compliance_status === 'Under Review') {
+                        compBadge = 'bg-amber-50 text-amber-700 border-amber-200';
                     }
 
                     const row = `
-                        <tr class="hover:bg-surface-container-low border-b border-outline-variant">
+                        <tr class="hover:bg-surface-container-low border-b border-outline-variant text-body-md text-on-surface">
+                            <td class="px-lg py-md font-mono text-caption text-on-surface-variant">#${v.vendor_id}</td>
                             <td class="px-lg py-md">
-                                <div class="font-semibold">${escapeHtml(v.vendor_name)}</div>
+                                <div class="font-semibold text-on-surface">${escapeHtml(v.vendor_name)}</div>
+                                <span class="text-caption text-on-surface-variant font-mono">${escapeHtml(v.contact_email || 'No email')}</span>
                             </td>
-                            <td class="px-lg py-md">${escapeHtml(v.category)}</td>
+                            <td class="px-lg py-md text-on-surface-variant">${escapeHtml(v.category)}</td>
                             <td class="px-lg py-md">
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold ${riskClass}">
-                                    ${escapeHtml(v.risk_level)}
+                                <span class="px-2.5 py-0.5 rounded-full text-caption font-semibold border ${riskBadge}">
+                                    ${escapeHtml(v.risk_level)} (${v.risk_score}%)
                                 </span>
                             </td>
+                            <td class="px-lg py-md text-caption font-mono">
+                                <div class="grid grid-cols-2 gap-x-2 text-[11px]">
+                                    <span>Priv: <b>${v.privacy_score}%</b></span>
+                                    <span>Sec: <b>${v.security_score}%</b></span>
+                                    <span>Ops: <b>${v.operational_score}%</b></span>
+                                    <span>Leg: <b>${v.legal_score}%</b></span>
+                                </div>
+                            </td>
                             <td class="px-lg py-md">
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold ${dpaClass}">
-                                    ${escapeHtml(v.dpa_status)}
+                                <span class="px-2.5 py-0.5 rounded-full text-caption font-semibold border ${compBadge}">
+                                    ${escapeHtml(v.compliance_status)}
                                 </span>
                             </td>
-                            <td class="px-lg py-md text-center">
-                                <button onclick="triggerDpiaForVendor(${v.id}, ${JSON.stringify(v.vendor_name).replace(/"/g, '&quot;')})" class="text-primary hover:underline">
-                                    <span class="material-symbols-outlined align-middle">fact_check</span> Assess
+                            <td class="px-lg py-md text-caption font-mono text-on-surface-variant">${escapeHtml(v.last_assessment_date || 'Not Assessed')}</td>
+                            <td class="px-lg py-md text-right whitespace-nowrap space-x-1">
+                                <button onclick="openRiskAssessmentModal(${v.vendor_id})" class="text-primary hover:underline font-semibold text-xs px-1.5" title="Audit Risk Factors">
+                                    <span class="material-symbols-outlined text-[16px] align-middle">fact_check</span> Assess
                                 </button>
+                                <span class="text-outline">|</span>
+                                <button onclick="openRiskHistoryModal(${v.vendor_id})" class="text-indigo-600 hover:underline font-semibold text-xs px-1.5" title="View Audit History">History</button>
                             </td>
                         </tr>
                     `;
@@ -104,231 +137,258 @@ async function loadVendors() {
             const paginationDiv = document.getElementById('vendorPagination');
             if (paginationDiv) {
                 paginationDiv.innerHTML = `
-                    <div class="text-sm text-outline">
+                    <div class="text-caption text-on-surface-variant">
                         Showing <strong>${(currentPage - 1) * 10 + 1}–${Math.min(currentPage * 10, total)}</strong> of <strong>${total}</strong> Vendors
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-4 py-2 rounded-lg border border-outline-variant hover:bg-gray-50 disabled:opacity-50">Previous</button>
-                        <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-4 py-2 rounded-lg border border-outline-variant hover:bg-gray-50 disabled:opacity-50">Next</button>
+                    <div class="flex gap-sm">
+                        <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high disabled:opacity-50 text-body-md font-semibold">Previous</button>
+                        <button onclick="changePage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high disabled:opacity-50 text-body-md font-semibold">Next</button>
                     </div>
                 `;
             }
         }
     } catch (e) {
-        console.error('Failed to load vendors', e);
+        console.error('Failed to load vendor risk list', e);
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="9" class="px-lg py-md text-center text-red-600">Failed to load vendor risk data.</td></tr>';
+        }
     }
 }
 
 function changePage(page) {
+    if (page < 1) return;
     currentPage = page;
-    loadVendors();
+    loadRiskVendors();
 }
 
-// 3. Start Assessment for selected Vendor
-function triggerDpiaForVendor(vendorId, vendorName) {
-    const select = document.getElementById('assessment_vendor_select');
-    select.innerHTML = `<option value="${vendorId}" selected>${vendorName}</option>`;
-    document.getElementById('assessment_title').value = `${vendorName} Security Audit`;
-    document.getElementById('startAssessmentModal').classList.remove('hidden');
-    document.getElementById('startAssessmentModal').classList.add('flex');
-}
+// 3. Risk Assessment Audit Modal
+async function openRiskAssessmentModal(vendorId) {
+    if (!vendorId) return;
+    const modal = document.getElementById('riskAssessmentModal');
+    if (!modal) return;
 
-// Helper to load all vendors into Select dropdown
-async function loadVendorSelectDropdown() {
     try {
-        const res = await fetch('backend/api/vendors/list.php?p=1&limit=100');
+        const res = await fetch(`backend/api/vendor-risk/get.php?vendor_id=${vendorId}`);
         const data = await res.json();
-        if (data.success && data.data) {
-            const items = data.data.items || [];
-            const select = document.getElementById('assessment_vendor_select');
-            select.innerHTML = '<option value="">-- Choose a Vendor --</option>';
-            items.forEach(v => {
-                select.innerHTML += `<option value="${v.id}">${escapeHtml(v.vendor_name)}</option>`;
-            });
+        if ((data.status === 'success' || data.success) && data.data) {
+            const v = data.data;
+            document.getElementById('assess_vendor_id').value = v.vendor_id;
+            document.getElementById('assess_vendor_name_display').innerText = v.vendor_name;
+            document.getElementById('assess_category_display').innerText = v.category;
+            
+            document.getElementById('privacy_score_input').value = v.privacy_score || 20;
+            document.getElementById('privacy_score_val').innerText = (v.privacy_score || 20) + '%';
+
+            document.getElementById('security_score_input').value = v.security_score || 20;
+            document.getElementById('security_score_val').innerText = (v.security_score || 20) + '%';
+
+            document.getElementById('operational_score_input').value = v.operational_score || 20;
+            document.getElementById('operational_score_val').innerText = (v.operational_score || 20) + '%';
+
+            document.getElementById('legal_score_input').value = v.legal_score || 20;
+            document.getElementById('legal_score_val').innerText = (v.legal_score || 20) + '%';
+
+            document.getElementById('assess_compliance_status').value = v.compliance_status || 'Under Review';
+            document.getElementById('assess_notes').value = v.assessment_notes || '';
+
+            updateLiveCalculatedScore();
+            modal.classList.remove('hidden');
+        } else {
+            alert('Error loading vendor assessment details: ' + (data.message || 'Error'));
         }
     } catch (e) {
-        console.error('Failed to load vendors dropdown', e);
+        console.error('Failed to load vendor risk details', e);
+        alert('Network error loading vendor risk details.');
     }
 }
 
-// 4. Modal Triggers
-function openVendorModal() {
-    document.getElementById('vendorModal').classList.remove('hidden');
-    document.getElementById('vendorModal').classList.add('flex');
+function closeRiskAssessmentModal() {
+    const modal = document.getElementById('riskAssessmentModal');
+    if (modal) modal.classList.add('hidden');
 }
 
-function closeVendorModal() {
-    document.getElementById('vendorModal').classList.add('hidden');
-    document.getElementById('vendorModal').classList.remove('flex');
-    document.getElementById('vendorForm').reset();
+function updateLiveCalculatedScore() {
+    const p = parseInt(document.getElementById('privacy_score_input')?.value || 0);
+    const s = parseInt(document.getElementById('security_score_input')?.value || 0);
+    const o = parseInt(document.getElementById('operational_score_input')?.value || 0);
+    const l = parseInt(document.getElementById('legal_score_input')?.value || 0);
+
+    document.getElementById('privacy_score_val').innerText = p + '%';
+    document.getElementById('security_score_val').innerText = s + '%';
+    document.getElementById('operational_score_val').innerText = o + '%';
+    document.getElementById('legal_score_val').innerText = l + '%';
+
+    const avg = Math.round((p + s + o + l) / 4);
+    let level = 'Low';
+    let badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (avg >= 80) {
+        level = 'Critical';
+        badgeClass = 'bg-red-100 text-red-800 border-red-300 font-bold';
+    } else if (avg >= 60) {
+        level = 'High';
+        badgeClass = 'bg-red-50 text-red-700 border-red-200';
+    } else if (avg >= 40) {
+        level = 'Medium';
+        badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+    }
+
+    const preview = document.getElementById('live_score_preview');
+    if (preview) {
+        preview.className = `px-3 py-1 rounded-full text-caption font-semibold border ${badgeClass}`;
+        preview.innerText = `Calculated: ${avg}% (${level} Risk)`;
+    }
 }
 
-function openAssessmentModal() {
-    loadVendorSelectDropdown();
-    document.getElementById('assessment_title').value = '';
-    document.getElementById('startAssessmentModal').classList.remove('hidden');
-    document.getElementById('startAssessmentModal').classList.add('flex');
-}
+// 4. Risk History Modal
+async function openRiskHistoryModal(vendorId) {
+    if (!vendorId) return;
+    const modal = document.getElementById('riskHistoryModal');
+    const content = document.getElementById('riskHistoryContent');
+    if (!modal || !content) return;
 
-function closeAssessmentModal() {
-    document.getElementById('startAssessmentModal').classList.add('hidden');
-    document.getElementById('startAssessmentModal').classList.remove('flex');
-    document.getElementById('assessmentForm').reset();
-}
-
-// 5. Review Flags (High/Critical or non-compliant status)
-async function openFlagsModal() {
-    const tbody = document.getElementById('flaggedVendorsTableBody');
-    tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">Checking flags...</td></tr>';
-    document.getElementById('reviewFlagsModal').classList.remove('hidden');
-    document.getElementById('reviewFlagsModal').classList.add('flex');
+    content.innerHTML = '<div class="text-center py-6 text-gray-500 text-xs"><span class="material-symbols-outlined animate-spin text-xl text-primary block mb-1">sync</span>Loading risk history logs...</div>';
+    modal.classList.remove('hidden');
 
     try {
-        // Fetch all vendors
-        const res = await fetch('backend/api/vendors/list.php?p=1&limit=100');
+        const res = await fetch(`backend/api/vendor-risk/history.php?vendor_id=${vendorId}`);
         const data = await res.json();
-        if (data.success && data.data) {
-            tbody.innerHTML = '';
-            const items = data.data.items || [];
-            const flagged = items.filter(v => 
-                v.risk_level === 'Critical' || 
-                v.risk_level === 'High' || 
-                v.dpa_status !== 'Compliant'
-            );
-
-            if (flagged.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-green-600 font-semibold">No critical flags found! All systems green.</td></tr>';
+        if ((data.status === 'success' || data.success) && data.data) {
+            const items = data.data || [];
+            if (items.length === 0) {
+                content.innerHTML = '<div class="text-center py-6 text-gray-500 text-xs">No historical risk changes recorded yet.</div>';
             } else {
-                flagged.forEach(v => {
-                    let riskClass = 'text-green-600';
-                    if (v.risk_level === 'Critical' || v.risk_level === 'High') {
-                        riskClass = 'text-red-600 font-bold';
-                    }
-
-                    let dpaClass = 'text-green-600';
-                    if (v.dpa_status !== 'Compliant') {
-                        dpaClass = 'text-yellow-600 font-bold';
-                    }
-
-                    tbody.innerHTML += `
-                        <tr class="border-b">
-                            <td class="p-4 font-semibold">${escapeHtml(v.vendor_name)}</td>
-                            <td class="p-4 ${riskClass}">${escapeHtml(v.risk_level)}</td>
-                            <td class="p-4 ${dpaClass}">${escapeHtml(v.dpa_status)}</td>
-                        </tr>
+                let html = '<div class="space-y-3">';
+                items.forEach(h => {
+                    const user = (h.first_name ? h.first_name + ' ' + h.last_name : h.email) || 'System Auditor';
+                    html += `
+                        <div class="p-3 bg-surface-container-low rounded-lg border border-outline-variant text-caption">
+                            <div class="flex justify-between font-semibold text-on-surface mb-1">
+                                <span>${escapeHtml(user)}</span>
+                                <span class="text-on-surface-variant font-mono text-[11px]">${escapeHtml(h.changed_at || '')}</span>
+                            </div>
+                            <div class="text-on-surface-variant">
+                                Risk Score: <span class="font-bold text-primary">${h.previous_risk_score}% &rarr; ${h.new_risk_score}%</span> | Level: <b>${escapeHtml(h.previous_risk_level || 'Low')} &rarr; ${escapeHtml(h.new_risk_level)}</b>
+                            </div>
+                            <div class="text-on-surface-variant">
+                                Compliance: <b>${escapeHtml(h.previous_status || 'Under Review')} &rarr; ${escapeHtml(h.new_status)}</b>
+                            </div>
+                            ${h.notes ? `<div class="mt-1 text-gray-600 italic">"${escapeHtml(h.notes)}"</div>` : ''}
+                        </div>
                     `;
                 });
+                html += '</div>';
+                content.innerHTML = html;
             }
+        } else {
+            content.innerHTML = '<div class="text-center py-6 text-red-600">Failed to load risk history.</div>';
         }
     } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-red-600">Error loading flags.</td></tr>';
+        console.error('Failed to load risk history', e);
+        content.innerHTML = '<div class="text-center py-6 text-red-600">Error loading risk history logs.</div>';
     }
 }
 
-function closeFlagsModal() {
-    document.getElementById('reviewFlagsModal').classList.add('hidden');
-    document.getElementById('reviewFlagsModal').classList.remove('flex');
+function closeRiskHistoryModal() {
+    const modal = document.getElementById('riskHistoryModal');
+    if (modal) modal.classList.add('hidden');
 }
 
-// 6. Setup Listeners
+// 5. Export Functionality
+function exportRiskReport(format = 'csv') {
+    const search = document.getElementById('filter-search')?.value || '';
+    const category = document.getElementById('filter-category')?.value || '';
+    const risk = document.getElementById('filter-risk')?.value || '';
+    const compliance = document.getElementById('filter-compliance')?.value || '';
+
+    const url = `backend/api/vendor-risk/export.php?format=${format}&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&risk_level=${encodeURIComponent(risk)}&compliance_status=${encodeURIComponent(compliance)}`;
+    window.open(url, '_blank');
+}
+
+function searchRiskVendors() {
+    currentPage = 1;
+    loadRiskVendors();
+}
+
+function clearRiskFilters() {
+    const s = document.getElementById('filter-search');
+    const c = document.getElementById('filter-category');
+    const r = document.getElementById('filter-risk');
+    const comp = document.getElementById('filter-compliance');
+
+    if (s) s.value = '';
+    if (c) c.value = '';
+    if (r) r.value = '';
+    if (comp) comp.value = '';
+
+    currentPage = 1;
+    loadRiskVendors();
+}
+
+// Global scope exports to window
+window.loadRiskDashboard = loadRiskDashboard;
+window.loadRiskVendors = loadRiskVendors;
+window.openRiskAssessmentModal = openRiskAssessmentModal;
+window.closeRiskAssessmentModal = closeRiskAssessmentModal;
+window.openRiskHistoryModal = openRiskHistoryModal;
+window.closeRiskHistoryModal = closeRiskHistoryModal;
+window.exportRiskReport = exportRiskReport;
+window.searchRiskVendors = searchRiskVendors;
+window.clearRiskFilters = clearRiskFilters;
+window.changePage = changePage;
+window.updateLiveCalculatedScore = updateLiveCalculatedScore;
+
 document.addEventListener('DOMContentLoaded', () => {
-    loadKpis();
-    loadVendors();
+    loadRiskDashboard();
+    loadRiskVendors();
 
-    // Filters Search Button
-    document.getElementById('btn-search').addEventListener('click', () => {
-        currentPage = 1;
-        loadVendors();
-    });
-
-    // Onboard Header Button & Modal Toggles
-    document.getElementById('btn-onboard-header')?.addEventListener('click', openVendorModal);
-    document.getElementById('btn-add-vendor')?.addEventListener('click', openVendorModal);
-    document.getElementById('closeVendorModal')?.addEventListener('click', closeVendorModal);
-    document.getElementById('cancelVendorModal')?.addEventListener('click', closeVendorModal);
-
-    // Save Vendor AJAX Submit
-    const vendorForm = document.getElementById('vendorForm');
-    if (vendorForm) {
-        vendorForm.addEventListener('submit', async function(e) {
+    const searchForm = document.getElementById('searchForm');
+    if (searchForm) {
+        searchForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            console.log('vendorForm submit fired');
-            
-            const fd = new FormData(this);
-            // Check if csrf_token already exists in FormData, if so, override or make sure it has G_CSRF_TOKEN
-            if (fd.has('csrf_token')) {
-                fd.set('csrf_token', G_CSRF_TOKEN);
-            } else {
-                fd.append('csrf_token', G_CSRF_TOKEN);
-            }
-            
-            console.log('Sending onboard vendor request...');
-            try {
-                const res = await fetch('backend/api/vendors/create.php', { method: 'POST', body: fd });
-                console.log('HTTP status received:', res.status);
-                
-                let data;
-                const text = await res.text();
-                try {
-                    data = JSON.parse(text);
-                } catch (jsonErr) {
-                    throw new Error('Invalid JSON response: ' + text);
-                }
-                
-                if (data.success || data.status === 'success') {
-                    alert(data.message || 'Vendor onboarded successfully!');
-                    closeVendorModal();
-                    loadVendors();
-                    loadKpis();
-                } else {
-                    alert('Error: ' + (data.message || 'Failed to onboard vendor.'));
-                }
-            } catch (err) {
-                console.error('Submit error:', err);
-                alert('Request failed: ' + err.message);
-            }
+            currentPage = 1;
+            loadRiskVendors();
         });
-        console.log('vendorForm submit handler attached successfully');
-    } else {
-        console.error('vendorForm element not found');
     }
 
-    // Start Assessment Trigger
-    document.getElementById('btn-start-assessment').addEventListener('click', openAssessmentModal);
-    document.getElementById('closeAssessmentModal').addEventListener('click', closeAssessmentModal);
-    document.getElementById('cancelAssessmentModal').addEventListener('click', closeAssessmentModal);
-
-    // Save Assessment AJAX Submit
-    document.getElementById('assessmentForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const fd = new FormData(this);
-        
-        try {
-            const res = await fetch('api/save-assessment.php', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data.status === 'success') {
-                alert(data.message || 'DPIA Assessment started successfully!');
-                closeAssessmentModal();
-                loadVendors();
-                loadKpis();
-            } else {
-                alert(data.message || 'Failed to start assessment.');
-            }
-        } catch (e) {
-            alert('Network error starting assessment.');
+    ['privacy_score_input', 'security_score_input', 'operational_score_input', 'legal_score_input'].forEach(id => {
+        const inp = document.getElementById(id);
+        if (inp) {
+            inp.addEventListener('input', updateLiveCalculatedScore);
+            inp.addEventListener('change', updateLiveCalculatedScore);
         }
     });
 
-    // Download Report
-    document.getElementById('btn-download-report').addEventListener('click', () => {
-        window.open('backend/api/reports/vendor-risk.php', '_blank');
-    });
-    document.getElementById('btn-export-report-header')?.addEventListener('click', () => {
-        window.open('backend/api/reports/vendor-risk.php', '_blank');
-    });
+    const form = document.getElementById('riskAssessmentForm');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving Assessment...';
+            }
 
-    // Review Flags
-    document.getElementById('btn-review-flags').addEventListener('click', openFlagsModal);
-    document.getElementById('closeFlagsModal').addEventListener('click', closeFlagsModal);
-    document.getElementById('closeFlagsModalBtn').addEventListener('click', closeFlagsModal);
+            const formData = new FormData(this);
+            try {
+                const res = await fetch('backend/api/vendor-risk/save.php', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.status === 'success' || data.success) {
+                    closeRiskAssessmentModal();
+                    loadRiskVendors();
+                    loadRiskDashboard();
+                    alert('Vendor risk assessment saved and score recalculated successfully!');
+                } else {
+                    alert('Error saving assessment: ' + (data.message || 'Action failed'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to save assessment. Connection error.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Save & Recalculate';
+                }
+            }
+        });
+    }
 });
