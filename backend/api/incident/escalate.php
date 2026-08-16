@@ -1,16 +1,6 @@
 <?php
-// backend/api/incident/escalate.php
-
-use Backend\Core\ApiBootstrap;
-require_once __DIR__ . '/../../../backend/core/ApiBootstrap.php';
-require_once __DIR__ . '/../../../backend/models/Incident.php';
-require_once __DIR__ . '/../../../backend/services/IncidentService.php';
-require_once __DIR__ . '/../../../backend/controllers/IncidentController.php';
-
-ApiBootstrap::requireMethod('POST');
-ApiBootstrap::requireCsrf();
-
-$model = new \Backend\Models\Incident($pdo);
-$service = new \Backend\Services\IncidentService($pdo, $model);
-$controller = new \Backend\Controllers\IncidentController($service);
+// governance/backend/api/incident/escalate.php
+require_once __DIR__ . '/bootstrap.php';
+\Backend\Core\ApiBootstrap::requireMethod('POST');
+\Backend\Core\ApiBootstrap::requireCsrf();
 $controller->escalate();

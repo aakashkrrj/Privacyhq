@@ -1,14 +1,6 @@
 <?php
-use Backend\Core\ApiBootstrap;
-require_once __DIR__ . '/../../../backend/core/ApiBootstrap.php';
-require_once __DIR__ . '/../../../backend/models/RiskRegister.php';
-require_once __DIR__ . '/../../../backend/services/RiskRegisterService.php';
-require_once __DIR__ . '/../../../backend/controllers/RiskRegisterController.php';
-
-ApiBootstrap::requireMethod('POST');
-ApiBootstrap::requireCsrf();
-
-$model = new \Backend\Models\RiskRegister($pdo);
-$service = new \Backend\Services\RiskRegisterService($pdo, $model);
-$controller = new \Backend\Controllers\RiskRegisterController($service);
+// governance/backend/api/risk-register/create.php
+require_once __DIR__ . '/bootstrap.php';
+\Backend\Core\ApiBootstrap::requireMethod('POST');
+\Backend\Core\ApiBootstrap::requireCsrf();
 $controller->create();

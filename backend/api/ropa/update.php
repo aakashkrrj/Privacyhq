@@ -1,14 +1,6 @@
 <?php
-use Backend\Core\ApiBootstrap;
-require_once __DIR__ . '/../../../backend/core/ApiBootstrap.php';
-require_once __DIR__ . '/../../../backend/models/Ropa.php';
-require_once __DIR__ . '/../../../backend/services/RopaService.php';
-require_once __DIR__ . '/../../../backend/controllers/RopaController.php';
-
-ApiBootstrap::requireMethod('POST');
-ApiBootstrap::requireCsrf();
-
-$model = new \Backend\Models\Ropa($pdo);
-$service = new \Backend\Services\RopaService($pdo, $model);
-$controller = new \Backend\Controllers\RopaController($service);
+// governance/backend/api/ropa/update.php
+require_once __DIR__ . '/bootstrap.php';
+\Backend\Core\ApiBootstrap::requireMethod('POST');
+\Backend\Core\ApiBootstrap::requireCsrf();
 $controller->update();
