@@ -1,0 +1,8 @@
+# Local development / secrets
+reset_local_admin.php
+
+# QA / temporary test scripts
+scratch/
+
+# User-uploaded documents
+uploads/documents/

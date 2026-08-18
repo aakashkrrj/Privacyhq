@@ -32,7 +32,7 @@ if ($conn->connect_error) {
 
 // Session Management & CSRF Token
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    @session_start();
 }
 
 if (empty($_SESSION['csrf_token'])) {

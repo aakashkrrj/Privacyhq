@@ -1,326 +1,459 @@
 <?php
 // pages/settings.php
+require_once __DIR__ . '/../includes/db.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
-$userId = $_SESSION['user_id'] ?? null;
+$userId = $_SESSION['user_id'] ?? 0;
 if (!$userId) {
-    echo '<div class="p-6 bg-red-50 border border-red-200 text-red-800 text-sm rounded-xl">Access Denied: Please log in.</div>';
+    header('Location: login.php');
     exit;
 }
 
-// Fetch current user details
-$stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
-$stmt->execute([$userId]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-$fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
-$email = $user['email'] ?? '';
-$phone = $user['phone'] ?? '';
-$designation = $user['designation'] ?? 'Data Protection Officer';
-$department = $user['department'] ?? 'Compliance & Legal';
-$profileImage = $user['profile_image'] ?? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80';
-$roleId = $_SESSION['role_id'] ?? 0;
+$csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
 ?>
 
-<!-- Profile Header -->
-<section class="mb-lg animate-in fade-in slide-in-from-top-4 duration-500">
-    <div class="flex items-center gap-md p-md bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm">
-        <div class="relative">
-            <?php 
-            $profileUrl = getProfileImageUrl($user['profile_image'] ?? null); 
-            $defaultAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80';
-            ?>
-            <img id="settingsAvatar" class="w-16 h-16 rounded-full object-cover border-2 border-primary" src="<?= htmlspecialchars($profileUrl) ?><?= ($profileUrl !== $defaultAvatar) ? '?t=' . time() : '' ?>" alt="Avatar" onerror="this.src='<?= $defaultAvatar ?>';">
-            <div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-surface rounded-full"></div>
+<div class="space-y-lg max-w-7xl mx-auto">
+    <!-- Page Header -->
+    <div>
+        <div class="flex items-center gap-sm">
+            <span class="material-symbols-outlined text-primary text-[32px]">settings</span>
+            <h1 class="text-display font-display text-primary leading-tight">Platform Settings &amp; Security Portal</h1>
         </div>
-        <div class="flex-grow">
-            <h2 id="settingsFullName" class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface"><?= htmlspecialchars($fullName ?: 'Admin User') ?></h2>
-            <p id="settingsDesignation" class="font-body-md text-body-md text-on-surface-variant"><?= htmlspecialchars($designation) ?></p>
-            <div class="mt-1">
-                <span class="bg-tertiary-fixed text-on-tertiary-fixed text-[10px] uppercase font-bold px-2 py-0.5 rounded-full tracking-wider">Premium Enterprise</span>
-            </div>
-        </div>
-        <button onclick="openEditProfileModal()" class="text-primary hover:bg-primary-fixed p-2 rounded-lg transition-colors">
-            <span class="material-symbols-outlined" data-icon="edit">edit</span>
-        </button>
-    </div>
-</section>
-
-<!-- Settings Categories -->
-<div class="space-y-md">
-    <!-- Security Category -->
-    <div class="space-y-base">
-        <h3 class="px-base font-label-md text-label-md text-outline uppercase tracking-widest">Security</h3>
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-            <div class="fluent-list-item flex items-center justify-between p-md border-b border-surface-variant cursor-pointer transition-all">
-                <div class="flex items-center gap-md">
-                    <span class="material-symbols-outlined text-outline" data-icon="lock">lock</span>
-                    <span class="font-body-lg text-body-lg">Two-Factor Authentication</span>
-                </div>
-                <div class="flex items-center gap-sm">
-                    <span class="font-body-md text-body-md text-green-600">Enabled</span>
-                    <span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
-                </div>
-            </div>
-            <div onclick="openChangePasswordModal()" class="fluent-list-item flex items-center justify-between p-md cursor-pointer transition-all hover:bg-surface-container-low">
-                <div class="flex items-center gap-md">
-                    <span class="material-symbols-outlined text-outline" data-icon="password">password</span>
-                    <span class="font-body-lg text-body-lg">Change Password</span>
-                </div>
-                <span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
-            </div>
-        </div>
+        <p class="text-body-md text-on-surface-variant mt-xs">Manage personal profile details, authentication credentials, 2FA security, notification preferences, developer API keys, team permissions, and compliance evidence documents.</p>
     </div>
 
-    <!-- Preferences Category -->
-    <div class="space-y-base">
-        <h3 class="px-base font-label-md text-label-md text-outline uppercase tracking-widest">Preferences</h3>
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-            <a href="index.php?page=notification-preferences" class="fluent-list-item flex items-center justify-between p-md border-b border-surface-variant cursor-pointer transition-all hover:bg-surface-container-low block">
-                <div class="flex items-center gap-md">
-                    <span class="material-symbols-outlined text-outline" data-icon="notifications_active">notifications_active</span>
-                    <span class="font-body-lg text-body-lg">Notification Channels</span>
+    <!-- 8-Tab Settings Navigation Card -->
+    <div class="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+        <div class="border-b border-outline-variant bg-surface-container-low px-md flex flex-wrap gap-xs overflow-x-auto">
+            <button onclick="switchSettingsTab('profile')" id="tabBtn-profile" class="px-md py-3.5 font-title-md border-b-2 border-primary text-primary transition-all font-semibold focus:outline-none cursor-pointer flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px]">badge</span> Profile Info
+            </button>
+            <button onclick="switchSettingsTab('edit-profile')" id="tabBtn-edit-profile" class="px-md py-3.5 font-title-md border-b-2 border-transparent text-on-surface-variant transition-all font-semibold focus:outline-none cursor-pointer flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px]">edit_square</span> Edit Profile
+            </button>
+            <button onclick="switchSettingsTab('password')" id="tabBtn-password" class="px-md py-3.5 font-title-md border-b-2 border-transparent text-on-surface-variant transition-all font-semibold focus:outline-none cursor-pointer flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px]">lock_reset</span> Password
+            </button>
+            <button onclick="switchSettingsTab('2fa')" id="tabBtn-2fa" class="px-md py-3.5 font-title-md border-b-2 border-transparent text-on-surface-variant transition-all font-semibold focus:outline-none cursor-pointer flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px]">security</span> 2FA Security
+            </button>
+            <button onclick="switchSettingsTab('notifications')" id="tabBtn-notifications" class="px-md py-3.5 font-title-md border-b-2 border-transparent text-on-surface-variant transition-all font-semibold focus:outline-none cursor-pointer flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px]">notifications</span> Notifications
+            </button>
+            <button onclick="switchSettingsTab('api-keys')" id="tabBtn-api-keys" class="px-md py-3.5 font-title-md border-b-2 border-transparent text-on-surface-variant transition-all font-semibold focus:outline-none cursor-pointer flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px]">key</span> API Keys
+            </button>
+            <button onclick="switchSettingsTab('permissions')" id="tabBtn-permissions" class="px-md py-3.5 font-title-md border-b-2 border-transparent text-on-surface-variant transition-all font-semibold focus:outline-none cursor-pointer flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span> Team Permissions
+            </button>
+            <button onclick="switchSettingsTab('documents')" id="tabBtn-documents" class="px-md py-3.5 font-title-md border-b-2 border-transparent text-on-surface-variant transition-all font-semibold focus:outline-none cursor-pointer flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px]">folder_zip</span> Compliance Vault
+            </button>
+        </div>
+
+        <!-- Tab 1: Profile Information (Row 141) -->
+        <div id="tabContent-profile" class="p-lg space-y-md">
+            <div class="flex items-center gap-md p-md bg-surface-container-low rounded-xl border border-outline-variant">
+                <div class="w-20 h-20 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center overflow-hidden" id="prof-avatar-box">
+                    <span class="material-symbols-outlined text-primary text-[40px]">person</span>
                 </div>
-                <span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
-            </a>
-            <div class="fluent-list-item flex items-center justify-between p-md cursor-pointer transition-all">
-                <div class="flex items-center gap-md">
-                    <span class="material-symbols-outlined text-outline" data-icon="dark_mode">dark_mode</span>
-                    <span class="font-body-lg text-body-lg">Dark Mode</span>
+                <div>
+                    <h2 class="text-display font-bold text-on-surface" id="prof-name">Loading...</h2>
+                    <p class="text-body-md text-on-surface-variant" id="prof-email">...</p>
+                    <span class="inline-flex px-3 py-0.5 rounded-full text-caption font-semibold border bg-blue-50 text-blue-700 border-blue-200 mt-2" id="prof-role">
+                        Loading Role
+                    </span>
                 </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input id="settingsDarkModeToggle" class="sr-only peer" type="checkbox" onchange="toggleDarkTheme(this.checked)"/>
-                    <div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
+                <div class="p-md bg-surface-container-low rounded-lg border">
+                    <span class="text-caption text-on-surface-variant uppercase font-semibold block">User ID</span>
+                    <strong class="font-mono text-primary text-title-md block" id="prof-id">#...</strong>
+                </div>
+                <div class="p-md bg-surface-container-low rounded-lg border">
+                    <span class="text-caption text-on-surface-variant uppercase font-semibold block">Phone Number</span>
+                    <strong class="font-mono text-on-surface text-body-md block" id="prof-phone">N/A</strong>
+                </div>
+                <div class="p-md bg-surface-container-low rounded-lg border">
+                    <span class="text-caption text-on-surface-variant uppercase font-semibold block">Account Status</span>
+                    <strong class="capitalize text-emerald-700 text-body-md block" id="prof-status">Active</strong>
+                </div>
+                <div class="p-md bg-surface-container-low rounded-lg border">
+                    <span class="text-caption text-on-surface-variant uppercase font-semibold block">Account Created</span>
+                    <strong class="font-mono text-on-surface text-caption block" id="prof-created">...</strong>
+                </div>
+                <div class="p-md bg-surface-container-low rounded-lg border">
+                    <span class="text-caption text-on-surface-variant uppercase font-semibold block">Last Session Login</span>
+                    <strong class="font-mono text-on-surface text-caption block" id="prof-login">...</strong>
+                </div>
+                <div class="p-md bg-surface-container-low rounded-lg border">
+                    <span class="text-caption text-on-surface-variant uppercase font-semibold block">2FA Status</span>
+                    <strong class="text-primary text-body-md block" id="prof-2fa-status">Disabled</strong>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Team & API -->
-    <div class="space-y-base">
-        <h3 class="px-base font-label-md text-label-md text-outline uppercase tracking-widest">Organization</h3>
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-            <div onclick="alert('Team Permissions module is managed under User Management.')" class="fluent-list-item flex items-center justify-between p-md border-b border-surface-variant cursor-pointer transition-all hover:bg-surface-container-low">
-                <div class="flex items-center gap-md">
-                    <span class="material-symbols-outlined text-outline" data-icon="groups">groups</span>
-                    <span class="font-body-lg text-body-lg">Team Permissions</span>
+        <!-- Tab 2: Edit Profile (Row 142) -->
+        <div id="tabContent-edit-profile" class="hidden p-lg max-w-2xl space-y-md">
+            <h3 class="font-bold text-on-surface text-title-md">Update Personal Information</h3>
+            <form id="editProfileForm" class="space-y-md">
+                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+
+                <div class="grid grid-cols-2 gap-md">
+                    <div>
+                        <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">First Name *</label>
+                        <input type="text" name="first_name" id="edit_prof_first_name" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Last Name *</label>
+                        <input type="text" name="last_name" id="edit_prof_last_name" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none">
+                    </div>
                 </div>
-                <span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
+
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Phone Number</label>
+                    <input type="text" name="phone" id="edit_prof_phone" class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="+1 555-0192">
+                </div>
+
+                <div class="pt-2 border-t border-outline-variant flex justify-end">
+                    <button type="submit" class="px-5 py-2.5 text-body-md text-white bg-primary rounded-xl hover:opacity-90 font-semibold cursor-pointer">Save Profile Details</button>
+                </div>
+            </form>
+
+            <hr class="my-md border-outline-variant">
+
+            <h3 class="font-bold text-on-surface text-title-md">Update Profile Avatar</h3>
+            <form id="avatarForm" class="space-y-md">
+                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Select Avatar Image (JPG, PNG, WEBP, Max 5MB)</label>
+                    <input type="file" name="profile_image" accept="image/*" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="px-5 py-2.5 text-body-md text-white bg-primary rounded-xl hover:opacity-90 font-semibold cursor-pointer">Upload Avatar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tab 3: Change Password (Row 143) -->
+        <div id="tabContent-password" class="hidden p-lg max-w-xl space-y-md">
+            <h3 class="font-bold text-on-surface text-title-md">Change Account Password</h3>
+            <form id="changePasswordForm" class="space-y-md">
+                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Current Password *</label>
+                    <input type="password" name="current_password" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="Enter current password">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">New Password * (Min 8 Chars)</label>
+                    <input type="password" name="new_password" minlength="8" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="Enter new password">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Confirm New Password *</label>
+                    <input type="password" name="confirm_password" minlength="8" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="Re-enter new password">
+                </div>
+
+                <div class="pt-2 border-t border-outline-variant flex justify-end">
+                    <button type="submit" class="px-5 py-2.5 text-body-md text-white bg-primary rounded-xl hover:opacity-90 font-semibold cursor-pointer">Update Password</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tab 4: Two-Factor Authentication (Row 144) -->
+        <div id="tabContent-2fa" class="hidden p-lg space-y-md">
+            <div class="flex items-center justify-between p-md bg-surface-container-low rounded-xl border border-outline-variant">
+                <div>
+                    <h3 class="font-bold text-on-surface text-title-md">Two-Factor Authentication (2FA) Security</h3>
+                    <p class="text-caption text-on-surface-variant mt-0.5">Protect your account using TOTP authenticator apps (Google Authenticator, Authy, 1Password).</p>
+                </div>
+                <span class="px-3 py-1 text-caption font-bold rounded-full border bg-amber-50 text-amber-700 border-amber-200" id="2fa-badge">
+                    Status: Disabled
+                </span>
             </div>
-            <div onclick="alert('API Keys configuration is restricted to Enterprise Administrators.')" class="fluent-list-item flex items-center justify-between p-md cursor-pointer transition-all hover:bg-surface-container-low">
-                <div class="flex items-center gap-md">
-                    <span class="material-symbols-outlined text-outline" data-icon="api">api</span>
-                    <span class="font-body-lg text-body-lg">API Keys</span>
+
+            <div id="2fa-setup-box" class="space-y-md border border-outline-variant p-md rounded-xl bg-surface">
+                <h4 class="font-bold text-on-surface">Enable 2FA Protection</h4>
+                <p class="text-body-md text-on-surface-variant">Step 1: Click setup below to generate your secret seed. Scan the secret using your authenticator app.</p>
+                
+                <button onclick="start2faSetup()" class="px-4 py-2.5 bg-primary text-white text-body-md font-semibold rounded-xl hover:opacity-90 transition cursor-pointer">
+                    Start 2FA Setup
+                </button>
+
+                <div id="2fa-qr-container" class="hidden p-md bg-surface-container-low rounded-lg border space-y-md max-w-lg">
+                    <div>
+                        <span class="text-caption font-semibold uppercase text-on-surface-variant block mb-1">Secret Key (Manual Entry)</span>
+                        <code class="font-mono text-primary font-bold text-title-md bg-surface p-2 rounded border block text-center select-all" id="2fa-secret-text">...</code>
+                    </div>
+
+                    <form id="enable2faForm" class="space-y-md">
+                        <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                        <input type="hidden" name="secret" id="2fa_secret_input" value="">
+
+                        <div>
+                            <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Step 2: Enter 6-Digit Authenticator Code *</label>
+                            <input type="text" name="otp_code" required maxlength="6" class="w-full font-mono text-center text-title-lg tracking-widest border border-outline-variant rounded-lg p-2.5 focus:border-primary focus:outline-none" placeholder="123456">
+                        </div>
+
+                        <button type="submit" class="w-full py-2.5 bg-emerald-600 text-white text-body-md font-semibold rounded-xl hover:bg-emerald-700 transition cursor-pointer">
+                            Verify &amp; Activate 2FA
+                        </button>
+                    </form>
                 </div>
-                <span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
+            </div>
+
+            <div id="2fa-disable-box" class="hidden space-y-md border border-red-200 p-md rounded-xl bg-red-50">
+                <h4 class="font-bold text-red-800">2FA is Currently Active</h4>
+                <p class="text-body-md text-red-700">To disable Two-Factor Authentication, confirm your current login password.</p>
+                <form id="disable2faForm" class="flex gap-md items-center max-w-lg">
+                    <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                    <input type="password" name="current_password" required placeholder="Enter Current Password" class="border border-outline-variant rounded-lg p-2.5 text-body-md bg-surface flex-1">
+                    <button type="submit" class="px-4 py-2.5 bg-red-600 text-white text-body-md font-semibold rounded-xl hover:bg-red-700 transition cursor-pointer whitespace-nowrap">
+                        Disable 2FA
+                    </button>
+                </form>
             </div>
         </div>
-    </div>
 
-    <!-- Compliance Category -->
-    <div class="space-y-base">
-        <h3 class="px-base font-label-md text-label-md text-outline uppercase tracking-widest">Compliance</h3>
-        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-            <a href="index.php?page=policies" class="fluent-list-item flex items-center justify-between p-md border-b border-surface-variant cursor-pointer transition-all hover:bg-surface-container-low block">
-                <div class="flex items-center gap-md">
-                    <span class="material-symbols-outlined text-outline" data-icon="policy">policy</span>
-                    <span class="font-body-lg text-body-lg">Legal &amp; Compliance Docs</span>
+        <!-- Tab 5: Notification Preferences (Row 145) -->
+        <div id="tabContent-notifications" class="hidden p-lg space-y-md">
+            <h3 class="font-bold text-on-surface text-title-md">Configure Notification Alerts</h3>
+            <form id="notificationForm" class="space-y-md max-w-2xl">
+                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+
+                <div class="space-y-3">
+                    <label class="flex items-center justify-between p-md bg-surface-container-low rounded-lg border border-outline-variant cursor-pointer hover:bg-surface-container-high transition">
+                        <div>
+                            <span class="font-semibold text-on-surface block">Email Notification Alerts</span>
+                            <span class="text-caption text-on-surface-variant">Receive compliance activity summaries via email</span>
+                        </div>
+                        <input type="checkbox" name="email_notifications" id="notif_email" value="1" class="w-5 h-5 text-primary rounded border-outline-variant">
+                    </label>
+
+                    <label class="flex items-center justify-between p-md bg-surface-container-low rounded-lg border border-outline-variant cursor-pointer hover:bg-surface-container-high transition">
+                        <div>
+                            <span class="font-semibold text-on-surface block">In-App Banner Notifications</span>
+                            <span class="text-caption text-on-surface-variant">Show realtime notifications inside PrivacyHQ dashboard</span>
+                        </div>
+                        <input type="checkbox" name="in_app_notifications" id="notif_in_app" value="1" class="w-5 h-5 text-primary rounded border-outline-variant">
+                    </label>
+
+                    <label class="flex items-center justify-between p-md bg-surface-container-low rounded-lg border border-outline-variant cursor-pointer hover:bg-surface-container-high transition">
+                        <div>
+                            <span class="font-semibold text-red-700 block">Privacy Incident &amp; Breach Alerts</span>
+                            <span class="text-caption text-on-surface-variant">High-priority instant alerts for security incidents</span>
+                        </div>
+                        <input type="checkbox" name="privacy_incident_alerts" id="notif_incident" value="1" class="w-5 h-5 text-red-600 rounded border-outline-variant">
+                    </label>
+
+                    <label class="flex items-center justify-between p-md bg-surface-container-low rounded-lg border border-outline-variant cursor-pointer hover:bg-surface-container-high transition">
+                        <div>
+                            <span class="font-semibold text-on-surface block">Consent &amp; DSR Request Updates</span>
+                            <span class="text-caption text-on-surface-variant">Notifications when data subject requests are submitted</span>
+                        </div>
+                        <input type="checkbox" name="consent_updates" id="notif_consent" value="1" class="w-5 h-5 text-primary rounded border-outline-variant">
+                    </label>
+
+                    <label class="flex items-center justify-between p-md bg-surface-container-low rounded-lg border border-outline-variant cursor-pointer hover:bg-surface-container-high transition">
+                        <div>
+                            <span class="font-semibold text-on-surface block">Assessment &amp; Audit Reminders</span>
+                            <span class="text-caption text-on-surface-variant">Automated reminders for due PIA/DPIA audits</span>
+                        </div>
+                        <input type="checkbox" name="assessment_reminders" id="notif_assessment" value="1" class="w-5 h-5 text-primary rounded border-outline-variant">
+                    </label>
                 </div>
-                <span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
-            </a>
-            <a href="index.php?page=audit-logs" class="fluent-list-item flex items-center justify-between p-md cursor-pointer transition-all hover:bg-surface-container-low block">
-                <div class="flex items-center gap-md">
-                    <span class="material-symbols-outlined text-outline" data-icon="history">history</span>
-                    <span class="font-body-lg text-body-lg">Audit Logs</span>
+
+                <div class="pt-2 border-t border-outline-variant flex justify-end">
+                    <button type="submit" class="px-5 py-2.5 text-body-md text-white bg-primary rounded-xl hover:opacity-90 font-semibold cursor-pointer">Save Notification Preferences</button>
                 </div>
-                <span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
-            </a>
+            </form>
         </div>
-    </div>
 
-    <!-- Sign Out -->
-    <div class="pt-lg">
-        <button onclick="window.location.href='logout.php'" class="w-full flex items-center justify-center gap-sm bg-surface-container-lowest text-error border border-error/20 py-md rounded-xl font-body-lg hover:bg-error-container/20 transition-all active:scale-95 font-semibold">
-            <span class="material-symbols-outlined" data-icon="logout">logout</span>
-            Sign Out
-        </button>
-        <p class="text-center font-caption text-caption text-outline mt-md">Version 2.4.0 • Build 882</p>
+        <!-- Tab 6: API Keys (Row 146) -->
+        <div id="tabContent-api-keys" class="hidden p-lg space-y-md">
+            <div class="flex justify-between items-center bg-surface-container-low p-md rounded-xl border border-outline-variant">
+                <div>
+                    <h3 class="font-bold text-on-surface text-title-md">Developer API Keys</h3>
+                    <p class="text-caption text-on-surface-variant">Generate secure API tokens for integrating PrivacyHQ with external systems.</p>
+                </div>
+                <button onclick="openCreateApiKeyModal()" class="px-4 py-2 bg-primary text-white text-body-md font-semibold rounded-lg hover:opacity-90 transition cursor-pointer">
+                    + Generate New API Key
+                </button>
+            </div>
+
+            <div class="overflow-x-auto border border-outline-variant rounded-lg">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface-container-low text-on-surface-variant font-semibold text-label-md uppercase border-b border-outline-variant">
+                            <th class="p-md">Key Label</th>
+                            <th class="p-md">Prefix</th>
+                            <th class="p-md">Scopes</th>
+                            <th class="p-md">Status</th>
+                            <th class="p-md">Created At</th>
+                            <th class="p-md text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="apiKeysTableBody" class="divide-y divide-outline-variant text-body-md text-on-surface">
+                        <tr><td colspan="6" class="p-md text-center text-gray-500">Loading API keys...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 7: Team Permissions (Row 147) -->
+        <div id="tabContent-permissions" class="hidden p-lg space-y-md">
+            <div class="flex justify-between items-center bg-surface-container-low p-md rounded-xl border border-outline-variant">
+                <div>
+                    <h3 class="font-bold text-on-surface text-title-md">Team Permission Matrix</h3>
+                    <p class="text-caption text-on-surface-variant">View and configure role-based access rules for system modules.</p>
+                </div>
+                <div class="flex gap-sm">
+                    <select id="set-matrix-role-select" onchange="loadSettingsRoleMatrix()" class="border border-outline-variant rounded-lg px-3 py-2 text-body-md bg-surface font-semibold text-primary">
+                        <option value="1">Super Admin</option>
+                        <option value="2">DPO / Privacy Officer</option>
+                        <option value="3">Compliance Assessor</option>
+                        <option value="4">Audit Specialist</option>
+                        <option value="5">Business User</option>
+                    </select>
+                    <button onclick="saveSettingsRoleMatrix()" class="px-4 py-2 bg-primary text-white text-body-md font-semibold rounded-lg hover:opacity-90 transition cursor-pointer">
+                        Save Matrix Changes
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto border border-outline-variant rounded-lg">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface-container-low text-on-surface-variant font-semibold text-label-md uppercase border-b border-outline-variant">
+                            <th class="p-md w-12">Grant</th>
+                            <th class="p-md">Module</th>
+                            <th class="p-md">Permission Name</th>
+                            <th class="p-md">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="settingsMatrixTableBody" class="divide-y divide-outline-variant text-body-md text-on-surface">
+                        <tr><td colspan="4" class="p-md text-center text-gray-500">Loading team permission matrix...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 8: Compliance Documents Vault (Row 148) -->
+        <div id="tabContent-documents" class="hidden p-lg space-y-md">
+            <div class="flex justify-between items-center bg-surface-container-low p-md rounded-xl border border-outline-variant">
+                <div>
+                    <h3 class="font-bold text-on-surface text-title-md">Compliance Evidence Documents Vault</h3>
+                    <p class="text-caption text-on-surface-variant">Store and manage compliance certifications, DPAs, and audit evidence files.</p>
+                </div>
+                <button onclick="openUploadDocModal()" class="px-4 py-2 bg-primary text-white text-body-md font-semibold rounded-lg hover:opacity-90 transition cursor-pointer">
+                    + Upload Compliance Document
+                </button>
+            </div>
+
+            <div class="overflow-x-auto border border-outline-variant rounded-lg">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface-container-low text-on-surface-variant font-semibold text-label-md uppercase border-b border-outline-variant">
+                            <th class="p-md">Document Title</th>
+                            <th class="p-md">Category</th>
+                            <th class="p-md">File Name &amp; Size</th>
+                            <th class="p-md">Uploaded By</th>
+                            <th class="p-md">Date</th>
+                            <th class="p-md text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="documentsTableBody" class="divide-y divide-outline-variant text-body-md text-on-surface">
+                        <tr><td colspan="6" class="p-md text-center text-gray-500">Loading compliance documents...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Modal: Edit Profile -->
-<div id="editProfileModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 w-full max-w-md shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
-        <button onclick="closeEditProfileModal()" class="absolute top-4 right-4 text-outline hover:text-on-surface font-bold text-xl">&times;</button>
-        <h2 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-            <span class="material-symbols-outlined text-primary">person</span>
-            Edit Profile
-        </h2>
-        <form id="editProfileForm" onsubmit="submitProfileUpdate(event)" class="space-y-4" enctype="multipart/form-data">
+<!-- Modal: Create API Key (Row 146) -->
+<div id="createApiKeyModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-surface shadow-xl rounded-xl w-full max-w-lg overflow-hidden border border-outline-variant">
+        <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+            <h3 class="font-bold text-on-surface text-title-md">Generate New API Key</h3>
+            <button onclick="closeCreateApiKeyModal()" class="text-on-surface-variant hover:text-on-surface text-xl font-bold cursor-pointer">&times;</button>
+        </div>
+        <form id="createApiKeyForm" class="p-md space-y-md">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
             <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">First Name</label>
-                <input type="text" name="first_name" required value="<?= htmlspecialchars($user['first_name'] ?? '') ?>" class="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-sm bg-surface text-on-surface">
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Key Label / Name *</label>
+                <input type="text" name="key_name" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="e.g. Production Webhook Key">
             </div>
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Last Name</label>
-                <input type="text" name="last_name" value="<?= htmlspecialchars($user['last_name'] ?? '') ?>" class="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-sm bg-surface text-on-surface">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Email</label>
-                <input type="email" name="email" required value="<?= htmlspecialchars($email) ?>" class="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-sm bg-surface text-on-surface">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Phone</label>
-                <input type="text" name="phone" value="<?= htmlspecialchars($phone) ?>" class="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-sm bg-surface text-on-surface">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Designation</label>
-                <input type="text" name="designation" value="<?= htmlspecialchars($designation) ?>" class="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-sm bg-surface text-on-surface">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Department</label>
-                <input type="text" name="department" value="<?= htmlspecialchars($department) ?>" class="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-sm bg-surface text-on-surface">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Profile Image</label>
-                <input type="file" name="profile_image" accept="image/*" class="w-full text-body-sm text-on-surface-variant">
-            </div>
-            <div class="flex justify-end gap-3 pt-4 border-t border-outline-variant">
-                <button type="button" onclick="closeEditProfileModal()" class="px-4 py-2 text-body-sm font-medium border border-outline-variant rounded-lg hover:bg-surface-container-low bg-surface text-on-surface">Cancel</button>
-                <button type="submit" class="px-4 py-2 text-body-sm font-medium text-white bg-primary rounded-lg hover:bg-opacity-90">Save Changes</button>
+            <div class="border-t border-outline-variant pt-md flex justify-end gap-sm">
+                <button type="button" onclick="closeCreateApiKeyModal()" class="px-4 py-2.5 text-body-md text-on-surface border border-outline-variant rounded-xl hover:bg-surface-container-high font-semibold cursor-pointer">Cancel</button>
+                <button type="submit" class="px-4 py-2.5 text-body-md text-white bg-primary rounded-xl hover:opacity-90 font-semibold cursor-pointer">Generate Key</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal: Change Password -->
-<div id="changePasswordModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 w-full max-w-md shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
-        <button onclick="closeChangePasswordModal()" class="absolute top-4 right-4 text-outline hover:text-on-surface font-bold text-xl">&times;</button>
-        <h2 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-            <span class="material-symbols-outlined text-primary">lock</span>
-            Change Password
-        </h2>
-        <form id="changePasswordForm" onsubmit="submitPasswordChange(event)" class="space-y-4">
+<!-- Modal: Show Raw API Key Once (Row 146) -->
+<div id="showApiKeyModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-surface shadow-xl rounded-xl w-full max-w-lg overflow-hidden border border-outline-variant">
+        <div class="p-md border-b border-outline-variant flex justify-between items-center bg-emerald-50">
+            <h3 class="font-bold text-emerald-800 text-title-md">API Key Generated Successfully</h3>
+            <button onclick="closeShowApiKeyModal()" class="text-emerald-800 hover:text-emerald-950 text-xl font-bold cursor-pointer">&times;</button>
+        </div>
+        <div class="p-md space-y-md">
+            <p class="text-body-md text-on-surface">Save this API key immediately. <strong>It will NEVER be shown again!</strong></p>
+            <code class="font-mono text-primary font-bold text-body-md bg-surface-container-low p-3 rounded-lg border border-outline-variant block text-center select-all break-all" id="rawApiKeyDisplay">...</code>
+        </div>
+        <div class="p-md border-t border-outline-variant flex justify-end bg-surface-container-low">
+            <button onclick="closeShowApiKeyModal()" class="px-4 py-2 text-body-md text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 font-semibold cursor-pointer">I Have Saved My API Key</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Upload Compliance Document (Row 148) -->
+<div id="uploadDocModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-surface shadow-xl rounded-xl w-full max-w-lg overflow-hidden border border-outline-variant">
+        <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+            <h3 class="font-bold text-on-surface text-title-md">Upload Compliance Document</h3>
+            <button onclick="closeUploadDocModal()" class="text-on-surface-variant hover:text-on-surface text-xl font-bold cursor-pointer">&times;</button>
+        </div>
+        <form id="uploadDocForm" class="p-md space-y-md" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+
             <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Current Password</label>
-                <input type="password" name="current_password" required class="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-sm bg-surface text-on-surface">
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Document Title *</label>
+                <input type="text" name="title" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none" placeholder="e.g. GDPR ISO 27001 Certification 2026">
             </div>
+
             <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">New Password</label>
-                <input type="password" name="new_password" required class="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-sm bg-surface text-on-surface">
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Category *</label>
+                <select name="category" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
+                    <option value="General Compliance" selected>General Compliance</option>
+                    <option value="DPA / Vendor Contract">DPA / Vendor Contract</option>
+                    <option value="Audit Certification">Audit Certification</option>
+                    <option value="PIA / DPIA Report">PIA / DPIA Report</option>
+                    <option value="Policy Signoff">Policy Signoff</option>
+                </select>
             </div>
+
             <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Confirm New Password</label>
-                <input type="password" name="confirm_password" required class="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-sm bg-surface text-on-surface">
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Document File * (PDF, DOCX, XLSX, PNG, JPG, Max 10MB)</label>
+                <input type="file" name="document_file" required class="w-full border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary focus:outline-none bg-surface">
             </div>
-            <div class="flex justify-end gap-3 pt-4 border-t border-outline-variant">
-                <button type="button" onclick="closeChangePasswordModal()" class="px-4 py-2 text-body-sm font-medium border border-outline-variant rounded-lg hover:bg-surface-container-low bg-surface text-on-surface">Cancel</button>
-                <button type="submit" class="px-4 py-2 text-body-sm font-medium text-white bg-primary rounded-lg hover:bg-opacity-90">Update Password</button>
+
+            <div class="border-t border-outline-variant pt-md flex justify-end gap-sm">
+                <button type="button" onclick="closeUploadDocModal()" class="px-4 py-2.5 text-body-md text-on-surface border border-outline-variant rounded-xl hover:bg-surface-container-high font-semibold cursor-pointer">Cancel</button>
+                <button type="submit" class="px-4 py-2.5 text-body-md text-white bg-primary rounded-xl hover:opacity-90 font-semibold cursor-pointer">Upload Document</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const isDark = localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark');
-    const toggleInput = document.getElementById('settingsDarkModeToggle');
-    if (toggleInput) {
-        toggleInput.checked = isDark;
-    }
-});
-
-function toggleDarkTheme(checked) {
-    if (checked) {
-        document.documentElement.classList.add('dark');
-        document.documentElement.classList.remove('light');
-        localStorage.setItem('theme', 'dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('light');
-        localStorage.setItem('theme', 'light');
-    }
-}
-
-function openEditProfileModal() {
-    document.getElementById('editProfileModal').classList.remove('hidden');
-}
-
-function closeEditProfileModal() {
-    document.getElementById('editProfileModal').classList.add('hidden');
-}
-
-function openChangePasswordModal() {
-    document.getElementById('changePasswordModal').classList.remove('hidden');
-}
-
-function closeChangePasswordModal() {
-    document.getElementById('changePasswordModal').classList.add('hidden');
-}
-
-function submitProfileUpdate(e) {
-    e.preventDefault();
-    const formData = new FormData(document.getElementById('editProfileForm'));
-
-    fetch('backend/api/profile/update.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(res => {
-        if (res.success) {
-            alert('Profile updated successfully!');
-            closeEditProfileModal();
-            const firstName = formData.get('first_name');
-            const lastName = formData.get('last_name');
-            const designation = formData.get('designation');
-            document.getElementById('settingsFullName').textContent = firstName + ' ' + lastName;
-            document.getElementById('settingsDesignation').textContent = designation;
-            if (res.data && res.data.profile_image) {
-                const newImgUrl = res.data.profile_image + '?t=' + new Date().getTime();
-                document.getElementById('settingsAvatar').src = newImgUrl;
-                
-                const headerImg = document.getElementById('headerAvatarImg');
-                const headerIcon = document.getElementById('headerAvatarIcon');
-                
-                if (headerImg) {
-                    headerImg.src = newImgUrl;
-                } else if (headerIcon) {
-                    const img = document.createElement('img');
-                    img.id = "headerAvatarImg";
-                    img.className = "w-full h-full object-cover";
-                    img.src = newImgUrl;
-                    img.alt = "Profile";
-                    headerIcon.parentNode.replaceChild(img, headerIcon);
-                }
-            }
-        } else {
-            alert(res.message);
-        }
-    })
-    .catch(err => console.error(err));
-}
-
-function submitPasswordChange(e) {
-    e.preventDefault();
-    const formData = new FormData(document.getElementById('changePasswordForm'));
-
-    fetch('backend/api/profile/change-password.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(res => {
-        if (res.success) {
-            alert('Password changed successfully! Logging out for security...');
-            window.location.href = 'logout.php';
-        } else {
-            alert(res.message);
-        }
-    })
-    .catch(err => console.error(err));
-}
+    const G_CSRF_TOKEN = '<?= $csrfToken ?>';
 </script>
+<script src="assets/js/settings.js?v=<?= time() ?>"></script>
