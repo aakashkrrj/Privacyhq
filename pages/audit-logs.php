@@ -50,6 +50,7 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
         </div>
     </div>
 
+
     <!-- Executive Dashboard Telemetry Cards (Row 124) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-md">
         <div class="p-md bg-surface rounded-xl border border-outline-variant shadow-sm">

@@ -61,12 +61,13 @@ class Consent {
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
-    public function getList($search, $statusFilter, $categoryFilter, $limit, $offset) {
+    public function getList($search, $statusFilter, $categoryFilter, $dateFilter, $limit, $offset) {
         $whereClauses = ["1=1"];
         $params = [];
 
         if ($search) {
-            $whereClauses[] = "ds.identifier_hash LIKE ?";
+            $whereClauses[] = "(ds.identifier_hash LIKE ? OR ds.email LIKE ?)";
+            $params[] = "%$search%";
             $params[] = "%$search%";
         }
         if ($statusFilter) {
@@ -76,6 +77,28 @@ class Consent {
         if ($categoryFilter) {
             $whereClauses[] = "cp.purpose_name = ?";
             $params[] = $categoryFilter;
+        }
+        if ($dateFilter) {
+            $dateStr = trim($dateFilter);
+            $parsedDate = null;
+            $formats = ['Y-m-d', 'd-m-Y', 'm/d/Y', 'Y/m/d'];
+            foreach ($formats as $fmt) {
+                $d = \DateTime::createFromFormat($fmt, $dateStr);
+                if ($d && $d->format($fmt) === $dateStr) {
+                    $parsedDate = $d->format('Y-m-d');
+                    break;
+                }
+            }
+            if (!$parsedDate) {
+                $ts = strtotime($dateStr);
+                if ($ts !== false) {
+                    $parsedDate = date('Y-m-d', $ts);
+                }
+            }
+            if ($parsedDate) {
+                $whereClauses[] = "DATE(c.created_at) = ?";
+                $params[] = $parsedDate;
+            }
         }
 
         $whereSql = "WHERE " . implode(" AND ", $whereClauses);
@@ -95,14 +118,14 @@ class Consent {
         // Fetch items
         $sql = "
             SELECT c.id, c.status, c.source, c.collection_method, c.ip_address, c.user_agent, c.created_at, c.granted_at, c.expires_at, c.updated_at, 
-                   ds.identifier_hash as subject_email, cp.purpose_name as category
+                   COALESCE(NULLIF(ds.email, ''), ds.identifier_hash) as subject_email, cp.purpose_name as category
             FROM consents c
             LEFT JOIN data_subjects ds ON c.data_subject_id = ds.id
             LEFT JOIN consent_purposes cp ON c.consent_purpose_id = cp.id
             $whereSql
             ORDER BY c.id DESC
             LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
-            
+             
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         $items = $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -110,12 +133,13 @@ class Consent {
         return ['total' => $total, 'items' => $items];
     }
 
-    public function getExportList($search, $statusFilter, $categoryFilter) {
+    public function getExportList($search, $statusFilter, $categoryFilter, $dateFilter) {
         $whereClauses = ["1=1"];
         $params = [];
 
         if ($search) {
-            $whereClauses[] = "ds.identifier_hash LIKE ?";
+            $whereClauses[] = "(ds.identifier_hash LIKE ? OR ds.email LIKE ?)";
+            $params[] = "%$search%";
             $params[] = "%$search%";
         }
         if ($statusFilter) {
@@ -126,19 +150,41 @@ class Consent {
             $whereClauses[] = "cp.purpose_name = ?";
             $params[] = $categoryFilter;
         }
+        if ($dateFilter) {
+            $dateStr = trim($dateFilter);
+            $parsedDate = null;
+            $formats = ['Y-m-d', 'd-m-Y', 'm/d/Y', 'Y/m/d'];
+            foreach ($formats as $fmt) {
+                $d = \DateTime::createFromFormat($fmt, $dateStr);
+                if ($d && $d->format($fmt) === $dateStr) {
+                    $parsedDate = $d->format('Y-m-d');
+                    break;
+                }
+            }
+            if (!$parsedDate) {
+                $ts = strtotime($dateStr);
+                if ($ts !== false) {
+                    $parsedDate = date('Y-m-d', $ts);
+                }
+            }
+            if ($parsedDate) {
+                $whereClauses[] = "DATE(c.created_at) = ?";
+                $params[] = $parsedDate;
+            }
+        }
 
         $whereSql = "WHERE " . implode(" AND ", $whereClauses);
 
         $sql = "
             SELECT c.id, c.status, c.source, c.collection_method, c.ip_address, c.user_agent, c.created_at, c.granted_at, c.expires_at, c.updated_at, 
-                   ds.identifier_hash as subject_email, cp.purpose_name as category
+                   COALESCE(NULLIF(ds.email, ''), ds.identifier_hash) as subject_email, cp.purpose_name as category
             FROM consents c
             LEFT JOIN data_subjects ds ON c.data_subject_id = ds.id
             LEFT JOIN consent_purposes cp ON c.consent_purpose_id = cp.id
             $whereSql
             ORDER BY c.id DESC
         ";
-            
+             
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);

@@ -50,7 +50,7 @@ class ProfileController extends BaseController {
             }
 
             $this->profileService->updateProfile($userId, $firstName, $lastName, $email, $phone, $designation, $department, $dbPath);
-            ApiResponse::success('Profile updated successfully.', ['profile_image' => $dbPath]);
+            ApiResponse::success('Profile updated successfully.', ['profile_image' => getProfileImageUrl($dbPath ?? $_SESSION['profile_image'] ?? null)]);
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
         }

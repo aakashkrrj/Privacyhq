@@ -188,18 +188,32 @@ if (!function_exists('getProfileImageUrl')) {
         if (empty($dbPath)) {
             return $defaultAvatar;
         }
+
+        // Decode any file:// URL if present
+        if (strpos($dbPath, 'file://') === 0) {
+            $dbPath = substr($dbPath, 7);
+            $dbPath = ltrim($dbPath, '/');
+            $dbPath = rawurldecode($dbPath);
+        }
+
         // Normalize any absolute Windows paths to relative uploads paths if present
         $cleanPath = str_replace('\\', '/', $dbPath);
         if (preg_match('/uploads\/(.+)/i', $cleanPath, $matches)) {
             $relativePath = 'uploads/' . $matches[1];
         } else {
-            $relativePath = $cleanPath;
+            $relativePath = ltrim($cleanPath, '/');
         }
-        
-        $fullLocalPath = 'd:/New folder/governance/' . $relativePath;
+
+        $fullLocalPath = dirname(dirname(__DIR__)) . '/' . $relativePath;
         if (file_exists($fullLocalPath) && is_readable($fullLocalPath)) {
-            return $relativePath;
+            return '/' . $relativePath;
         }
+
+        // If the database path is already an HTTP URL, return it
+        if (preg_match('/^https?:\/\//i', $dbPath)) {
+            return $dbPath;
+        }
+
         return $defaultAvatar;
     }
 }

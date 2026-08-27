@@ -94,13 +94,13 @@ class ConsentService {
         }
     }
 
-    public function getList($search, $statusFilter, $categoryFilter, $page, $pageSize = 10) {
+    public function getList($search, $statusFilter, $categoryFilter, $dateFilter, $page, $pageSize = 10) {
         $offset = ($page - 1) * $pageSize;
-        return $this->consentModel->getList($search, $statusFilter, $categoryFilter, $pageSize, $offset);
+        return $this->consentModel->getList($search, $statusFilter, $categoryFilter, $dateFilter, $pageSize, $offset);
     }
 
-    public function getExportList($search, $statusFilter, $categoryFilter) {
-        return $this->consentModel->getExportList($search, $statusFilter, $categoryFilter);
+    public function getExportList($search, $statusFilter, $categoryFilter, $dateFilter) {
+        return $this->consentModel->getExportList($search, $statusFilter, $categoryFilter, $dateFilter);
     }
 
     public function getDashboardMetrics() {

@@ -124,6 +124,7 @@ class AuditLogService
             'user_agent' => 'User Agent'
         ];
 
+
         // Sanitize rows for formula injection
         $sanitizedData = [];
         foreach ($data as $row) {

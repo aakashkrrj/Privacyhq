@@ -8,15 +8,12 @@ class NotificationService {
         $this->pdo = $pdo;
     }
 
-    /**
-     * Create a notification.
-     */
-    public function createNotification($userId, $module, $recordId, $category, $priority, $title, $message) {
+    public function createNotification($userId, $module, $recordId, $category, $priority, $title, $message, $type = 'info') {
         $stmt = $this->pdo->prepare("
-            INSERT INTO notifications (user_id, module, record_id, category, priority, title, message, is_read)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+            INSERT INTO notifications (user_id, module, record_id, category, priority, title, message, type, is_read)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
         ");
-        $stmt->execute([$userId, $module, $recordId, $category, $priority, $title, $message]);
+        $stmt->execute([$userId, $module, $recordId, $category, $priority, $title, $message, $type]);
         return $this->pdo->lastInsertId();
     }
 

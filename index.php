@@ -387,7 +387,7 @@ if (isset($conn) && !$conn->connect_error) {
             
             <!-- START NEW CODE - Notification Bell & Dropdown -->
             <div class="relative">
-                <button id="notifBellBtn" onclick="toggleNotifDropdown(event)" class="relative p-2 rounded-full hover:bg-surface-container-low transition-colors focus:outline-none" title="Notifications">
+                <button id="notifBellBtn" class="relative p-2 rounded-full hover:bg-surface-container-low transition-colors focus:outline-none" title="Notifications">
                     <span class="material-symbols-outlined text-on-surface-variant pointer-events-none" data-icon="notifications">notifications</span>
                     <?php if ($unread_notifications_count > 0): ?>
                         <span id="notifBadge" class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-error text-white text-[10px] font-bold rounded-full border-2 border-surface flex items-center justify-center px-1">

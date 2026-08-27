@@ -9,6 +9,11 @@ require_once __DIR__ . '/../../../backend/services/ConsentService.php';
 
 ApiBootstrap::requireMethod('GET');
 
+// Enforce permission
+if (function_exists('require_permission')) {
+    require_permission('view_dashboard');
+}
+
 $consentModel = new \Backend\Models\Consent($pdo);
 $subjectModel = new \Backend\Models\DataSubject($pdo);
 $purposeModel = new \Backend\Models\ConsentPurpose($pdo);
@@ -18,8 +23,9 @@ $consentService = new \Backend\Services\ConsentService($pdo, $consentModel, $sub
 $search = trim($_GET['search'] ?? '');
 $statusFilter = trim($_GET['status'] ?? '');
 $categoryFilter = trim($_GET['category'] ?? '');
+$dateFilter = trim($_GET['date'] ?? '');
 
-$data = $consentService->getExportList($search, $statusFilter, $categoryFilter);
+$data = $consentService->getExportList($search, $statusFilter, $categoryFilter, $dateFilter);
 
 // Audit logging for export event
 if (function_exists('log_audit_event')) {

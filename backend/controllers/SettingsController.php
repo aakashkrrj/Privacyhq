@@ -22,6 +22,11 @@ class SettingsController extends BaseController
     {
         try {
             $user = $this->settingsService->getProfile($this->getUserId());
+
+            if (isset($user['profile_image'])) {
+                $user['profile_image'] = getProfileImageUrl($user['profile_image']);
+            }
+
             ApiResponse::success("Success", $user);
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
@@ -38,8 +43,40 @@ class SettingsController extends BaseController
             $lastName  = trim($_POST['last_name'] ?? '');
             $phone     = trim($_POST['phone'] ?? '');
 
+            // Image upload handling
+            $dbPath = null;
+            if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['profile_image'];
+                $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (!in_array($file['type'], $allowed)) {
+                    throw new \Exception("Invalid profile image type. Allowed types: JPEG, PNG, GIF, WebP.");
+                }
+
+                $uploadsDir = __DIR__ . '/../../uploads';
+                if (!is_dir($uploadsDir)) {
+                    mkdir($uploadsDir, 0777, true);
+                }
+
+                $filename = time() . '_' . basename($file['name']);
+                $destPath = $uploadsDir . '/' . $filename;
+                if (move_uploaded_file($file['tmp_name'], $destPath)) {
+                    $dbPath = 'uploads/' . $filename;
+                }
+            }
+
             $this->settingsService->updateProfile($this->getUserId(), $firstName, $lastName, $phone);
-            ApiResponse::success("Profile information updated successfully.");
+
+            if ($dbPath) {
+                $this->settingsService->updateProfileImage($this->getUserId(), $dbPath);
+                $_SESSION['profile_image'] = $dbPath;
+            }
+
+            ApiResponse::success(
+                "Profile updated successfully.",
+                [
+                    "profile_image" => getProfileImageUrl($dbPath ?? $_SESSION['profile_image'] ?? null)
+                ]
+            );
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
         }
@@ -56,7 +93,13 @@ class SettingsController extends BaseController
             }
 
             $imagePath = $this->settingsService->updateProfileImage($this->getUserId(), $_FILES['profile_image']);
-            ApiResponse::success("Profile avatar updated successfully.", ["image" => $imagePath]);
+
+            $_SESSION['profile_image'] = $imagePath;
+
+            ApiResponse::success("Profile avatar updated successfully.", [
+                "image" => $imagePath,
+                "profile_image" => getProfileImageUrl($imagePath)
+            ]);
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
         }
@@ -296,4 +339,4 @@ class SettingsController extends BaseController
             ApiResponse::error($e->getMessage());
         }
     }
-}
+}

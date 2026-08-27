@@ -32,14 +32,7 @@ $query = "
         u_rev.first_name AS reviewer_first,
         u_rev.last_name AS reviewer_last,
         ast.status_name AS status,
-        COALESCE(
-            (SELECT rm.risk_level_name 
-             FROM assessment_risks ar 
-             JOIN risk_matrix rm ON ar.inherent_risk_matrix_id = rm.id 
-             WHERE ar.assessment_id = pa.id 
-             ORDER BY rm.risk_score DESC LIMIT 1), 
-            'Low'
-        ) AS risk_level
+        COALESCE(pa.calculated_risk_level, 'Low') AS risk_level
     FROM privacy_assessments pa
     LEFT JOIN assessment_statuses ast ON pa.status_id = ast.id
     LEFT JOIN users u_ass ON pa.assigned_to = u_ass.id

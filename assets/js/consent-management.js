@@ -65,8 +65,9 @@ async function loadRecords() {
     const search = document.getElementById('filter-search').value;
     const status = document.getElementById('filter-status').value;
     const category = document.getElementById('filter-category').value;
+    const date = document.getElementById('filter-date').value;
 
-    const url = `backend/api/consent/list.php?p=${currentPage}&limit=${pageSize}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`;
+    const url = `backend/api/consent/list.php?p=${currentPage}&limit=${pageSize}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}&date=${encodeURIComponent(date)}`;
     
     try {
         const res = await fetch(url);
@@ -281,7 +282,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const search = document.getElementById('filter-search').value;
         const status = document.getElementById('filter-status').value;
         const category = document.getElementById('filter-category').value;
-        const url = `backend/api/consent/export.php?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`;
+        const date = document.getElementById('filter-date').value;
+        const url = `backend/api/consent/export.php?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}&date=${encodeURIComponent(date)}`;
         window.location.href = url;
     });
 
@@ -291,7 +293,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const search = document.getElementById('filter-search').value;
             const status = document.getElementById('filter-status').value;
             const category = document.getElementById('filter-category').value;
-            const url = `backend/api/consent/export-excel.php?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`;
+            const date = document.getElementById('filter-date').value;
+            const url = `backend/api/consent/export-excel.php?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}&date=${encodeURIComponent(date)}`;
             window.location.href = url;
         });
     }

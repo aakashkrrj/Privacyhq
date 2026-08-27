@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // CSRF Token
 if (!isset($_SESSION['csrf_token'])) {
@@ -58,7 +60,7 @@ $csrfToken = $_SESSION['csrf_token'];
 
             <div class="flex items-center gap-4">
 
-                <a href="settings.php"
+                <a href="index.php?page=settings"
                    class="text-blue-600 hover:text-blue-800">
 
                     <span class="material-symbols-outlined">
@@ -127,6 +129,7 @@ $csrfToken = $_SESSION['csrf_token'];
                 <div class="mt-6">
 
                     <label
+                        for="profileImage"
                         class="cursor-pointer inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
 
                         <span class="material-symbols-outlined mr-2">
@@ -136,16 +139,6 @@ $csrfToken = $_SESSION['csrf_token'];
                         </span>
 
                         Upload Image
-
-                        <input
-
-                            type="file"
-
-                            id="profileImage"
-
-                            class="hidden"
-
-                            accept="image/*">
 
                     </label>
 
@@ -164,6 +157,12 @@ $csrfToken = $_SESSION['csrf_token'];
         type="hidden"
         name="csrf_token"
         value="<?= htmlspecialchars($csrfToken) ?>">
+    <input
+        type="file"
+        id="profileImage"
+        name="profile_image"
+        class="hidden"
+        accept="image/*">
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
@@ -295,6 +294,16 @@ phoneInput.addEventListener("input", function () {
 document.addEventListener("DOMContentLoaded", function () {
 
     loadProfile();
+
+    document.getElementById("profileImage").addEventListener("change", function(e) {
+        if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                document.getElementById("profilePreview").src = evt.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
 
 });
 

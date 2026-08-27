@@ -67,7 +67,11 @@ function closeHistoryModal() {
 
 function exportAssessment(id, format = 'csv') {
     const url = `backend/api/assessment/export.php?id=${id}&format=${format}`;
-    window.open(url, '_blank');
+    if (format === 'csv' || format === 'excel') {
+        window.location.href = url;
+    } else {
+        window.open(url, '_blank');
+    }
 }
 
 function populateEditModal(item) {
