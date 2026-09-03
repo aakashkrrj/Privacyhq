@@ -1,5 +1,6 @@
 <?php
 // governance/pages/vendor-management.php
+if (!defined('IN_APP')) { http_response_code(403); exit('Direct access not permitted'); }
 require_once __DIR__ . '/../includes/db.php';
 
 // Authenticated check

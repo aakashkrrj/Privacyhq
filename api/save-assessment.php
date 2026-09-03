@@ -12,6 +12,12 @@ require_once __DIR__ . '/../backend/services/NotificationService.php';
 require_once __DIR__ . '/../backend/services/ActivityService.php';
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // 1. CSRF Validation
+    if (!isset($_POST['csrf_token']) || !verify_csrf_token($_POST['csrf_token'])) {
+        echo json_encode(['status' => 'error', 'message' => 'CSRF token validation failed.']);
+        exit;
+    }
+
     $title = trim($_POST['title'] ?? '');
     $assessor = trim($_POST['assessor'] ?? '');
     $risk_level = trim($_POST['risk_level'] ?? 'Medium');

@@ -12,6 +12,9 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
+// Define IN_APP for direct access protection on view pages
+define('IN_APP', true);
+
 $currentPage = isset($_GET['page']) ? trim($_GET['page']) : 'dashboard';
 
 // Route Mappings

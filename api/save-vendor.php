@@ -15,6 +15,12 @@ require_once __DIR__ . '/../backend/services/ActivityService.php';
 
 // Check Request Method
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // 1. CSRF Validation
+    if (!isset($_POST['csrf_token']) || !verify_csrf_token($_POST['csrf_token'])) {
+        echo json_encode(['status' => 'error', 'message' => 'CSRF token validation failed.']);
+        exit;
+    }
+
     $vendor_name  = trim($_POST['vendor_name'] ?? '');
     $service_type = trim($_POST['service_type'] ?? '');
     $data_shared  = trim($_POST['data_shared'] ?? '');
