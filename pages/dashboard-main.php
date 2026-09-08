@@ -35,8 +35,12 @@ if (isset($conn) && !$conn->connect_error) {
         $incident_count = (int)$res->fetch_assoc()['total'];
     }
 
+    $role_id = (int)($_SESSION['role_id'] ?? 0);
+    $user_id = (int)($_SESSION['user_id'] ?? 0);
+    $assessment_auth_filter = ($role_id === 1 || $role_id === 2) ? "" : " AND pa.assigned_to = " . $user_id;
+
     // 3. Get total assessments
-    $res = $conn->query("SELECT COUNT(*) AS total FROM privacy_assessments WHERE deleted_at IS NULL");
+    $res = $conn->query("SELECT COUNT(*) AS total FROM privacy_assessments pa WHERE pa.deleted_at IS NULL" . $assessment_auth_filter);
     if ($res) {
         $assessment_count = (int)$res->fetch_assoc()['total'];
     }
@@ -83,7 +87,7 @@ if (isset($conn) && !$conn->connect_error) {
     // Assessments
     $total_assessments = 0;
     $completed_assessments = 0;
-    $res = $conn->query("SELECT COUNT(*) AS total FROM privacy_assessments WHERE deleted_at IS NULL");
+    $res = $conn->query("SELECT COUNT(*) AS total FROM privacy_assessments pa WHERE pa.deleted_at IS NULL" . $assessment_auth_filter);
     if ($res) {
         $total_assessments = (int)$res->fetch_assoc()['total'];
     }
@@ -91,7 +95,7 @@ if (isset($conn) && !$conn->connect_error) {
         SELECT COUNT(*) AS total 
         FROM privacy_assessments pa 
         INNER JOIN assessment_statuses s ON pa.status_id = s.id 
-        WHERE LOWER(s.status_name) = 'completed' AND pa.deleted_at IS NULL
+        WHERE LOWER(s.status_name) = 'completed' AND pa.deleted_at IS NULL" . $assessment_auth_filter . "
     ");
     if ($res) {
         $completed_assessments = (int)$res->fetch_assoc()['total'];
