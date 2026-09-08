@@ -6,7 +6,7 @@ abstract class BaseController {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
-        return $_SESSION['user_id'] ?? 1;
+        return (int)($_SESSION['user_id'] ?? 0);
     }
 
     protected function checkPermission(string $permission): void {

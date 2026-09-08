@@ -280,7 +280,11 @@ function applyNotifFilters() {
 }
 
 function markSingleNotifPage(id, btn) {
-    fetch('api/mark-notification-read.php?id=' + id, { method: 'POST' })
+    let fd = new FormData();
+    fd.append('notification_id', id);
+    fd.append('csrf_token', '<?= htmlspecialchars($_SESSION["csrf_token"] ?? "") ?>');
+
+    fetch('backend/api/notifications/mark-read.php', { method: 'POST', body: fd })
         .then(res => res.json())
         .then(data => {
             if (data.success) {
@@ -293,7 +297,9 @@ function markSingleNotifPage(id, btn) {
                     if (badge) badge.remove();
                     if (btn) btn.remove();
                 }
-                if (typeof updateBadge === 'function') updateBadge(data.unread_count);
+                if (typeof updateBadge === 'function' && data.unread_count !== undefined) {
+                    updateBadge(data.unread_count);
+                }
                 applyNotifFilters();
             }
         }).catch(err => console.error(err));
@@ -301,7 +307,11 @@ function markSingleNotifPage(id, btn) {
 
 function deleteSingleNotifPage(id, btn) {
     if (!confirm('Are you sure you want to delete this notification?')) return;
-    fetch('api/delete-notification.php?id=' + id, { method: 'POST' })
+    let fd = new FormData();
+    fd.append('notification_id', id);
+    fd.append('csrf_token', '<?= htmlspecialchars($_SESSION["csrf_token"] ?? "") ?>');
+
+    fetch('backend/api/notifications/delete.php', { method: 'POST', body: fd })
         .then(res => res.json())
         .then(data => {
             if (data.success) {
@@ -313,7 +323,10 @@ function deleteSingleNotifPage(id, btn) {
 }
 
 function markAllNotificationsReadPage() {
-    fetch('api/mark-notification-read.php?all=1', { method: 'POST' })
+    let fd = new FormData();
+    fd.append('csrf_token', '<?= htmlspecialchars($_SESSION["csrf_token"] ?? "") ?>');
+
+    fetch('backend/api/notifications/mark-all-read.php', { method: 'POST', body: fd })
         .then(res => res.json())
         .then(data => {
             if (data.success) {

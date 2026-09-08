@@ -57,7 +57,8 @@ class NotificationController extends BaseController {
 
             $userId = $this->getUserId();
             $this->notificationService->markAsRead($id, $userId);
-            ApiResponse::success('Notification marked as read.');
+            $unreadCount = $this->notificationService->getUnreadCount($userId);
+            ApiResponse::success('Notification marked as read.', ['unread_count' => $unreadCount]);
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
         }

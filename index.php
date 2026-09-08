@@ -541,7 +541,11 @@ if (isset($conn) && !$conn->connect_error) {
     });
 
     function markNotifRead(id) {
-        fetch('api/mark-notification-read.php?id=' + id, { method: 'POST' })
+        let fd = new FormData();
+        fd.append('notification_id', id);
+        fd.append('csrf_token', '<?= htmlspecialchars($_SESSION["csrf_token"] ?? "") ?>');
+
+        fetch('backend/api/notifications/mark-read.php', { method: 'POST', body: fd })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -550,14 +554,19 @@ if (isset($conn) && !$conn->connect_error) {
                         item.classList.add('opacity-75');
                         item.classList.remove('bg-primary/5', 'font-medium');
                     }
-                    updateBadge(data.unread_count);
+                    if (data.unread_count !== undefined) {
+                        updateBadge(data.unread_count);
+                    }
                 }
             }).catch(err => console.error(err));
     }
 
     function markAllNotificationsRead(e) {
         e.stopPropagation();
-        fetch('api/mark-notification-read.php?all=1', { method: 'POST' })
+        let fd = new FormData();
+        fd.append('csrf_token', '<?= htmlspecialchars($_SESSION["csrf_token"] ?? "") ?>');
+
+        fetch('backend/api/notifications/mark-all-read.php', { method: 'POST', body: fd })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
