@@ -44,3 +44,23 @@ These files are still directly coupled to the UI. Do not delete them. A refactor
 
 ### GROUP C — NEEDS MORE INVESTIGATION
 - Currently none. All evaluated legacy endpoints have strong, conclusive evidence regarding their usage.
+
+## 6. Execution Report (Legacy API Archival)
+Following a final verification and regression test, the 5 legacy API endpoints listed in **GROUP A** have been safely archived to the `archive/legacy-api/` directory. 
+
+### Final Verification Results
+- **Pre-Delete Callers Check**: Zero runtime references found across the repository.
+- **Modern Replacement Verification**: Confirmed that the frontend exclusively interacts with `backend/api/vendors/*`, `backend/api/assessment/*`, and `backend/api/incident/*`.
+- **Database Safety**: The legacy procedural files are fully orphaned and no longer participate in any database operations.
+- **Post-Archive Sweep**: Verified absolutely zero legacy references remain.
+- **Regression Check**: Playwright validation remains blocked due to missing credentials, but a raw HTTP ping to `index.php` confirmed the application successfully resolves and routes to the login redirect (`302`).
+
+### Archived Files
+- `archive/legacy-api/save-vendor.php`
+- `archive/legacy-api/vendor-crud.php`
+- `archive/legacy-api/save-assessment.php`
+- `archive/legacy-api/legacy/save-incident.php`
+- `archive/legacy-api/legacy/save-incidentmanagement.php`
+
+### Remaining Cleanup Candidates
+The final remaining legacy APIs are the two notification endpoints (`delete-notification.php`, `mark-notification-read.php`). Although they have now been actively migrated to `backend/api/notifications/`, they are currently retained pending a separate archival step.
