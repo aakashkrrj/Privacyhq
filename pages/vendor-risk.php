@@ -88,7 +88,14 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
     <!-- Main Vendor Risk Inventory Table Card -->
     <div class="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
         <div class="p-md border-b border-outline-variant bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-md">
-            <h2 class="font-semibold text-on-surface text-title-md">Vendor Risk Inventory & Audits</h2>
+            <div class="flex items-center gap-4">
+                <h2 class="font-semibold text-on-surface text-title-md">Vendor Risk Inventory & Audits</h2>
+                <?php if (has_permission('manage_vendors')): ?>
+                    <button type="button" onclick="openAddVendorModal()" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-white text-sm font-semibold rounded-lg hover:opacity-90 transition shadow-sm">
+                        <span class="material-symbols-outlined mr-1 text-[18px]">add</span> Add Vendor
+                    </button>
+                <?php endif; ?>
+            </div>
             
             <!-- Filters -->
             <form id="searchForm" class="flex flex-wrap items-center gap-sm">
@@ -246,6 +253,124 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
         <div class="p-md border-t border-outline-variant flex justify-end bg-surface-container-low">
             <button onclick="closeRiskHistoryModal()" class="px-4 py-2 text-body-md text-on-surface border border-outline-variant rounded-lg hover:bg-surface-container-high font-semibold">Close</button>
         </div>
+    </div>
+</div>
+
+<!-- Modal 3: Add Vendor -->
+<div id="addVendorModal" class="fixed inset-0 bg-gray-900/50 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-surface shadow-xl rounded-xl w-full max-w-3xl overflow-hidden border border-outline-variant flex flex-col max-h-[90vh]">
+        <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low shrink-0">
+            <h3 class="font-bold text-on-surface text-title-md">Add New Vendor</h3>
+            <button onclick="closeAddVendorModal()" class="text-on-surface-variant hover:text-on-surface text-xl font-bold">&times;</button>
+        </div>
+
+        <form id="addVendorForm" class="flex flex-col overflow-hidden h-full">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+
+            <!-- Scrollable Form Body -->
+            <div class="p-md space-y-6 overflow-y-auto grow">
+
+                <!-- Section 1: Basic Information -->
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4">
+                    <h4 class="text-body-lg font-bold text-primary mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">info</span> Basic Information
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Vendor Name *</label>
+                            <input type="text" name="vendor_name" required class="w-full border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary focus:outline-none bg-surface" placeholder="e.g., Acme Corp">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Category *</label>
+                            <select name="category" required class="w-full border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary focus:outline-none bg-surface">
+                                <option value="">Select Category</option>
+                                <option value="Cloud Storage">Cloud Storage</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Analytics">Analytics</option>
+                                <option value="HR / Payroll">HR / Payroll</option>
+                                <option value="Software">Software</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Vendor Status</label>
+                            <select name="status" class="w-full border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary focus:outline-none bg-surface">
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Under Review">Under Review</option>
+                                <option value="Pending Review">Pending Review</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Contact Information -->
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4">
+                    <h4 class="text-body-lg font-bold text-primary mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">contact_mail</span> Contact Information
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Contact Name</label>
+                            <input type="text" name="contact_name" class="w-full border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary focus:outline-none bg-surface" placeholder="John Doe">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Contact Email</label>
+                            <input type="email" name="contact_email" class="w-full border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary focus:outline-none bg-surface" placeholder="contact@vendor.com">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Privacy & Data Processing -->
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4">
+                    <h4 class="text-body-lg font-bold text-primary mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">security</span> Privacy & Data Processing
+                    </h4>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Data Shared / Processed</label>
+                            <textarea name="data_shared" rows="2" class="w-full border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary focus:outline-none bg-surface" placeholder="Describe what personal or sensitive data is shared..."></textarea>
+                        </div>
+                        <div class="md:w-1/2">
+                            <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">DPA Status</label>
+                            <select name="dpa_status" class="w-full border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary focus:outline-none bg-surface">
+                                <option value="Pending">Pending</option>
+                                <option value="Signed">Signed</option>
+                                <option value="Not Required">Not Required</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Security, Compliance & Notes -->
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4">
+                    <h4 class="text-body-lg font-bold text-primary mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">verified_user</span> Security, Compliance & Notes
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Next Assessment Date</label>
+                            <input type="date" name="next_assessment_date" class="w-full border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary focus:outline-none bg-surface">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Contract Expiry</label>
+                            <input type="date" name="contract_expiry" class="w-full border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary focus:outline-none bg-surface">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-on-surface-variant uppercase mb-1">Notes / Description</label>
+                        <textarea name="notes" rows="2" class="w-full border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary focus:outline-none bg-surface" placeholder="Additional vendor notes..."></textarea>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-md border-t border-outline-variant flex justify-end gap-sm bg-surface-container-low shrink-0">
+                <button type="button" onclick="closeAddVendorModal()" class="px-4 py-2 text-body-md text-on-surface border border-outline-variant rounded-xl hover:bg-surface-container-high font-semibold transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-body-md text-white bg-primary rounded-xl hover:opacity-90 font-semibold transition">Save Vendor</button>
+            </div>
+        </form>
     </div>
 </div>
 

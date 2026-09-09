@@ -324,7 +324,21 @@ function clearRiskFilters() {
     loadRiskVendors();
 }
 
+function openAddVendorModal() {
+    const form = document.getElementById('addVendorForm');
+    if (form) form.reset();
+    const modal = document.getElementById('addVendorModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeAddVendorModal() {
+    const modal = document.getElementById('addVendorModal');
+    if (modal) modal.classList.add('hidden');
+}
+
 // Global scope exports to window
+window.openAddVendorModal = openAddVendorModal;
+window.closeAddVendorModal = closeAddVendorModal;
 window.loadRiskDashboard = loadRiskDashboard;
 window.loadRiskVendors = loadRiskVendors;
 window.openRiskAssessmentModal = openRiskAssessmentModal;
@@ -340,6 +354,40 @@ window.updateLiveCalculatedScore = updateLiveCalculatedScore;
 document.addEventListener('DOMContentLoaded', () => {
     loadRiskDashboard();
     loadRiskVendors();
+
+    const addForm = document.getElementById('addVendorForm');
+    if (addForm) {
+        addForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving...';
+            }
+
+            const formData = new FormData(this);
+            try {
+                const res = await fetch('backend/api/vendors/create.php', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.status === 'success' || data.success) {
+                    closeAddVendorModal();
+                    loadRiskVendors();
+                    loadRiskDashboard();
+                    this.reset();
+                } else {
+                    alert('Error creating vendor: ' + (data.message || 'Action failed'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to save vendor. Connection error.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Save Vendor';
+                }
+            }
+        });
+    }
 
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
