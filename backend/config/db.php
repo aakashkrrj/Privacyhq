@@ -1,16 +1,18 @@
 <?php
 // governance/includes/db.php
-$host = "127.0.0.1";
-$user = "root";
-$pass = "";
-$dbname = "privacyhq";
+$host   = getenv('DB_HOST')     ?: "127.0.0.1";
+$user   = getenv('DB_USER')     ?: "root";
+$pass   = getenv('DB_PASS') !== false ? getenv('DB_PASS') : "";
+$dbname = getenv('DB_NAME')     ?: "privacyhq";
+$port   = (int)(getenv('DB_PORT') ?: 3306);
 
-$port = 3306;
 mysqli_report(MYSQLI_REPORT_OFF);
-$conn = @new mysqli($host, $user, $pass, $dbname, 3306);
-if ($conn->connect_error) {
+$conn = @new mysqli($host, $user, $pass, $dbname, $port);
+if ($conn->connect_error && $port === 3306) {
     $conn = @new mysqli($host, $user, $pass, $dbname, 3307);
-    $port = 3307;
+    if (!$conn->connect_error) {
+        $port = 3307;
+    }
 }
 
 try {
@@ -203,8 +205,14 @@ if (!function_exists('getProfileImageUrl')) {
         } else {
             $relativePath = ltrim($cleanPath, '/');
         }
+} else {
+    $relativePath = ltrim($cleanPath, '/');
 
-        $fullLocalPath = dirname(dirname(__DIR__)) . '/' . $relativePath;
+    $fullLocalPath = dirname(dirname(__DIR__)) . '/' . $relativePath;
+
+    if (file_exists($fullLocalPath) && is_readable($fullLocalPath)) {
+        return $relativePath;
+    }
         if (file_exists($fullLocalPath) && is_readable($fullLocalPath)) {
             return '/' . $relativePath;
         }
