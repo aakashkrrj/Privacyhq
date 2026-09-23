@@ -191,6 +191,11 @@ if (!function_exists('getProfileImageUrl')) {
             return $defaultAvatar;
         }
 
+        // If the database path is already an HTTP URL, return it
+        if (preg_match('/^https?:\/\//i', $dbPath)) {
+            return $dbPath;
+        }
+
         // Decode any file:// URL if present
         if (strpos($dbPath, 'file://') === 0) {
             $dbPath = substr($dbPath, 7);
@@ -205,21 +210,10 @@ if (!function_exists('getProfileImageUrl')) {
         } else {
             $relativePath = ltrim($cleanPath, '/');
         }
-} else {
-    $relativePath = ltrim($cleanPath, '/');
 
-    $fullLocalPath = dirname(dirname(__DIR__)) . '/' . $relativePath;
-
-    if (file_exists($fullLocalPath) && is_readable($fullLocalPath)) {
-        return $relativePath;
-    }
+        $fullLocalPath = dirname(dirname(__DIR__)) . '/' . $relativePath;
         if (file_exists($fullLocalPath) && is_readable($fullLocalPath)) {
-            return '/' . $relativePath;
-        }
-
-        // If the database path is already an HTTP URL, return it
-        if (preg_match('/^https?:\/\//i', $dbPath)) {
-            return $dbPath;
+            return $relativePath;
         }
 
         return $defaultAvatar;
