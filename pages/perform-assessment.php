@@ -164,6 +164,7 @@ try {
             <h3 class="font-display text-title-md text-primary">Supporting Evidence</h3>
             <form id="evidenceForm" enctype="multipart/form-data" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <input type="hidden" name="assessment_id" value="<?= $assessmentId ?>">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                 <div class="flex-1 min-w-0">
                     <input type="file" name="evidence_file" id="evidenceFile" required class="w-full text-xs text-on-surface-variant border border-outline-variant rounded-lg p-2 bg-surface-container-low focus:outline-none file:mr-3 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
                 </div>

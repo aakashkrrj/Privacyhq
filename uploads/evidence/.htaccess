@@ -1,0 +1,23 @@
+# Disable execution of scripts and server-side code
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# Force files to be served as static types, never execute
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .cgi .pl .py .sh .jsp .asp .aspx
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .cgi .pl .py .sh .jsp .asp .aspx
+
+# Set default MIME type to plain text or octet-stream for safety
+# Alternatively, prevent execution via Options
+Options -ExecCGI -Includes
+
+# Deny access to .htaccess itself
+<Files .htaccess>
+    Require all denied
+</Files>

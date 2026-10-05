@@ -268,14 +268,42 @@ class AssessmentController extends BaseController
             $userId = $_SESSION['user_id'] ?? 1;
 
             $file = $_FILES['evidence_file'];
-            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+            if (filesize($file['tmp_name']) === 0) {
+                throw new \Exception("Uploaded file is empty.");
+            }
+
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+
+            $allowedMimes = [
+                'image/jpeg' => 'jpg',
+                'image/png'  => 'png',
+                'application/pdf' => 'pdf',
+                'text/plain' => 'txt',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx'
+            ];
+
+            if (!isset($allowedMimes[$mime])) {
+                throw new \Exception("File type not permitted.");
+            }
+
+            if (strpos($mime, 'image/') === 0) {
+                $imgSize = @getimagesize($file['tmp_name']);
+                if ($imgSize === false) {
+                    throw new \Exception("Invalid image content.");
+                }
+            }
+
+            $ext = $allowedMimes[$mime];
 
             $uploadDir = __DIR__ . '/../../uploads/evidence/';
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
+                mkdir($uploadDir, 0755, true);
             }
 
-            $filename = 'evidence_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+            $filename = 'evidence_' . bin2hex(random_bytes(16)) . '.' . $ext;
             $filePath = 'uploads/evidence/' . $filename;
 
             if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
