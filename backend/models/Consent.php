@@ -216,12 +216,21 @@ class Consent {
         ";
         $newThisMonth = $this->pdo->query($monthQuery)->fetchColumn();
 
+        $catQuery = "
+            SELECT cp.purpose_name as category, COUNT(*) as count
+            FROM consents c
+            JOIN consent_purposes cp ON c.consent_purpose_id = cp.id
+            GROUP BY cp.purpose_name
+        ";
+        $categories = $this->pdo->query($catQuery)->fetchAll(\PDO::FETCH_ASSOC);
+
         return [
             'total' => $total,
             'active_consents' => $kpiRes['active_consents'] ?? 0,
             'revoked_consents' => $kpiRes['revoked_consents'] ?? 0,
             'opt_in_rate' => $optInRate,
-            'new_this_month' => $newThisMonth ?? 0
+            'new_this_month' => $newThisMonth ?? 0,
+            'categories' => $categories
         ];
     }
 

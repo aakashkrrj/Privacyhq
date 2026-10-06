@@ -1,132 +1,6 @@
 <?php
 // pages/consent-management.php
-
-// 1. Database Connection check (MySQLi Compatible)
-if (!isset($conn) && !isset($pdo)) {
-    if (file_exists(__DIR__ . '/../includes/db.php')) {
-        require_once __DIR__ . '/../includes/db.php';
-    }
-}
-
-// Ensure $conn is the active MySQLi connection variable
-if (!isset($conn) && isset($pdo) && $pdo instanceof mysqli) {
-    $conn = $pdo;
-}
-
 $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
-
-$message = '';
-$error = '';
-
-// 2. Handle Form Submission (Save Consent) - Fallback
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_consent') {
-    $user_identifier = trim($_POST['user_identifier'] ?? '');
-    $category = trim($_POST['category'] ?? '');
-    $status = trim($_POST['status'] ?? 'Granted');
-
-    if (!empty($user_identifier) && !empty($category)) {
-        if (isset($conn) && $conn) {
-            $db_status = 'opt_in'; // default
-            if ($status === 'Revoked') $db_status = 'withdrawn';
-            if ($status === 'Pending') $db_status = 'opt_out';
-
-            // 1. Get or create data_subject
-            $subject_id = null;
-            $stmt_ds = $conn->prepare("SELECT id FROM data_subjects WHERE identifier_hash = ?");
-            $stmt_ds->bind_param("s", $user_identifier);
-            $stmt_ds->execute();
-            $res_ds = $stmt_ds->get_result();
-            if ($row = $res_ds->fetch_assoc()) {
-                $subject_id = $row['id'];
-            } else {
-                $stmt_insert_ds = $conn->prepare("INSERT INTO data_subjects (identifier_hash, type) VALUES (?, 'customer')");
-                $stmt_insert_ds->bind_param("s", $user_identifier);
-                $stmt_insert_ds->execute();
-                $subject_id = $conn->insert_id;
-                $stmt_insert_ds->close();
-            }
-            $stmt_ds->close();
-
-            // 2. Get or create consent_purpose
-            $purpose_id = null;
-            $stmt_cp = $conn->prepare("SELECT id FROM consent_purposes WHERE purpose_name = ?");
-            $stmt_cp->bind_param("s", $category);
-            $stmt_cp->execute();
-            $res_cp = $stmt_cp->get_result();
-            if ($row = $res_cp->fetch_assoc()) {
-                $purpose_id = $row['id'];
-            } else {
-                $stmt_insert_cp = $conn->prepare("INSERT INTO consent_purposes (purpose_name) VALUES (?)");
-                $stmt_insert_cp->bind_param("s", $category);
-                $stmt_insert_cp->execute();
-                $purpose_id = $conn->insert_id;
-                $stmt_insert_cp->close();
-            }
-            $stmt_cp->close();
-
-            // 3. Insert consent
-            $stmt = $conn->prepare("INSERT INTO consents (data_subject_id, consent_purpose_id, policy_id, status, source) VALUES (?, ?, 1, ?, 'Manual')");
-            if ($stmt) {
-                $stmt->bind_param("iis", $subject_id, $purpose_id, $db_status);
-                if ($stmt->execute()) {
-                    $message = "Consent logged successfully!";
-                    
-                    if (function_exists('log_audit_event')) {
-                        log_audit_event($conn, 'CONSENT_LOGGED', "Consent recorded for: $user_identifier ($category)");
-                    }
-                } else {
-                    $error = "Execution Error: " . $stmt->error;
-                }
-                $stmt->close();
-            } else {
-                $error = "Database Query Error: " . $conn->error;
-            }
-        } else {
-            $error = "Database connection not available.";
-        }
-    } else {
-        $error = "Please fill in all required fields.";
-    }
-}
-
-// 3. Handle Revoke Action - Fallback
-if (isset($_GET['revoke_id'])) {
-    $revoke_id = intval($_GET['revoke_id']);
-    if (isset($conn) && $conn) {
-        $stmt = $conn->prepare("UPDATE consents SET status = 'withdrawn' WHERE id = ?");
-        if ($stmt) {
-            $stmt->bind_param("i", $revoke_id);
-            if ($stmt->execute()) {
-                $message = "Consent revoked successfully!";
-            } else {
-                $error = "Error revoking consent: " . $stmt->error;
-            }
-            $stmt->close();
-        }
-    }
-}
-
-// 4. Fetch Existing Consents (MySQLi Compatible) - Fallback/Initial Load
-$consents = [];
-if (isset($conn) && $conn) {
-    $query = "SELECT c.id, ds.identifier_hash AS user_identifier, p.purpose_name AS category, c.status AS db_status, c.created_at AS captured_at 
-              FROM consents c 
-              JOIN data_subjects ds ON c.data_subject_id = ds.id 
-              JOIN consent_purposes p ON c.consent_purpose_id = p.id 
-              ORDER BY c.created_at DESC";
-    $result = $conn->query($query);
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            $status = 'Granted';
-            if ($row['db_status'] === 'withdrawn') $status = 'Revoked';
-            if ($row['db_status'] === 'opt_out') $status = 'Pending';
-            if ($row['db_status'] === 'expired') $status = 'Expired';
-            
-            $row['status'] = $status;
-            $consents[] = $row;
-        }
-    }
-}
 ?>
 
 <div class="space-y-6">
@@ -139,13 +13,6 @@ if (isset($conn) && $conn) {
         <p class="text-sm text-gray-500">Capture, audit, and revoke user consent preferences across digital properties.</p>
     </div>
 
-    <!-- Alerts -->
-    <?php if ($message): ?>
-        <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 border border-green-200"><?php echo htmlspecialchars($message); ?></div>
-    <?php endif; ?>
-    <?php if ($error): ?>
-        <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200"><?php echo htmlspecialchars($error); ?></div>
-    <?php endif; ?>
     <div id="jsAlertBox" class="hidden p-4 mb-4 text-sm rounded-lg border"></div>
 
     <!-- ================= KPI CARDS ================= -->
@@ -289,34 +156,9 @@ if (isset($conn) && $conn) {
                     </tr>
                 </thead>
                 <tbody id="consentTableBody">
-                    <?php if (empty($consents)): ?>
-                        <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-gray-400">No consent records found.</td>
-                        </tr>
-                    <?php else: ?>
-                        <?php foreach ($consents as $c): ?>
-                            <tr class="border-b border-gray-50 hover:bg-gray-50/50">
-                                <td class="px-6 py-4 font-medium text-gray-900"><?php echo htmlspecialchars($c['user_identifier']); ?></td>
-                                <td class="px-6 py-4"><?php echo htmlspecialchars($c['category']); ?></td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2 py-1 text-xs rounded-full font-medium <?php 
-                                        echo $c['status'] === 'Granted' ? 'bg-green-100 text-green-700' : 
-                                            ($c['status'] === 'Revoked' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'); 
-                                    ?>">
-                                        <?php echo htmlspecialchars($c['status']); ?>
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-xs text-gray-500"><?php echo htmlspecialchars($c['captured_at']); ?></td>
-                                <td class="px-6 py-4 text-right">
-                                    <?php if ($c['status'] !== 'Revoked'): ?>
-                                        <a href="index.php?page=consent&revoke_id=<?php echo $c['id']; ?>" class="text-xs text-red-600 hover:underline">Revoke</a>
-                                    <?php else: ?>
-                                        <span class="text-xs text-gray-400">N/A</span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-400">Loading records...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -328,46 +170,8 @@ if (isset($conn) && $conn) {
     <!-- ================= CONSENT CATEGORIES ================= -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
         <h2 class="text-md font-semibold text-gray-700 mb-5">Consent Categories Overview</h2>
-        <div class="space-y-5">
-            <div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span>Marketing Emails</span>
-                    <span id="cat-marketing-pct">42%</span>
-                </div>
-                <div class="w-full h-2 bg-gray-200 rounded-full">
-                    <div id="cat-marketing-bar" class="h-2 bg-blue-500 rounded-full" style="width:42%"></div>
-                </div>
-            </div>
-
-            <div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span>Analytics Cookies</span>
-                    <span id="cat-analytics-pct">31%</span>
-                </div>
-                <div class="w-full h-2 bg-gray-200 rounded-full">
-                    <div id="cat-analytics-bar" class="h-2 bg-green-500 rounded-full" style="width:31%"></div>
-                </div>
-            </div>
-
-            <div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span>Third-party Sharing</span>
-                    <span id="cat-sharing-pct">17%</span>
-                </div>
-                <div class="w-full h-2 bg-gray-200 rounded-full">
-                    <div id="cat-sharing-bar" class="h-2 bg-yellow-500 rounded-full" style="width:17%"></div>
-                </div>
-            </div>
-
-            <div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span>Terms of Service</span>
-                    <span id="cat-tos-pct">10%</span>
-                </div>
-                <div class="w-full h-2 bg-gray-200 rounded-full">
-                    <div id="cat-tos-bar" class="h-2 bg-purple-500 rounded-full" style="width:10%"></div>
-                </div>
-            </div>
+        <div id="categories-overview-container" class="space-y-5">
+            <p class="text-xs text-gray-400">Loading categories...</p>
         </div>
     </div>
 
@@ -375,22 +179,7 @@ if (isset($conn) && $conn) {
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
         <h2 class="text-md font-semibold text-gray-700 mb-5">Recent Consent Events</h2>
         <div id="recentEventsList" class="space-y-4">
-            <!-- Dynamic recent events will load here -->
-            <div class="flex justify-between items-center border-b pb-3">
-                <div>
-                    <p class="font-medium text-gray-700">John Miller granted Marketing Emails</p>
-                    <p class="text-xs text-gray-500">Today • 09:15 AM</p>
-                </div>
-                <span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">Granted</span>
-            </div>
-
-            <div class="flex justify-between items-center border-b pb-3">
-                <div>
-                    <p class="font-medium text-gray-700">Sarah revoked Analytics Cookies</p>
-                    <p class="text-xs text-gray-500">Today • 08:42 AM</p>
-                </div>
-                <span class="px-3 py-1 rounded-full text-xs bg-red-100 text-red-700">Revoked</span>
-            </div>
+            <p class="text-xs text-gray-400">Loading events...</p>
         </div>
     </div>
 

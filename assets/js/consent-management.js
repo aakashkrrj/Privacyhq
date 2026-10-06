@@ -55,6 +55,31 @@ async function loadDashboard() {
 
             document.getElementById('dist-pending-pct').innerText = pendingPct + '%';
             document.getElementById('dist-pending-bar').style.width = pendingPct + '%';
+
+            if (metrics.categories) {
+                const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500'];
+                let catHtml = '';
+                metrics.categories.forEach((cat, index) => {
+                    const pct = Math.round((parseInt(cat.count) || 0) / total * 100);
+                    const color = colors[index % colors.length];
+                    catHtml += `
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>${escapeHtml(cat.category)}</span>
+                                <span>${pct}%</span>
+                            </div>
+                            <div class="w-full h-2 bg-gray-200 rounded-full">
+                                <div class="h-2 rounded-full ${color}" style="width:${pct}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                const catContainer = document.getElementById('categories-overview-container');
+                if (catContainer) {
+                    catContainer.innerHTML = catHtml;
+                }
+            }
         }
     } catch (e) {
         console.error('Failed to load dashboard metrics', e);
