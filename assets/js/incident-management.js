@@ -376,8 +376,10 @@ async function editIncident(id) {
             document.getElementById('incident_affected_system').value = i.affected_system || 'Core System';
             document.getElementById('incident_due_date').value = i.due_date || '';
             document.getElementById('incident_status').value = i.status || 'Open';
+            document.getElementById('incident_investigation_notes').value = i.investigation_notes || '';
             
             document.getElementById('statusGroup').classList.remove('hidden');
+            document.getElementById('investigationGroup').classList.remove('hidden');
             document.getElementById('modalTitle').innerText = 'Edit Incident';
             currentEndpoint = 'update.php';
             
@@ -485,6 +487,7 @@ function openIncidentModal() {
     if (form) form.reset();
     document.getElementById('incident_id').value = '';
     document.getElementById('statusGroup').classList.add('hidden');
+    document.getElementById('investigationGroup').classList.add('hidden');
     document.getElementById('modalTitle').innerText = 'Log New Incident';
     currentEndpoint = 'create.php';
     document.getElementById('incidentModal').classList.remove('hidden');

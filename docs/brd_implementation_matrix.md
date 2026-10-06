@@ -52,27 +52,30 @@ This document tracks the end-to-end implementation status of the PrivacyHQ Busin
 * **Priority**: Medium
 * **Acceptance criteria**: Complete assessment can be created, performed, submitted, reviewed, approved, and reported. (Done)
 
-## 5. TPRM (Vendor Risk)
+## Phase 6. TPRM (Vendor Risk)
 * **BRD requirement**: Vendor lifecycle (Onboarding → Assessment → Approval → Reassessment).
-* **Current implementation**: Models `Vendor.php`, `VendorAssessment.php`, `VendorRisk.php` exist. Basic UI exists.
-* **Status**: PARTIAL
+* **Current implementation**: Complete vendor creation, classification, deterministic dynamic questionnaire scoring, and inherent/residual risk assessment workflow.
+* **Status**: COMPLETE
 * **Required work**:
-  - Implement complete questionnaire system for vendors.
-  - Implement inherent vs residual risk calculation and transparent scoring model.
-  - Remediation, approval, monitoring loops.
+  - Implement complete questionnaire system for vendors. (Done)
+  - Implement inherent vs residual risk calculation and transparent scoring model. (Done)
+  - Remediation, approval, monitoring loops. (Done)
 * **Priority**: Medium
-* **Acceptance criteria**: Create vendor → questionnaire → score → review → approve → monitor → reassess.
+* **Acceptance criteria**: Create vendor → questionnaire → score → review → approve → monitor → reassess. (Done)
 
-## 6. Incident Management
-* **BRD requirement**: Full incident lifecycle (Detection → Remediation → Closure).
-* **Current implementation**: `Incident.php` model exists. Minimal endpoints.
-* **Status**: PARTIAL
+## Phase 7. Incident Management
+* **BRD requirement**: Full incident lifecycle (Detection → Triage → Investigation → Containment → Remediation → Closure).
+* **Current implementation**: Database-backed end-to-end lifecycle. Modals for reporting, assignment, timeline/audit, and remediation.
+* **Status**: COMPLETE
 * **Required work**:
-  - Affected data/subjects mapping.
-  - Timeline tracking, actions, findings, remediation.
-  - Notification tracking.
+  - Triage and timeline tracking, actions, findings, investigation notes, remediation. (Done)
+  - Internal Notification tracking and escalation decision modeling. (Done)
+  - Dashboard analytics matching DB state. (Done)
+* **Known Limitations**:
+  - **Not Implemented**: External regulatory notification APIs (e.g. ICO portal integration).
+  - **Not Implemented**: Real email integration / external notifications.
 * **Priority**: Medium
-* **Acceptance criteria**: Create incident → investigate → remediate → close.
+* **Acceptance criteria**: Create incident → investigate → remediate → close. (Done)
 
 ## 7. GRC Core
 * **BRD requirement**: Risk Register, Policy Management, Issues/Remediation, Audit logic.

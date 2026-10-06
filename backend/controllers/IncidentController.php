@@ -112,6 +112,7 @@ class IncidentController extends BaseController
             $affectedSystem = trim($_POST['affected_system'] ?? 'Core System');
             $dueDate = trim($_POST['due_date'] ?? '');
             $status = trim($_POST['status'] ?? 'Open');
+            $investigationNotes = trim($_POST['investigation_notes'] ?? '');
 
             $success = $this->incidentService->update(
                 $id,
@@ -124,6 +125,7 @@ class IncidentController extends BaseController
                 $affectedSystem,
                 $dueDate,
                 $status,
+                $investigationNotes,
                 $this->getUserId()
             );
 

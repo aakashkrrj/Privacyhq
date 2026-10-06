@@ -95,7 +95,7 @@ class IncidentService
         }
     }
 
-    public function update($id, $summary, $description, $incidentType, $severity, $priority, $impactedRecords, $affectedSystem, $dueDate, $status, $userId)
+    public function update($id, $summary, $description, $incidentType, $severity, $priority, $impactedRecords, $affectedSystem, $dueDate, $status, $investigationNotes, $userId)
     {
         $existing = $this->findById($id);
 
@@ -113,6 +113,7 @@ class IncidentService
                 $affectedSystem ?: 'Core System',
                 $dueDate,
                 $status ?: 'Open',
+                $investigationNotes,
                 $userId
             );
 

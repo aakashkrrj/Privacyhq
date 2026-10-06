@@ -46,7 +46,7 @@ class Incident
     /**
      * Update an existing incident record
      */
-    public function update($id, $summary, $description, $incidentType, $severity, $priority, $impactedRecords, $affectedSystem, $dueDate, $status, $userId = 1)
+    public function update($id, $summary, $description, $incidentType, $severity, $priority, $impactedRecords, $affectedSystem, $dueDate, $status, $investigationNotes = null, $userId = 1)
     {
         $old = $this->findById($id);
         if (!$old) {
@@ -71,6 +71,7 @@ class Incident
                 affected_system = ?,
                 due_date = ?,
                 status = ?, 
+                investigation_notes = ?,
                 resolved_at = ?,
                 updated_at = NOW()
             WHERE id = ? AND deleted_at IS NULL
@@ -85,6 +86,7 @@ class Incident
             $affectedSystem,
             $dueDate ?: null,
             $status,
+            $investigationNotes,
             $resolvedAt,
             $id
         ]);
