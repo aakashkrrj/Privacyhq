@@ -30,6 +30,7 @@ class VendorController extends BaseController
             $nextAssessmentDate = trim($_POST['next_assessment_date'] ?? '');
             $contractExpiry = trim($_POST['contract_expiry'] ?? '');
             $notes = trim($_POST['notes'] ?? '');
+            $criticality = trim($_POST['criticality'] ?? 'Medium');
 
             $vendorId = $this->vendorService->createVendor(
                 $name,
@@ -43,7 +44,8 @@ class VendorController extends BaseController
                 $nextAssessmentDate,
                 $contractExpiry,
                 $notes,
-                $this->getUserId()
+                $this->getUserId(),
+                $criticality
             );
 
             ApiResponse::success('Vendor created successfully', ['vendor_id' => $vendorId]);
@@ -72,6 +74,7 @@ class VendorController extends BaseController
             $nextAssessmentDate = trim($_POST['next_assessment_date'] ?? '');
             $contractExpiry = trim($_POST['contract_expiry'] ?? '');
             $notes = trim($_POST['notes'] ?? '');
+            $criticality = trim($_POST['criticality'] ?? 'Medium');
 
             $this->vendorService->updateVendor(
                 $id,
@@ -86,7 +89,8 @@ class VendorController extends BaseController
                 $nextAssessmentDate,
                 $contractExpiry,
                 $notes,
-                $this->getUserId()
+                $this->getUserId(),
+                $criticality
             );
 
             ApiResponse::success('Vendor updated successfully');

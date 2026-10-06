@@ -31,54 +31,39 @@ class VendorRiskService
         return $assessment;
     }
 
-    public function saveAssessment($vendorId, $privacyScore, $securityScore, $operationalScore, $legalScore, $complianceStatus, $notes, $userId = 1)
+        public function saveAssessment($vendorId, $responses, $complianceStatus, $notes, $userId = 1)
     {
-        if (empty($vendorId)) {
-            throw new \Exception("Valid Vendor ID is required.");
-        }
-
-        $existing = $this->vendorRiskModel->getAssessment($vendorId);
-        if (!$existing) {
-            throw new \Exception("Vendor not found.");
-        }
-
         try {
             $this->pdo->beginTransaction();
 
             $result = $this->vendorRiskModel->saveAssessment(
                 $vendorId,
-                $privacyScore,
-                $securityScore,
-                $operationalScore,
-                $legalScore,
+                $responses,
                 $complianceStatus,
                 $notes,
                 $userId
             );
 
+            // Audit
             if (function_exists('log_audit_event')) {
-                log_audit_event(
-                    $this->pdo,
-                    'Vendor Risk',
-                    'Save Assessment',
-                    $userId,
-                    $vendorId,
-                    json_encode(['risk_score' => $existing['risk_score'], 'risk_level' => $existing['risk_level']]),
-                    json_encode(['risk_score' => $result['risk_score'], 'risk_level' => $result['risk_level'], 'compliance_status' => $complianceStatus])
-                );
+                log_audit_event($this->pdo, 'Vendor Risk', 'Risk Assessment Saved', $userId, $vendorId, null, json_encode([
+                    'risk_level' => $result['risk_level'],
+                    'compliance_status' => $complianceStatus
+                ]));
             }
 
             $this->pdo->commit();
-
-            // Dispatch workflow event if available
+            
+            // Workflow Event
             if (class_exists('\Backend\Services\WorkflowService')) {
-                \Backend\Services\WorkflowService::dispatch('vendor.assessed', [
-                    'module' => 'Vendor Risk',
-                    'record_id' => $vendorId,
-                    'title' => $existing['vendor_name'] . ' Risk Assessment',
-                    'assigned_to' => 11,
-                    'created_by' => $userId
-                ]);
+                if ($result['risk_level'] === 'Critical' || $result['risk_level'] === 'High') {
+                    \Backend\Services\WorkflowService::dispatch('vendor_risk.high_detected', [
+                        'module' => 'VendorRisk',
+                        'record_id' => $vendorId,
+                        'assigned_to' => 2, // Security/Compliance lead
+                        'risk_level' => $result['risk_level']
+                    ]);
+                }
             }
 
             return $result;

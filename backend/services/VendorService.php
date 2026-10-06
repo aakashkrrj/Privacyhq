@@ -34,7 +34,7 @@ class VendorService
         };
     }
 
-    public function createVendor($name, $category, $contactName = null, $contactEmail = null, $dpaStatus = 'Pending', $riskLevel = 'Low', $dataShared = null, $status = 'Active', $nextAssessmentDate = null, $contractExpiry = null, $notes = null, $userId = 1)
+    public function createVendor($name, $category, $contactName = null, $contactEmail = null, $dpaStatus = 'Pending', $riskLevel = 'Low', $dataShared = null, $status = 'Active', $nextAssessmentDate = null, $contractExpiry = null, $notes = null, $userId = 1, $criticality = 'Medium')
     {
         if (empty($name) || empty($category)) {
             throw new \Exception("Vendor Name and Service Category are required.");
@@ -64,7 +64,8 @@ class VendorService
                 $status,
                 $nextAssessmentDate,
                 $contractExpiry,
-                $notes
+                $notes,
+                $criticality
             );
 
             $riskScore = $this->mapRiskScore($riskLevel);
@@ -103,7 +104,7 @@ class VendorService
         }
     }
 
-    public function updateVendor($id, $name, $category, $contactName = null, $contactEmail = null, $dpaStatus = 'Pending', $riskLevel = 'Low', $dataShared = null, $status = 'Active', $nextAssessmentDate = null, $contractExpiry = null, $notes = null, $userId = 1)
+    public function updateVendor($id, $name, $category, $contactName = null, $contactEmail = null, $dpaStatus = 'Pending', $riskLevel = 'Low', $dataShared = null, $status = 'Active', $nextAssessmentDate = null, $contractExpiry = null, $notes = null, $userId = 1, $criticality = 'Medium')
     {
         if (empty($id) || empty($name) || empty($category)) {
             throw new \Exception("Valid Vendor ID, Vendor Name, and Category are required.");
@@ -139,7 +140,8 @@ class VendorService
                 $status,
                 $nextAssessmentDate,
                 $contractExpiry,
-                $notes
+                $notes,
+                $criticality
             );
 
             $riskScore = $this->mapRiskScore($riskLevel);

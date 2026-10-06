@@ -15,17 +15,18 @@ class Vendor
     /**
      * Create a new vendor
      */
-    public function create($name, $serviceType, $contactName = null, $contactEmail = null, $dpaStatus = 'Pending', $riskLevel = 'Low', $dataShared = null, $status = 'Active', $nextAssessmentDate = null, $contractExpiry = null, $notes = null)
+    public function create($name, $serviceType, $contactName = null, $contactEmail = null, $dpaStatus = 'Pending', $riskLevel = 'Low', $dataShared = null, $status = 'Active', $nextAssessmentDate = null, $contractExpiry = null, $notes = null, $criticality = 'Medium')
     {
         $stmt = $this->pdo->prepare("
             INSERT INTO vendors 
-                (name, service_type, contact_name, contact_email, dpa_status, risk_level, data_shared, status, next_assessment_date, contract_expiry, notes, created_at, updated_at) 
+                (name, service_type, criticality, contact_name, contact_email, dpa_status, risk_level, data_shared, status, next_assessment_date, contract_expiry, notes, created_at, updated_at) 
             VALUES 
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ");
         $stmt->execute([
             $name,
             $serviceType,
+            $criticality,
             $contactName,
             $contactEmail,
             $dpaStatus,
@@ -42,12 +43,13 @@ class Vendor
     /**
      * Update existing vendor details
      */
-    public function update($id, $name, $serviceType, $contactName = null, $contactEmail = null, $dpaStatus = 'Pending', $riskLevel = 'Low', $dataShared = null, $status = 'Active', $nextAssessmentDate = null, $contractExpiry = null, $notes = null)
+    public function update($id, $name, $serviceType, $contactName = null, $contactEmail = null, $dpaStatus = 'Pending', $riskLevel = 'Low', $dataShared = null, $status = 'Active', $nextAssessmentDate = null, $contractExpiry = null, $notes = null, $criticality = 'Medium')
     {
         $stmt = $this->pdo->prepare("
             UPDATE vendors 
             SET name = ?, 
                 service_type = ?, 
+                criticality = ?,
                 contact_name = ?, 
                 contact_email = ?, 
                 dpa_status = ?, 
@@ -63,6 +65,7 @@ class Vendor
         return $stmt->execute([
             $name,
             $serviceType,
+            $criticality,
             $contactName,
             $contactEmail,
             $dpaStatus,
@@ -165,6 +168,7 @@ class Vendor
             SELECT v.id,
                    v.name AS vendor_name, 
                    v.service_type AS category, 
+                   v.criticality,
                    COALESCE(v.contact_name, '') AS contact_name,
                    COALESCE(v.contact_email, '') AS contact_email,
                    COALESCE(v.dpa_status, 'Pending') AS dpa_status, 

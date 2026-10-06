@@ -140,7 +140,7 @@ function openEditVendorModal(data) {
     document.getElementById('edit_contact_name').value = data.contact_name || '';
     document.getElementById('edit_contact_email').value = data.contact_email || '';
     document.getElementById('edit_dpa_status').value = data.dpa_status || 'Pending';
-    document.getElementById('edit_risk_level').value = data.risk_level || 'Low';
+    document.getElementById('edit_criticality').value = data.criticality || 'Medium';
     document.getElementById('edit_status').value = data.status || 'Active';
     document.getElementById('edit_data_shared').value = data.data_shared || '';
     document.getElementById('edit_next_assessment_date').value = data.next_assessment_date || '';

@@ -41,7 +41,7 @@ class VendorRiskController extends BaseController
         }
     }
 
-    public function saveAssessment()
+        public function saveAssessment()
     {
         $this->checkPermission('manage_vendors');
         try {
@@ -50,25 +50,21 @@ class VendorRiskController extends BaseController
                 throw new \Exception("Invalid Vendor ID.");
             }
 
-            $privacyScore = filter_input(INPUT_POST, 'privacy_score', FILTER_VALIDATE_INT) ?? (int)($_POST['privacy_score'] ?? 0);
-            $securityScore = filter_input(INPUT_POST, 'security_score', FILTER_VALIDATE_INT) ?? (int)($_POST['security_score'] ?? 0);
-            $operationalScore = filter_input(INPUT_POST, 'operational_score', FILTER_VALIDATE_INT) ?? (int)($_POST['operational_score'] ?? 0);
-            $legalScore = filter_input(INPUT_POST, 'legal_score', FILTER_VALIDATE_INT) ?? (int)($_POST['legal_score'] ?? 0);
+            $responsesJson = $_POST['responses'] ?? '{}';
+            $responses = json_decode($responsesJson, true) ?: [];
+            
             $complianceStatus = trim($_POST['compliance_status'] ?? 'Under Review');
             $notes = trim($_POST['assessment_notes'] ?? '');
 
             $result = $this->vendorRiskService->saveAssessment(
                 $vendorId,
-                $privacyScore,
-                $securityScore,
-                $operationalScore,
-                $legalScore,
+                $responses,
                 $complianceStatus,
                 $notes,
                 $this->getUserId()
             );
 
-            ApiResponse::success('Vendor risk assessment saved and score recalculated successfully!', $result);
+            ApiResponse::success('Vendor risk assessment saved successfully', $result);
         } catch (\Exception $e) {
             ApiResponse::error($e->getMessage());
         }

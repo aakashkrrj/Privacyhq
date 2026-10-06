@@ -170,43 +170,9 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
                 </span>
             </div>
 
-            <!-- Risk Categories Factors (0-100%) -->
-            <div class="space-y-sm">
-                <div>
-                    <div class="flex justify-between text-body-md font-semibold text-on-surface mb-1">
-                        <span>1. Data Privacy & Consent Risk (0-100%)</span>
-                        <span id="privacy_score_val" class="font-mono text-primary">20%</span>
-                    </div>
-                    <input type="range" name="privacy_score" id="privacy_score_input" min="0" max="100" value="20" class="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary">
-                    <p class="text-caption text-on-surface-variant mt-0.5">Evaluates explicit consent mechanisms, data subject rights, and PII storage limitations.</p>
-                </div>
-
-                <div>
-                    <div class="flex justify-between text-body-md font-semibold text-on-surface mb-1">
-                        <span>2. InfoSec & Technical Safeguards Risk (0-100%)</span>
-                        <span id="security_score_val" class="font-mono text-primary">20%</span>
-                    </div>
-                    <input type="range" name="security_score" id="security_score_input" min="0" max="100" value="20" class="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary">
-                    <p class="text-caption text-on-surface-variant mt-0.5">Evaluates TLS 1.3/AES-256 encryption, SOC 2 compliance, and penetration test frequency.</p>
-                </div>
-
-                <div>
-                    <div class="flex justify-between text-body-md font-semibold text-on-surface mb-1">
-                        <span>3. Operational & Continuity Risk (0-100%)</span>
-                        <span id="operational_score_val" class="font-mono text-primary">20%</span>
-                    </div>
-                    <input type="range" name="operational_score" id="operational_score_input" min="0" max="100" value="20" class="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary">
-                    <p class="text-caption text-on-surface-variant mt-0.5">Evaluates system uptime SLA, disaster recovery backups, and incident response readiness.</p>
-                </div>
-
-                <div>
-                    <div class="flex justify-between text-body-md font-semibold text-on-surface mb-1">
-                        <span>4. Legal, DPA & Regulatory Risk (0-100%)</span>
-                        <span id="legal_score_val" class="font-mono text-primary">20%</span>
-                    </div>
-                    <input type="range" name="legal_score" id="legal_score_input" min="0" max="100" value="20" class="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary">
-                    <p class="text-caption text-on-surface-variant mt-0.5">Evaluates executed Data Processing Agreements (DPA) and cross-border transfer safeguards.</p>
-                </div>
+            <!-- Dynamic Questionnaire -->
+            <div id="vendor_questionnaire_container" class="space-y-sm max-h-64 overflow-y-auto pr-2">
+                <div class="text-center py-4 text-on-surface-variant text-caption">Loading questionnaire...</div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-md pt-sm border-t border-outline-variant">

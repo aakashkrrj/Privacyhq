@@ -92,7 +92,29 @@ class VendorRisk
     /**
      * Get specific vendor risk assessment details
      */
-    public function getAssessment($vendorId)
+        public function create($vendorId, $riskScore, $complianceStatus)
+    {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO vendor_assessments 
+                (vendor_id, risk_score, privacy_score, security_score, operational_score, legal_score, compliance_status, assessment_notes, assessed_by, last_assessment_date, created_at, updated_at)
+            VALUES 
+                (?, ?, 20, 20, 20, 20, ?, 'Initial creation', 1, CURDATE(), NOW(), NOW())
+        ");
+        $stmt->execute([$vendorId, $riskScore, $complianceStatus]);
+        return $this->pdo->lastInsertId();
+    }
+    
+    public function updateByVendorId($vendorId, $riskScore, $complianceStatus)
+    {
+        $stmt = $this->pdo->prepare("
+            UPDATE vendor_assessments 
+            SET risk_score = ?, compliance_status = ?, updated_at = NOW()
+            WHERE vendor_id = ?
+        ");
+        $stmt->execute([$riskScore, $complianceStatus, $vendorId]);
+    }
+
+        public function getAssessment($vendorId)
     {
         $stmt = $this->pdo->prepare("
             SELECT 
@@ -102,11 +124,13 @@ class VendorRisk
                 v.contact_name,
                 v.contact_email,
                 v.dpa_status,
+                v.criticality,
                 v.risk_level,
                 v.status AS vendor_status,
                 v.data_shared,
                 v.next_assessment_date,
                 v.contract_expiry,
+                va.id AS assessment_id,
                 COALESCE(va.risk_score, 0) AS risk_score,
                 COALESCE(va.privacy_score, 20) AS privacy_score,
                 COALESCE(va.security_score, 20) AS security_score,
@@ -127,27 +151,82 @@ class VendorRisk
             LIMIT 1
         ");
         $stmt->execute([$vendorId]);
-        return $stmt->fetch(\PDO::FETCH_ASSOC);
+        $vendor = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$vendor) return null;
+
+        // Fetch questionnaire
+        $qStmt = $this->pdo->prepare("
+            SELECT q.id, q.question_text, q.question_type, q.options_json, q.is_required, q.weight_yes, q.weight_no, c.category_name
+            FROM assessment_questions q
+            JOIN assessment_sections s ON q.section_id = s.id
+            JOIN assessment_templates t ON s.template_id = t.id
+            LEFT JOIN risk_categories c ON q.risk_category_id = c.id
+            WHERE t.template_name = 'Standard Vendor Due Diligence'
+            ORDER BY q.display_order ASC
+        ");
+        $qStmt->execute();
+        $questions = $qStmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Fetch responses
+        $responses = [];
+        if ($vendor['assessment_id']) {
+            $rStmt = $this->pdo->prepare("SELECT question_id, response_text FROM vendor_assessment_responses WHERE vendor_assessment_id = ?");
+            $rStmt->execute([$vendor['assessment_id']]);
+            $responses = $rStmt->fetchAll(\PDO::FETCH_KEY_PAIR);
+        }
+
+        $vendor['questions'] = $questions;
+        $vendor['responses'] = $responses;
+        return $vendor;
     }
 
-    /**
-     * Save/update vendor risk assessment and recalculate score deterministically
-     */
-    public function saveAssessment($vendorId, $privacyScore, $securityScore, $operationalScore, $legalScore, $complianceStatus = 'Under Review', $notes = null, $userId = 1)
+    public function saveAssessment($vendorId, $responses, $complianceStatus, $notes, $userId = 1)
     {
-        // Fetch existing record for history logging
         $existing = $this->getAssessment($vendorId);
         if (!$existing) {
             throw new \Exception("Vendor not found.");
         }
 
-        // Clamp category scores between 0 and 100
-        $privacyScore = max(0, min(100, (int)$privacyScore));
-        $securityScore = max(0, min(100, (int)$securityScore));
-        $operationalScore = max(0, min(100, (int)$operationalScore));
-        $legalScore = max(0, min(100, (int)$legalScore));
+        // Deterministic Risk Calculation
+        // Base risk from vendor criticality
+        $criticalityBase = match($existing['criticality']) {
+            'Critical' => 30,
+            'High' => 20,
+            'Medium' => 10,
+            'Low' => 0,
+            default => 10
+        };
 
-        // Deterministic backend-authoritative risk score calculation (Average of categories)
+        $privacyScore = $criticalityBase;
+        $securityScore = $criticalityBase;
+        $operationalScore = $criticalityBase;
+        $legalScore = $criticalityBase;
+
+        // Map question ID to category and weights
+        $questions = [];
+        foreach ($existing['questions'] as $q) {
+            $questions[$q['id']] = $q;
+        }
+
+        foreach ($responses as $qId => $ans) {
+            if (isset($questions[$qId])) {
+                $q = $questions[$qId];
+                $weight = ($ans === 'yes') ? (int)$q['weight_yes'] : (int)$q['weight_no'];
+                $cat = $q['category_name'];
+
+                if (str_contains($cat, 'Privacy')) $privacyScore += $weight;
+                if (str_contains($cat, 'Security')) $securityScore += $weight;
+                if (str_contains($cat, 'Operational')) $operationalScore += $weight;
+                if (str_contains($cat, 'Legal')) $legalScore += $weight;
+            }
+        }
+
+        $privacyScore = max(0, min(100, $privacyScore));
+        $securityScore = max(0, min(100, $securityScore));
+        $operationalScore = max(0, min(100, $operationalScore));
+        $legalScore = max(0, min(100, $legalScore));
+
         $calculatedScore = (int)round(($privacyScore + $securityScore + $operationalScore + $legalScore) / 4);
         $newRiskLevel = $this->mapScoreToLevel($calculatedScore);
 
@@ -155,37 +234,16 @@ class VendorRisk
         $prevLevel = $existing['risk_level'] ?? 'Low';
         $prevStatus = $existing['compliance_status'] ?? 'Under Review';
 
-        // Check if assessment row exists in vendor_assessments
-        $checkStmt = $this->pdo->prepare("SELECT id FROM vendor_assessments WHERE vendor_id = ?");
-        $checkStmt->execute([$vendorId]);
-        $assessmentId = $checkStmt->fetchColumn();
+        $assessmentId = $existing['assessment_id'];
 
         if ($assessmentId) {
             $stmt = $this->pdo->prepare("
                 UPDATE vendor_assessments 
-                SET risk_score = ?,
-                    privacy_score = ?,
-                    security_score = ?,
-                    operational_score = ?,
-                    legal_score = ?,
-                    compliance_status = ?,
-                    assessment_notes = ?,
-                    assessed_by = ?,
-                    last_assessment_date = CURDATE(),
-                    updated_at = NOW()
+                SET risk_score = ?, privacy_score = ?, security_score = ?, operational_score = ?, legal_score = ?,
+                    compliance_status = ?, assessment_notes = ?, assessed_by = ?, last_assessment_date = CURDATE(), updated_at = NOW()
                 WHERE vendor_id = ?
             ");
-            $stmt->execute([
-                $calculatedScore,
-                $privacyScore,
-                $securityScore,
-                $operationalScore,
-                $legalScore,
-                $complianceStatus,
-                $notes,
-                $userId,
-                $vendorId
-            ]);
+            $stmt->execute([$calculatedScore, $privacyScore, $securityScore, $operationalScore, $legalScore, $complianceStatus, $notes, $userId, $vendorId]);
         } else {
             $stmt = $this->pdo->prepare("
                 INSERT INTO vendor_assessments 
@@ -193,20 +251,18 @@ class VendorRisk
                 VALUES 
                     (?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), NOW(), NOW())
             ");
-            $stmt->execute([
-                $vendorId,
-                $calculatedScore,
-                $privacyScore,
-                $securityScore,
-                $operationalScore,
-                $legalScore,
-                $complianceStatus,
-                $notes,
-                $userId
-            ]);
+            $stmt->execute([$vendorId, $calculatedScore, $privacyScore, $securityScore, $operationalScore, $legalScore, $complianceStatus, $notes, $userId]);
+            $assessmentId = $this->pdo->lastInsertId();
         }
 
-        // Synchronize vendors table risk level
+        // Save responses
+        $this->pdo->prepare("DELETE FROM vendor_assessment_responses WHERE vendor_assessment_id = ?")->execute([$assessmentId]);
+        $insR = $this->pdo->prepare("INSERT INTO vendor_assessment_responses (vendor_assessment_id, question_id, response_text, answered_by) VALUES (?, ?, ?, ?)");
+        foreach ($responses as $qId => $ans) {
+            $insR->execute([$assessmentId, $qId, $ans, $userId]);
+        }
+
+        // Sync vendors
         $stmtVendor = $this->pdo->prepare("
             UPDATE vendors 
             SET risk_level = ?, 
@@ -218,17 +274,7 @@ class VendorRisk
         $stmtVendor->execute([$newRiskLevel, $complianceStatus, $vendorId]);
 
         // Log entry to vendor_risk_history
-        $this->addHistory(
-            $vendorId,
-            $prevScore,
-            $calculatedScore,
-            $prevLevel,
-            $newRiskLevel,
-            $prevStatus,
-            $complianceStatus,
-            $userId,
-            $notes ?: 'Risk assessment audit saved'
-        );
+        $this->addHistory($vendorId, $prevScore, $calculatedScore, $prevLevel, $newRiskLevel, $prevStatus, $complianceStatus, $userId, $notes ?: 'Risk assessment saved (deterministic)');
 
         return [
             'vendor_id' => $vendorId,
@@ -242,9 +288,6 @@ class VendorRisk
         ];
     }
 
-    /**
-     * Add entry to vendor_risk_history
-     */
     public function addHistory($vendorId, $prevScore, $newScore, $prevLevel, $newLevel, $prevStatus, $newStatus, $userId, $notes = null)
     {
         $stmt = $this->pdo->prepare("
