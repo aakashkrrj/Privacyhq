@@ -55,17 +55,7 @@ class CookieGovernance {
             $categories[$cr['cat_name']] = (int)$cr['cookie_count'];
         }
 
-        // Recent Scan Summary
-        $scanSql = "SELECT * FROM cookie_scans ORDER BY id DESC LIMIT 1";
-        $recentScan = $this->pdo ? $this->pdo->query($scanSql)->fetch(\PDO::FETCH_ASSOC) : null;
-        if (!$recentScan) {
-            $recentScan = [
-                'domain' => 'privacyhq.com',
-                'status' => 'completed',
-                'cookies_found' => $total,
-                'last_scan_at' => date('Y-m-d H:i:s')
-            ];
-        }
+        // Removed Recent Scan Summary
 
         // Opt-In Rate from Consent Logs
         $consentSql = "
@@ -104,47 +94,7 @@ class CookieGovernance {
                 'medium' => (int)($counts['medium_risk'] ?? 0),
                 'low' => (int)($counts['low_risk'] ?? 0)
             ],
-            'recent_scan' => $recentScan,
             'recent_cookies' => $recentCookies
-        ];
-    }
-
-    public function getPlaceholderDataset() {
-        return [
-            'metrics' => [
-                'total_cookies' => 148,
-                'uncategorized' => 8,
-                'opt_in_rate' => '82.4%',
-                'configured_banners' => '3 Domains'
-            ],
-            'categories' => [
-                'Necessary' => 42,
-                'Analytics' => 28,
-                'Preferences' => 18,
-                'Advertising' => 12
-            ],
-            'recent_scan' => [
-                'domain' => 'privacyhq.com',
-                'status' => 'Completed',
-                'cookies_found' => 148,
-                'last_scan' => 'Today 11:45 AM'
-            ],
-            'inventory' => [
-                [
-                    'name' => '_ga',
-                    'domain' => 'example.com',
-                    'category' => 'Analytics',
-                    'type' => 'First-Party',
-                    'duration' => '2 Years'
-                ],
-                [
-                    'name' => '_fbp',
-                    'domain' => 'example.com',
-                    'category' => 'Advertising',
-                    'type' => 'Third-Party',
-                    'duration' => '90 Days'
-                ]
-            ]
         ];
     }
 
@@ -316,54 +266,7 @@ class CookieGovernance {
         return $stmt->execute([$targetCategoryId]);
     }
 
-    // 4. Scanner Simulation & State Machine
-    public function getLatestScan($domain = 'privacyhq.com') {
-        $stmt = $this->pdo->prepare("SELECT * FROM cookie_scans WHERE domain = ? ORDER BY id DESC LIMIT 1");
-        $stmt->execute([$domain]);
-        $scan = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-        if (!$scan) {
-            $stmtInit = $this->pdo->prepare("INSERT INTO cookie_scans (domain, status, progress_percentage, pages_scanned, cookies_found, time_taken_seconds, last_scan_at, next_scan_at) VALUES (?, 'completed', 100, 48, 7, 12, NOW(), NOW() + INTERVAL 7 DAY)");
-            $stmtInit->execute([$domain]);
-            $stmt->execute([$domain]);
-            $scan = $stmt->fetch(\PDO::FETCH_ASSOC);
-        }
-
-        return $scan;
-    }
-
-    public function updateScanStatus($scanId, $status, $progress = null, $pagesScanned = null, $cookiesFound = null, $timeTaken = null) {
-        $fields = ["status = ?"];
-        $params = [$status];
-
-        if ($progress !== null) {
-            $fields[] = "progress_percentage = ?";
-            $params[] = (int)$progress;
-        }
-        if ($pagesScanned !== null) {
-            $fields[] = "pages_scanned = ?";
-            $params[] = (int)$pagesScanned;
-        }
-        if ($cookiesFound !== null) {
-            $fields[] = "cookies_found = ?";
-            $params[] = (int)$cookiesFound;
-        }
-        if ($timeTaken !== null) {
-            $fields[] = "time_taken_seconds = ?";
-            $params[] = (int)$timeTaken;
-        }
-        if ($status === 'completed') {
-            $fields[] = "last_scan_at = NOW()";
-            $fields[] = "next_scan_at = NOW() + INTERVAL 7 DAY";
-        }
-
-        $fields[] = "updated_at = NOW()";
-        $params[] = $scanId;
-
-        $sql = "UPDATE cookie_scans SET " . implode(", ", $fields) . " WHERE id = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute($params);
-    }
+    // Scanner Simulation Removed
 
     // 5. Consent Banner Config & Consent Logs
     public function getBannerConfig($domain = 'privacyhq.com') {

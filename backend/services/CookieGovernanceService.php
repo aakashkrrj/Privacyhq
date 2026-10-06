@@ -200,50 +200,7 @@ class CookieGovernanceService {
         return $res;
     }
 
-    // Scanner Control Engine
-    public function getScannerState($domain = 'privacyhq.com') {
-        return $this->cookieModel->getLatestScan($domain);
-    }
-
-    public function controlScan($action, $domain = 'privacyhq.com', $userId = null) {
-        $scan = $this->cookieModel->getLatestScan($domain);
-
-        try {
-            $this->pdo->beginTransaction();
-
-            if ($action === 'start') {
-                $this->cookieModel->updateScanStatus($scan['id'], 'scanning', 10, 5, 2, 2);
-                if (function_exists('log_audit_event')) {
-                    log_audit_event($this->pdo, 'Cookie Governance', 'Start Scan', $userId, $scan['id'], null, $domain);
-                }
-            } else if ($action === 'pause') {
-                $this->cookieModel->updateScanStatus($scan['id'], 'paused');
-                if (function_exists('log_audit_event')) {
-                    log_audit_event($this->pdo, 'Cookie Governance', 'Pause Scan', $userId, $scan['id'], null, null);
-                }
-            } else if ($action === 'resume') {
-                $this->cookieModel->updateScanStatus($scan['id'], 'scanning');
-                if (function_exists('log_audit_event')) {
-                    log_audit_event($this->pdo, 'Cookie Governance', 'Resume Scan', $userId, $scan['id'], null, null);
-                }
-            } else if ($action === 'cancel') {
-                $this->cookieModel->updateScanStatus($scan['id'], 'cancelled', 0, 0, 0, 0);
-                if (function_exists('log_audit_event')) {
-                    log_audit_event($this->pdo, 'Cookie Governance', 'Cancel Scan', $userId, $scan['id'], null, null);
-                }
-            } else if ($action === 'complete') {
-                $countRes = $this->cookieModel->getCookies();
-                $totalFound = $countRes['total'] ?: 12;
-                $this->cookieModel->updateScanStatus($scan['id'], 'completed', 100, 48, $totalFound, 14);
-            }
-
-            $this->pdo->commit();
-            return $this->cookieModel->getLatestScan($domain);
-        } catch (\Exception $e) {
-            $this->pdo->rollBack();
-            throw $e;
-        }
-    }
+    // Scanner Control Engine Removed
 
     // Consent Banner & Preferences
     public function getBannerConfig($domain = 'privacyhq.com') {

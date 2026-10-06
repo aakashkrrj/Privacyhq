@@ -14,6 +14,7 @@ $action = $_GET['action'] ?? ($method === 'POST' ? ($_POST['action'] ?? 'create'
 
 if ($method === 'POST') {
     ApiBootstrap::requireCsrf();
+    ApiBootstrap::requireCsrf();
     if ($action === 'create') {
         $controller->createCategory();
     } else if ($action === 'update') {

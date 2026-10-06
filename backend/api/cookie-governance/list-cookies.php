@@ -1,13 +1,14 @@
 <?php
 use Backend\Core\ApiBootstrap;
 require_once __DIR__ . '/../../core/ApiBootstrap.php';
-require_once __DIR__ . '/../../services/ScannerAbstraction.php';
+require_once __DIR__ . '/../../models/CookieGovernance.php';
 require_once __DIR__ . '/../../services/CookieGovernanceService.php';
 require_once __DIR__ . '/../../controllers/CookieGovernanceController.php';
 
 ApiBootstrap::requireMethod('GET');
 
-$service = new \Backend\Services\CookieGovernanceService($pdo);
+$model = new \Backend\Models\CookieGovernance($pdo);
+$service = new \Backend\Services\CookieGovernanceService($pdo, $model);
 $controller = new \Backend\Controllers\CookieGovernanceController($service);
 
 $controller->listCookies();

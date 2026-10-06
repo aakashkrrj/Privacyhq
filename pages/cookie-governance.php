@@ -80,58 +80,8 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token']);
 
     <!-- 2. SCANNER & CATEGORY BREAKDOWN -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- SCANNER CONTROL CENTER WIDGET -->
-        <div class="lg:col-span-1 bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col justify-between">
-            <div>
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2">
-                        <span class="material-symbols-outlined text-indigo-600">travel_explore</span> Cookie Scanner Engine
-                    </h3>
-                    <span id="scan-status" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">IDLE</span>
-                </div>
-                <p class="text-xs text-gray-500 mb-4">Target Domain: <strong id="scan-domain" class="text-gray-800">privacyhq.com</strong></p>
-
-                <!-- Scanner Progress Bar -->
-                <div class="mb-4">
-                    <div class="flex justify-between text-xs font-semibold mb-1">
-                        <span class="text-gray-600">Scan Progress</span>
-                        <span id="scan-progress-pct" class="text-indigo-600">0%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden">
-                        <div id="scan-progress-bar" class="bg-indigo-600 h-full rounded-full transition-all duration-300" style="width:0%"></div>
-                    </div>
-                </div>
-
-                <!-- Scanner Telemetry Grid -->
-                <div class="grid grid-cols-3 gap-2 bg-gray-50 p-3 rounded-lg border border-gray-200 text-center mb-4">
-                    <div>
-                        <div class="text-[10px] text-gray-500 uppercase">Pages</div>
-                        <div class="font-bold text-sm text-gray-800" id="scan-pages">0</div>
-                    </div>
-                    <div>
-                        <div class="text-[10px] text-gray-500 uppercase">Detected</div>
-                        <div class="font-bold text-sm text-indigo-600" id="scan-cookies-found">0</div>
-                    </div>
-                    <div>
-                        <div class="text-[10px] text-gray-500 uppercase">Duration</div>
-                        <div class="font-bold text-sm text-gray-800" id="scan-time">0s</div>
-                    </div>
-                </div>
-
-                <div class="text-xs text-gray-500 mb-4">Last Automated Scan: <span id="scan-last-time" class="font-medium text-gray-700">Never</span></div>
-            </div>
-
-            <!-- Scanner Action Buttons -->
-            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
-                <button id="btnStartScan" onclick="controlScan('start')" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg transition">Start Scan</button>
-                <button id="btnPauseScan" onclick="controlScan('pause')" disabled class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-lg transition disabled:opacity-50">Pause</button>
-                <button id="btnResumeScan" onclick="controlScan('resume')" disabled class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition disabled:opacity-50">Resume</button>
-                <button id="btnCancelScan" onclick="controlScan('cancel')" disabled class="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-lg transition disabled:opacity-50">Cancel</button>
-            </div>
-        </div>
-
         <!-- CATEGORIES DISTRIBUTION & RISK SUMMARY -->
-        <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col justify-between">
+        <div class="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col justify-between">
             <div>
                 <div class="flex items-center justify-between mb-4 border-b pb-3">
                     <h3 class="font-bold text-gray-800 text-sm">Cookie Category Distribution</h3>

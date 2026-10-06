@@ -167,26 +167,7 @@ class CookieGovernanceController extends BaseController {
         }
     }
 
-    public function scanner() {
-        try {
-            $action = trim($_POST['action'] ?? ($_GET['action'] ?? 'status'));
-            $domain = trim($_POST['domain'] ?? ($_GET['domain'] ?? 'privacyhq.com'));
-
-            if ($action === 'status') {
-                $data = $this->cookieService->getScannerState($domain);
-            } else {
-                $data = $this->cookieService->controlScan($action, $domain, $this->getUserId());
-            }
-
-            ApiResponse::success('Scanner status updated', $data);
-        } catch (\Exception $e) {
-            ApiResponse::error($e->getMessage());
-        }
-    }
-
-    public function scan() {
-        $this->scanner();
-    }
+    // Scanner endpoints removed
 
     public function banner() {
         try {

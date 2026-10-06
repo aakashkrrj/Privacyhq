@@ -23,7 +23,6 @@ async function loadDashboardMetrics() {
             const m = d.metrics || {};
             const cats = d.categories || {};
             const risk = d.risk_summary || {};
-            const scan = d.recent_scan || {};
 
             document.getElementById('metric-total').innerText = m.total_cookies || 0;
             document.getElementById('metric-first-party').innerText = m.first_party || 0;
@@ -50,9 +49,6 @@ async function loadDashboardMetrics() {
             document.getElementById('risk-low').innerText = risk.low || 0;
             document.getElementById('risk-medium').innerText = risk.medium || 0;
             document.getElementById('risk-high').innerText = risk.high || 0;
-
-            // Scanner Status Hydration
-            updateScannerUI(scan);
         }
     } catch (e) {
         console.error('Failed to load Cookie Governance metrics', e);
@@ -239,78 +235,7 @@ async function loadCategories() {
     }
 }
 
-// 4. Scanner Controls & Progress Simulation
-async function controlScan(action) {
-    const fd = new FormData();
-    fd.append('action', action);
-    fd.append('domain', 'privacyhq.com');
-    fd.append('csrf_token', G_CSRF_TOKEN);
-
-    try {
-        const res = await fetch('backend/api/cookie-governance/scanner.php', { method: 'POST', body: fd });
-        const data = await res.json();
-        if (data.success && data.data) {
-            updateScannerUI(data.data);
-            if (action === 'start' || action === 'resume') {
-                startScannerAnimation();
-            } else if (action === 'pause' || action === 'cancel' || action === 'complete') {
-                stopScannerAnimation();
-            }
-        }
-    } catch (e) {
-        alert('Scanner action failed');
-    }
-}
-
-function updateScannerUI(scan) {
-    document.getElementById('scan-domain').innerText = scan.domain || 'privacyhq.com';
-    document.getElementById('scan-status').innerText = (scan.status || 'idle').toUpperCase();
-    document.getElementById('scan-status').className = `px-2.5 py-1 text-xs font-semibold rounded-full capitalize ${scan.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : (scan.status === 'scanning' ? 'bg-indigo-100 text-indigo-800 animate-pulse' : 'bg-gray-100 text-gray-800')}`;
-    
-    document.getElementById('scan-progress-bar').style.width = `${scan.progress_percentage || 0}%`;
-    document.getElementById('scan-progress-pct').innerText = `${scan.progress_percentage || 0}%`;
-    document.getElementById('scan-pages').innerText = scan.pages_scanned || 0;
-    document.getElementById('scan-cookies-found').innerText = scan.cookies_found || 0;
-    document.getElementById('scan-time').innerText = `${scan.time_taken_seconds || 0}s`;
-    document.getElementById('scan-last-time').innerText = scan.last_scan_at || 'Never';
-
-    // Button states
-    const isScanning = scan.status === 'scanning';
-    document.getElementById('btnStartScan').disabled = isScanning;
-    document.getElementById('btnPauseScan').disabled = !isScanning;
-    document.getElementById('btnResumeScan').disabled = scan.status !== 'paused';
-    document.getElementById('btnCancelScan').disabled = scan.status === 'idle' || scan.status === 'completed';
-}
-
-function startScannerAnimation() {
-    stopScannerAnimation();
-    let currentPct = parseInt(document.getElementById('scan-progress-pct').innerText) || 0;
-    
-    scannerInterval = setInterval(async () => {
-        currentPct += 15;
-        if (currentPct >= 100) {
-            currentPct = 100;
-            stopScannerAnimation();
-            await controlScan('complete');
-            loadDashboardMetrics();
-            loadCookieInventory();
-        } else {
-            const fd = new FormData();
-            fd.append('action', 'status');
-            fd.append('domain', 'privacyhq.com');
-            fd.append('csrf_token', G_CSRF_TOKEN);
-            document.getElementById('scan-progress-bar').style.width = `${currentPct}%`;
-            document.getElementById('scan-progress-pct').innerText = `${currentPct}%`;
-        }
-    }, 1500);
-}
-
-function stopScannerAnimation() {
-    if (scannerInterval) {
-        clearInterval(scannerInterval);
-        scannerInterval = null;
-    }
-}
+// Scanner Controls Removed
 
 // 5. Consent Banner Config & Live Customizer
 async function loadBannerConfig() {
@@ -570,7 +495,6 @@ window.executeSearch = executeSearch;
 window.resetFilters = resetFilters;
 window.sortTable = sortTable;
 window.changePage = changePage;
-window.controlScan = controlScan;
 window.triggerExport = triggerExport;
 window.openAddCookieModal = openAddCookieModal;
 window.closeAddCookieModal = closeAddCookieModal;

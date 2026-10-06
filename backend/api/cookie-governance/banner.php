@@ -12,6 +12,7 @@ $controller = new \Backend\Controllers\CookieGovernanceController($service);
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 if ($method === 'POST') {
     ApiBootstrap::requireCsrf();
+    ApiBootstrap::requireCsrf();
 }
 
 $controller->banner();
