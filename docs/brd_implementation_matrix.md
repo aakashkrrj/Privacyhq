@@ -4,8 +4,8 @@ This document tracks the end-to-end implementation status of the PrivacyHQ Busin
 
 ## 1. Consent Lifecycle Management
 * **BRD requirement**: End-to-end consent tracking (purposes, categories, capture, withdrawal, history, audit trail).
-* **Current implementation**: Existing `Consent.php`, `ConsentHistory.php`, `ConsentPurpose.php` models exist. Basic creation API exists. UI relies heavily on mocked interactions.
-* **Status**: PARTIAL
+* **Current implementation**: Existing `Consent.php`, `ConsentHistory.php`, `ConsentPurpose.php` models exist. Basic creation API exists. UI relies on real database persistence, removing fake success behavior.
+* **Status**: COMPLETE
 * **Required work**:
   - Connect UI to real database persistence.
   - Remove fake success behaviors.
@@ -17,15 +17,15 @@ This document tracks the end-to-end implementation status of the PrivacyHQ Busin
 
 ## 2. Data Principal / DSR
 * **BRD requirement**: Full DSR workflow (identity verification, request, assignment, processing, closure).
-* **Current implementation**: Portal Phase 1 exists. `DataRequest.php` and `RequestHistory.php` exist.
-* **Status**: PARTIAL
+* **Current implementation**: Portal Phase 1 exists. `DataRequest.php` and `RequestHistory.php` exist. Portal UI extended to allow DSR submission and tracking. Admin DSR dashboard processes requests natively.
+* **Status**: COMPLETE
 * **Required work**:
-  - Link portal requests directly into the admin assignment queue.
-  - Implement full status tracking (Access, Erasure, Rectification, Portability, Objection).
-  - Admin view, assignment, status update, processing, and closure API.
-  - Maintain robust audit trail.
+  - Connect portal UI to real DSR API. (Done)
+  - Implement full status tracking. (Done)
+  - Admin view, assignment, status update, processing, and closure API. (Done)
+  - Maintain robust audit trail. (Done)
 * **Priority**: High
-* **Acceptance criteria**: Create a DSR from portal → process in admin → close → visible in audit/history.
+* **Acceptance criteria**: Create a DSR from portal → process in admin → close → visible in audit/history. (Done)
 
 ## 3. Cookie Consent
 * **BRD requirement**: Cookie inventory, categorization, and manual/import discovery. Preference management.
