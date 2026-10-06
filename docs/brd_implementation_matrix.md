@@ -2,7 +2,7 @@
 
 This document tracks the end-to-end implementation status of the PrivacyHQ Business Requirements Document (BRD).
 
-## 1. Consent Lifecycle Management
+## Phase 2. Consent Lifecycle Management
 * **BRD requirement**: End-to-end consent tracking (purposes, categories, capture, withdrawal, history, audit trail).
 * **Current implementation**: Existing `Consent.php`, `ConsentHistory.php`, `ConsentPurpose.php` models exist. Basic creation API exists. UI relies on real database persistence, removing fake success behavior.
 * **Status**: COMPLETE
@@ -15,7 +15,7 @@ This document tracks the end-to-end implementation status of the PrivacyHQ Busin
 * **Priority**: High
 * **Acceptance criteria**: Real consent can be created, viewed, withdrawn, and audited end-to-end.
 
-## 2. Data Principal / DSR
+## Phase 3. Data Principal / DSR
 * **BRD requirement**: Full DSR workflow (identity verification, request, assignment, processing, closure).
 * **Current implementation**: Portal Phase 1 exists. `DataRequest.php` and `RequestHistory.php` exist. Portal UI extended to allow DSR submission and tracking. Admin DSR dashboard processes requests natively.
 * **Status**: COMPLETE
@@ -27,7 +27,7 @@ This document tracks the end-to-end implementation status of the PrivacyHQ Busin
 * **Priority**: High
 * **Acceptance criteria**: Create a DSR from portal → process in admin → close → visible in audit/history. (Done)
 
-## 3. Cookie Consent
+## Phase 4. Cookie Consent Governance
 * **BRD requirement**: Cookie inventory, categorization, and manual/import discovery. Preference management.
 * **Current implementation**: Mocked/fake cookie discovery behavior in UI. `CookieGovernance.php` model exists.
 * **Status**: COMPLETE
@@ -39,13 +39,16 @@ This document tracks the end-to-end implementation status of the PrivacyHQ Busin
 * **Priority**: Medium
 * **Acceptance criteria**: Working cookie inventory and manual management without fake automated scanning. (Done)
 
-## 4. PIA / Privacy Assessment
+## Phase 5. Privacy Impact Assessment (PIA)
 * **BRD requirement**: Complete assessment lifecycle (Draft → Review → Completed), secure evidence, risk rating.
 * **Current implementation**: SEC-02 remediated evidence upload. Templates, questions, responses mostly exist.
 * **Status**: COMPLETE
 * **Required work**:
   - Implement findings, remediation, due dates, ownership, risk severity. (Done)
   - Solidify review and approval workflows. (Done)
+* **Known Limitations**:
+  - Comprehensive PDF PIA report is not implemented.
+  - Background/cron-based reviewer notification delivery has not been fully verified.
 * **Priority**: Medium
 * **Acceptance criteria**: Complete assessment can be created, performed, submitted, reviewed, approved, and reported. (Done)
 
