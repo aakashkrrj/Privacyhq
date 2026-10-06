@@ -17,8 +17,8 @@ $purposeModel = new \Backend\Models\ConsentPurpose($pdo);
 $historyModel = new \Backend\Models\ConsentHistory($pdo);
 $consentService = new \Backend\Services\ConsentService($pdo, $consentModel, $subjectModel, $purposeModel, $historyModel);
 
-// Get currently logged-in user (fallback to 1 if session doesn't have it)
-$userId = $_SESSION['user_id'] ?? 1;
+// ApiBootstrap::requireAuth() has already run via ApiBootstrap inclusion
+$userId = (int) $_SESSION['user_id'];
 
 if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
     Backend\Core\ApiResponse::error('No file uploaded or file upload error occurred.');

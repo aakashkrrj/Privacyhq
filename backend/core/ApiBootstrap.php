@@ -39,4 +39,24 @@ class ApiBootstrap
             );
         }
     }
+    /**
+     * Require a valid authenticated admin session.
+     */
+    public static function requireAuth(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (empty($_SESSION['user_id'])) {
+            ApiResponse::error(
+                "Unauthorized access. Please log in.",
+                [],
+                401
+            );
+        }
+    }
 }
+
+// Enforce authentication at the shared Admin API boundary globally
+\Backend\Core\ApiBootstrap::requireAuth();

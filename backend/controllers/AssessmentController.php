@@ -102,7 +102,7 @@ class AssessmentController extends BaseController
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
-            $userId = $_SESSION['user_id'] ?? 1;
+            $userId = $this->getUserId();
             $roleId = $_SESSION['role_id'] ?? 1;
 
             $data = $this->assessmentService->getAssessmentsForUser($userId, $roleId);
@@ -127,7 +127,7 @@ class AssessmentController extends BaseController
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
-            $userId = $_SESSION['user_id'] ?? 1;
+            $userId = $this->getUserId();
             $roleId = $_SESSION['role_id'] ?? 1;
 
             $data = $this->assessmentService->getAssessmentDetail($id, $userId, $roleId);
@@ -157,7 +157,7 @@ class AssessmentController extends BaseController
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
-            $userId = $_SESSION['user_id'] ?? 1;
+            $userId = $this->getUserId();
             $roleId = $_SESSION['role_id'] ?? 1;
 
             $this->assessmentService->saveResponses($id, $answers, $userId, $roleId);
@@ -182,7 +182,7 @@ class AssessmentController extends BaseController
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
-            $userId = $_SESSION['user_id'] ?? 1;
+            $userId = $this->getUserId();
             $roleId = $_SESSION['role_id'] ?? 1;
 
             $this->assessmentService->submitAssessment($id, $userId, $roleId);
@@ -209,7 +209,7 @@ class AssessmentController extends BaseController
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
-            $userId = $_SESSION['user_id'] ?? 1;
+            $userId = $this->getUserId();
             $roleId = $_SESSION['role_id'] ?? 1;
 
             $this->assessmentService->approveAssessment($id, $notes, $userId, $roleId);
@@ -236,7 +236,7 @@ class AssessmentController extends BaseController
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
-            $userId = $_SESSION['user_id'] ?? 1;
+            $userId = $this->getUserId();
             $roleId = $_SESSION['role_id'] ?? 1;
 
             $this->assessmentService->rejectAssessment($id, $notes, $userId, $roleId);
@@ -265,7 +265,7 @@ class AssessmentController extends BaseController
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
-            $userId = $_SESSION['user_id'] ?? 1;
+            $userId = $this->getUserId();
 
             $file = $_FILES['evidence_file'];
 

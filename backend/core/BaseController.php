@@ -6,7 +6,10 @@ abstract class BaseController {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
-        return $_SESSION['user_id'] ?? 1;
+        if (empty($_SESSION['user_id'])) {
+            throw new \Exception("Unauthorized: Valid session required.");
+        }
+        return (int) $_SESSION['user_id'];
     }
 
     protected function checkPermission(string $permission): void {

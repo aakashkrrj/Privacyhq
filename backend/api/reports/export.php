@@ -125,7 +125,7 @@ try {
 
         // Audit Event
         if (function_exists('log_audit_event')) {
-            log_audit_event($pdo, 'Reports', 'Export PDF', $_SESSION['user_id'] ?? 1, $id ?: null, null, $filename);
+            log_audit_event($pdo, 'Reports', 'Export PDF', (int) $_SESSION['user_id'], $id ?: null, null, $filename);
         }
 
         @header('Content-Type: application/pdf');
@@ -146,7 +146,7 @@ try {
 
         // Audit Event
         if (function_exists('log_audit_event')) {
-            log_audit_event($pdo, 'Reports', 'Export XLSX', $_SESSION['user_id'] ?? 1, $id ?: null, null, $filename);
+            log_audit_event($pdo, 'Reports', 'Export XLSX', (int) $_SESSION['user_id'], $id ?: null, null, $filename);
         }
 
         @header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -164,7 +164,7 @@ try {
 
         // Audit Event
         if (function_exists('log_audit_event')) {
-            log_audit_event($pdo, 'Reports', 'Export CSV', $_SESSION['user_id'] ?? 1, $id ?: null, null, $filename);
+            log_audit_event($pdo, 'Reports', 'Export CSV', (int) $_SESSION['user_id'], $id ?: null, null, $filename);
         }
 
         @header('Content-Type: text/csv; charset=utf-8');
