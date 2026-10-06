@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../PortalBootstrap.php';
 require_once __DIR__ . '/../../../models/DataRequest.php';
+require_once __DIR__ . '/../../../core/ApiResponse.php';
 use Backend\Core\ApiResponse;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
