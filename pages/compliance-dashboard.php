@@ -467,21 +467,5 @@
 </a>
 </nav>
 <!-- Micro-interactions Script -->
-<script>
-        // Simple animation for numbers (Optional micro-interaction)
-        document.querySelectorAll('.text-display, .text-headline-lg').forEach(el => {
-            const finalVal = parseInt(el.innerText);
-            if (isNaN(finalVal)) return;
-            let startVal = 0;
-            const duration = 1000;
-            const step = (timestamp) => {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
-                el.innerText = Math.floor(progress * finalVal) + (el.innerText.includes('%') ? '%' : '');
-                if (progress < 1) window.requestAnimationFrame(step);
-            };
-            let startTime = null;
-            window.requestAnimationFrame(step);
-        });
-    </script>
+<script src="assets/js/compliance-dashboard.js"></script>
 </body></html>

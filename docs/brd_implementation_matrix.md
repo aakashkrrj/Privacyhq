@@ -77,18 +77,21 @@ This document tracks the end-to-end implementation status of the PrivacyHQ Busin
 * **Priority**: Medium
 * **Acceptance criteria**: Create incident → investigate → remediate → close. (Done)
 
-## 7. GRC Core
+## Phase 8. GRC Core
 * **BRD requirement**: Risk Register, Policy Management, Issues/Remediation, Audit logic.
-* **Current implementation**: Models `RiskRegister.php`, `Policy.php` exist, but lacking broad lifecycle capabilities.
-* **Status**: MISSING
+* **Current implementation**: Unified GRC schema linking `grc_controls`, `grc_compliance_requirements`, `grc_audits`, `grc_findings`. Global `assessment_risks` acts as the master Risk Register. `Policy.php` supports lifecycle.
+* **Status**: COMPLETE
 * **Required work**:
-  - Build out Risk Register (inherent/residual scores, controls, treatment).
-  - Policy Management (versions, approval, effective date).
-  - Issues/remediation and audit scopes.
+  - Build out Risk Register (inherent/residual scores, controls, treatment). (Done)
+  - Policy Management (versions, approval, effective date). (Done)
+  - Issues/remediation and audit scopes. (Done)
+* **Known Limitations**:
+  - **Not Implemented**: External regulatory notification APIs (e.g. ICO portal integration).
+  - **Not Implemented**: Full Framework Compliance automation (GDPR, SOC 2) - planned for Phase 9.
 * **Priority**: High
-* **Acceptance criteria**: Fully functional CRUD and workflow for risks, policies, and issues.
+* **Acceptance criteria**: Fully functional CRUD and workflow for risks, policies, and issues. (Done)
 
-## 8. Compliance Automation
+## Phase 9. Compliance Automation
 * **BRD requirement**: Framework-driven compliance model (GDPR, SOC 2, etc.) assessing percentage of compliance.
 * **Current implementation**: Not implemented.
 * **Status**: MISSING
