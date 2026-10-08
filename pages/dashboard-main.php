@@ -10,114 +10,34 @@ if (session_status() === PHP_SESSION_NONE) {
 // User greeting context
 $user_name = $_SESSION['user_name'] ?? ($_SESSION['first_name'] ?? 'User');
 
-// Initialize default counts and scores
-$vendor_count = 0;
-$incident_count = 0;
-$assessment_count = 0;
-$vendor_risk_level = 'Low';
-$vendor_risk_bg = 'bg-emerald-100 text-emerald-800';
+require_once __DIR__ . '/../backend/models/DashboardService.php';
 
-$policy_score = 0;
-$assessment_score = 0;
-$vendor_score = 0;
+$dashService = new \Backend\Models\DashboardService($conn); // Using existing PDO or conn (conn is mysqli, DashboardService uses PDO)
 
-if (isset($conn) && !$conn->connect_error) {
-    // 1. Get total vendors
-    $res = $conn->query("SELECT COUNT(*) AS total FROM vendors WHERE deleted_at IS NULL");
-    if ($res) {
-        $vendor_count = (int)$res->fetch_assoc()['total'];
-    }
+// Wait, DashboardService expects PDO, $conn is mysqli. Let's include backend DB config.
+require_once __DIR__ . '/../backend/config/db.php';
+$dashService = new \Backend\Models\DashboardService($pdo);
 
-    // 2. Get active incidents
-    $res = $conn->query("SELECT COUNT(*) AS total FROM incidents WHERE status != 'Resolved' AND deleted_at IS NULL");
-    if ($res) {
-        $incident_count = (int)$res->fetch_assoc()['total'];
-    }
+$metrics = $dashService->getExecutiveMetrics();
+$enterprise = $dashService->getEnterpriseScore();
+$dpdp = $dashService->getDpdpScore();
+$frameworkData = $dashService->getFrameworkCompliance();
 
-    // 3. Get total assessments
-    $res = $conn->query("SELECT COUNT(*) AS total FROM privacy_assessments WHERE deleted_at IS NULL");
-    if ($res) {
-        $assessment_count = (int)$res->fetch_assoc()['total'];
-    }
+$privacy_score = $enterprise['status'] === 'success' ? (int)$enterprise['score'] : 0;
+$dpdp_score = $dpdp['status'] === 'success' ? (int)$dpdp['score'] : 0;
 
-    // 4. Vendor Risk Level Calculation
-    $res = $conn->query("SELECT status, risk_score FROM vendor_assessments");
-    if ($res && $res->num_rows > 0) {
-        $has_critical = false;
-        $has_audit = false;
-        while ($r = $res->fetch_assoc()) {
-            if ($r['status'] === 'Critical Review' || (int)$r['risk_score'] >= 70) {
-                $has_critical = true;
-            }
-            if ($r['status'] === 'Under Audit' || (int)$r['risk_score'] >= 40) {
-                $has_audit = true;
-            }
-        }
-        if ($has_critical) {
-            $vendor_risk_level = 'High';
-            $vendor_risk_bg = 'bg-error/10 text-error';
-        } elseif ($has_audit) {
-            $vendor_risk_level = 'Medium';
-            $vendor_risk_bg = 'bg-amber-100 text-amber-800';
-        } else {
-            $vendor_risk_level = 'Low';
-            $vendor_risk_bg = 'bg-emerald-100 text-emerald-800';
-        }
-    }
-
-    // 5. Compliance Scores Calculation
-    // Policies
-    $total_policies = 0;
-    $active_policies = 0;
-    $res = $conn->query("SELECT COUNT(*) AS total FROM privacy_policies");
-    if ($res) {
-        $total_policies = (int)$res->fetch_assoc()['total'];
-    }
-    $res = $conn->query("SELECT COUNT(*) AS total FROM privacy_policies WHERE LOWER(status) = 'active'");
-    if ($res) {
-        $active_policies = (int)$res->fetch_assoc()['total'];
-    }
-    $policy_score = ($total_policies > 0) ? ($active_policies / $total_policies) * 100 : 0;
-
-    // Assessments
-    $total_assessments = 0;
-    $completed_assessments = 0;
-    $res = $conn->query("SELECT COUNT(*) AS total FROM privacy_assessments WHERE deleted_at IS NULL");
-    if ($res) {
-        $total_assessments = (int)$res->fetch_assoc()['total'];
-    }
-    $res = $conn->query("
-        SELECT COUNT(*) AS total 
-        FROM privacy_assessments pa 
-        INNER JOIN assessment_statuses s ON pa.status_id = s.id 
-        WHERE LOWER(s.status_name) = 'completed' AND pa.deleted_at IS NULL
-    ");
-    if ($res) {
-        $completed_assessments = (int)$res->fetch_assoc()['total'];
-    }
-    $assessment_score = ($total_assessments > 0) ? ($completed_assessments / $total_assessments) * 100 : 0;
-
-    // Vendor Compliance
-    $total_vendor_assessments = 0;
-    $compliant_vendors = 0;
-    $res = $conn->query("SELECT COUNT(*) AS total FROM vendor_assessments");
-    if ($res) {
-        $total_vendor_assessments = (int)$res->fetch_assoc()['total'];
-    }
-    $res = $conn->query("SELECT COUNT(*) AS total FROM vendor_assessments WHERE status = 'Compliant'");
-    if ($res) {
-        $compliant_vendors = (int)$res->fetch_assoc()['total'];
-    }
-    $vendor_score = ($total_vendor_assessments > 0) ? ($compliant_vendors / $total_vendor_assessments) * 100 : 0;
-}
-
-// Final Dashboard Scores
-$privacy_score = round(($assessment_score + $policy_score + $vendor_score) / 3);
-$dpdp_score = round(($policy_score + $vendor_score) / 2);
-
-// Calculate gauge stroke dash offsets (circumference = 251.2)
 $privacy_offset = round(251.2 * (1 - ($privacy_score / 100)), 2);
 $dpdp_offset = round(251.2 * (1 - ($dpdp_score / 100)), 2);
+
+// Map new metrics to old variables for seamless UI transition
+$vendor_count = $metrics['vendor']['total'];
+$incident_count = $metrics['incident']['open'];
+$assessment_count = $metrics['pia']['open'];
+
+$vendor_risk_level = $metrics['vendor']['high_risk'] > 0 ? 'High' : 'Low';
+$vendor_risk_bg = $vendor_risk_level === 'High' ? 'bg-error/10 text-error' : 'bg-emerald-100 text-emerald-800';
+
+$dpdp_status_text = $dpdp['status'] === 'success' ? "Highly Compliant" : $dpdp['message'];
 
 // START NEW CODE - Dynamic Audit Logs (Recent Activities)
 $recent_activities = [];
@@ -228,7 +148,7 @@ for ($i = 1; $i < 5; $i++) {
             <p class="font-caption text-outline text-xs mt-0.5">India Regulatory Framework</p>
             <div class="mt-3 md:mt-4 flex items-center gap-1.5 text-[#107C10]">
                 <span class="material-symbols-outlined text-sm" data-icon="verified">verified</span>
-                <span class="font-label-md text-xs font-medium">Highly Compliant</span>
+                <span class="font-label-md text-xs font-medium"><?= htmlspecialchars($dpdp_status_text) ?></span>
             </div>
         </div>
         <div class="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0">
