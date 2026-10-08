@@ -10,21 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
 ?>
-<!DOCTYPE html>
-<html class="light" lang="en">
-<head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>PrivacyHQ - Data Asset Inventory (DSPM)</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #faf9f8; color: #1a1c1c; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-    </style>
-</head>
-<body class="bg-background min-h-screen pb-24">
+
     <header class="bg-white shadow flex justify-between items-center px-6 py-4">
         <h1 class="text-2xl font-bold text-primary">Data Asset Inventory</h1>
         <div><a href="/governance/index.php" class="text-primary underline">Back to Dashboard</a></div>
@@ -211,5 +197,3 @@ $csrfToken = htmlspecialchars($_SESSION['csrf_token'] ?? '');
             loadMetrics();
         });
     </script>
-</body>
-</html>

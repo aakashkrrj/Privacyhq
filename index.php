@@ -44,7 +44,9 @@ $routes = [
     'notification-preferences' => 'pages/notification-preferences.php',
     'my-tasks'                 => 'pages/my-tasks.php',
     'executive-dashboard'      => 'pages/executive-dashboard.php',
-    'search'                   => 'pages/search.php'
+    'search'                   => 'pages/search.php',
+    'compliance-dashboard'     => 'pages/compliance-dashboard.php',
+    'frameworks'               => 'pages/frameworks.php'
 ];
 
 $pagePermissions = [
@@ -76,7 +78,9 @@ $pagePermissions = [
     'my-tasks'                 => 'view_dashboard',
     'edit-profile'             => 'view_dashboard',
     'change-password'          => 'view_dashboard',
-    'notification-preferences' => 'view_dashboard'
+    'notification-preferences' => 'view_dashboard',
+    'compliance-dashboard'     => 'view_dashboard',
+    'frameworks'               => 'view_dashboard'
 ];
 
 $reqPermission = $pagePermissions[$currentPage] ?? null;

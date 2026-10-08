@@ -11,44 +11,7 @@ if (!isset($_SESSION['csrf_token'])) {
 $csrfToken = $_SESSION['csrf_token'];
 ?>
 
-<!DOCTYPE html>
-<html lang="en" class="light">
 
-<head>
-
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>Edit Profile | PrivacyHQ</title>
-
-    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet">
-
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-          rel="stylesheet">
-
-    <style>
-
-        body{
-            font-family:'Inter',sans-serif;
-        }
-
-        .material-symbols-outlined{
-            font-variation-settings:
-            'FILL'0,
-            'wght'400,
-            'GRAD'0,
-            'opsz'24;
-        }
-
-    </style>
-
-</head>
-
-<body class="bg-gray-100">
 
 <div class="min-h-screen">
 
