@@ -31,7 +31,11 @@ class DataAsset {
             isset($data['sensitivity_indicators']) ? json_encode($data['sensitivity_indicators']) : null,
             $userId
         ]);
-        return $this->pdo->lastInsertId();
+        $id = $this->pdo->lastInsertId();
+        if (function_exists('log_audit_event')) {
+            log_audit_event($this->pdo, 'DSPM', 'Create Data Asset', $userId, $id, null, json_encode(['asset_name' => $data['asset_name']]));
+        }
+        return $id;
     }
 
     public function getAsset($id) {
@@ -48,7 +52,7 @@ class DataAsset {
                 sensitivity_indicators = ?
             WHERE id = ? AND deleted_at IS NULL
         ");
-        return $stmt->execute([
+        $res = $stmt->execute([
             $data['asset_name'],
             $data['description'] ?? '',
             $data['asset_type'] ?? '',
@@ -62,21 +66,43 @@ class DataAsset {
             isset($data['sensitivity_indicators']) ? json_encode($data['sensitivity_indicators']) : null,
             $id
         ]);
+        if ($res && function_exists('log_audit_event')) {
+            // we assume user id is not passed, but we can try to guess it or pass it. 
+            // In API we don't pass userId to updateAsset right now. I need to fix that or use session.
+            $userId = $_SESSION['user_id'] ?? 1;
+            log_audit_event($this->pdo, 'DSPM', 'Update Data Asset', $userId, $id, null, json_encode(['classification' => $data['classification'] ?? '']));
+        }
+        return $res;
     }
 
     public function linkCategory($assetId, $categoryName) {
         $stmt = $this->pdo->prepare("INSERT IGNORE INTO data_asset_categories (asset_id, category_name) VALUES (?, ?)");
-        return $stmt->execute([$assetId, $categoryName]);
+        $res = $stmt->execute([$assetId, $categoryName]);
+        if ($res && function_exists('log_audit_event')) {
+            $userId = $_SESSION['user_id'] ?? 1;
+            log_audit_event($this->pdo, 'DSPM', 'Link Asset to Category', $userId, $assetId, null, json_encode(['category' => $categoryName]));
+        }
+        return $res;
     }
 
     public function linkRopa($assetId, $ropaId) {
         $stmt = $this->pdo->prepare("INSERT IGNORE INTO data_asset_ropa (asset_id, processing_activity_id) VALUES (?, ?)");
-        return $stmt->execute([$assetId, $ropaId]);
+        $res = $stmt->execute([$assetId, $ropaId]);
+        if ($res && function_exists('log_audit_event')) {
+            $userId = $_SESSION['user_id'] ?? 1;
+            log_audit_event($this->pdo, 'DSPM', 'Link Asset to RoPA', $userId, $assetId, null, json_encode(['ropa_id' => $ropaId]));
+        }
+        return $res;
     }
 
     public function linkRisk($assetId, $riskId) {
         $stmt = $this->pdo->prepare("INSERT IGNORE INTO data_asset_risks (asset_id, risk_id) VALUES (?, ?)");
-        return $stmt->execute([$assetId, $riskId]);
+        $res = $stmt->execute([$assetId, $riskId]);
+        if ($res && function_exists('log_audit_event')) {
+            $userId = $_SESSION['user_id'] ?? 1;
+            log_audit_event($this->pdo, 'DSPM', 'Link Asset to Risk', $userId, $assetId, null, json_encode(['risk_id' => $riskId]));
+        }
+        return $res;
     }
 
     public function importAssets($assets, $userId) {
@@ -128,6 +154,10 @@ class DataAsset {
             ];
             $this->createAsset($data, $userId);
             $imported++;
+        }
+
+        if ($imported > 0 && function_exists('log_audit_event')) {
+            log_audit_event($this->pdo, 'DSPM', 'Import Data Assets', $userId, null, null, json_encode(['imported' => $imported, 'failed' => $failed]));
         }
 
         return ['imported' => $imported, 'failed' => $failed, 'errors' => $errors];

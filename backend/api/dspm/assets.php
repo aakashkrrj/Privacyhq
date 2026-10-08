@@ -3,12 +3,19 @@ require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../models/User.php';
 require_once __DIR__ . '/../../models/DataAsset.php';
 require_once __DIR__ . '/../../core/ApiBootstrap.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
 \Backend\Core\ApiBootstrap::enforceAuth();
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_REQUEST['action'] ?? ($method === 'POST' ? 'create' : 'list');
 $assetModel = new \Backend\Models\DataAsset($pdo);
-$userId = $_SESSION['user_id'] ?? 1;
+
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized']);
+    exit;
+}
+$userId = $_SESSION['user_id'];
 
 if ($method === 'POST') {
     \Backend\Core\ApiBootstrap::requireCsrf();
@@ -61,7 +68,30 @@ if ($method === 'POST') {
 
 if ($method === 'GET') {
     if ($action === 'list') {
-        $stmt = $pdo->query("SELECT * FROM data_assets WHERE deleted_at IS NULL ORDER BY id DESC");
+        $search = $_GET['search'] ?? '';
+        $classification = $_GET['classification'] ?? '';
+        $type = $_GET['asset_type'] ?? '';
+
+        $sql = "SELECT * FROM data_assets WHERE deleted_at IS NULL";
+        $params = [];
+
+        if (!empty($search)) {
+            $sql .= " AND (asset_name LIKE ? OR owner LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+        }
+        if (!empty($classification)) {
+            $sql .= " AND classification = ?";
+            $params[] = $classification;
+        }
+        if (!empty($type)) {
+            $sql .= " AND asset_type = ?";
+            $params[] = $type;
+        }
+
+        $sql .= " ORDER BY id DESC";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
         exit;
     }
