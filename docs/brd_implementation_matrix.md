@@ -108,14 +108,19 @@ This document tracks the end-to-end implementation status of the PrivacyHQ Busin
 
 ## 10. Data Governance / DSPM MVP
 * **BRD requirement**: Practical MVP for data source inventory, classification, sensitivity, and risk.
-* **Current implementation**: `DataDiscovery.php`, `DataMapping.php` exist. UI mocked.
-* **Status**: PARTIAL
+* **Current implementation**: Data Asset inventory built on top of `discovery_sources`. RoPA, Categories, and Risk mappings are fully supported via `data_asset_*` mapping tables. Import, Classification, and Dashboard metrics are functional.
+* **Status**: COMPLETE (Inventory Foundation)
 * **Required work**:
-  - Implement manual inventory of data assets and mapping.
-  - Integrate with RoPA.
-  - Owners, sensitivity, risk tracking.
-* **Priority**: Medium
-* **Acceptance criteria**: Working manual data asset inventory tracking and RoPA integration.
+  - Connect data asset inventory to RoPA and personal data categories. (Done)
+  - Map risks to data assets. (Done)
+  - Allow CSV/JSON asset import. (Done)
+  - Full automated scanning / detection (Not Implemented).
+* **Known Limitations**:
+  - **Not Implemented**: Automated database scanning.
+  - **Not Implemented**: Cloud discovery & continuous DSPM monitoring.
+  - **Not Implemented**: Automatic sensitive-data detection.
+* **Priority**: High
+* **Acceptance criteria**: System maintains a central data inventory mapped to RoPA, owners, and risks. (Done)
 
 ## 10. Dashboard
 * **BRD requirement**: Real metrics calculated from DB (Compliance, Risk Score, Open Assessments, etc.).
