@@ -17,21 +17,31 @@ try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
+    error_log("PDO connection failed: " . $e->getMessage());
     die(json_encode([
         "status" => "error",
-        "message" => "PDO connection failed: " . $e->getMessage()
+        "message" => "Database connection failed. Please contact support."
     ]));
 }
 
 if ($conn->connect_error) {
+    error_log("Database connection failed: " . $conn->connect_error);
     die(json_encode([
         "status" => "error",
-        "message" => "Database connection failed: " . $conn->connect_error
+        "message" => "Database connection failed. Please contact support."
     ]));
 }
 
 // Session Management & CSRF Token
 if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
     @session_start();
 }
 
