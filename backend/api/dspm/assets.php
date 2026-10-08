@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../models/DataAsset.php';
 require_once __DIR__ . '/../../core/ApiBootstrap.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-\Backend\Core\ApiBootstrap::enforceAuth();
+\Backend\Core\ApiBootstrap::requireAuth();
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_REQUEST['action'] ?? ($method === 'POST' ? 'create' : 'list');
 $assetModel = new \Backend\Models\DataAsset($pdo);

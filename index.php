@@ -87,7 +87,7 @@ if ($reqPermission && function_exists('require_permission')) {
 $fileToInclude = isset($routes[$currentPage]) ? $routes[$currentPage] : 'pages/dashboard-main.php';
 
 // START NEW CODE - Notifications & Dynamic User Profile Context
-$current_user_id = (int)($_SESSION['user_id'] ?? 1);
+$current_user_id = (int)($_SESSION['user_id'] ?? 0);
 $notifications_list = [];
 $unread_notifications_count = 0;
 

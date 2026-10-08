@@ -224,7 +224,7 @@ class PrivacyAssessment
 
         if ($res) {
             if (!$changedBy && session_status() !== PHP_SESSION_NONE) {
-                $changedBy = $_SESSION['user_id'] ?? 1;
+                $changedBy = $_SESSION['user_id'] ?? 0;
             }
             $this->addStatusHistory($assessmentId, $prevStatusId, $statusId, $changedBy ?: 1, $reason);
         }

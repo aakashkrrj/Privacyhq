@@ -249,7 +249,7 @@ class WorkflowService {
         // Extract standard identifiers
         $module = $payload['module'] ?? 'Global';
         $recordId = $payload['record_id'] ?? 0;
-        $performedBy = $payload['performed_by'] ?? ($_SESSION['user_id'] ?? 1);
+        $performedBy = $payload['performed_by'] ?? ($_SESSION['user_id'] ?? 0);
 
         // Parse placeholders in templates
         $parseTemplate = function($template) use ($payload) {

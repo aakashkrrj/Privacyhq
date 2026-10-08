@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../models/User.php';
 require_once __DIR__ . '/../../models/GrcModel.php';
 require_once __DIR__ . '/../../core/ApiBootstrap.php';
 
-\Backend\Core\ApiBootstrap::enforceAuth();
+\Backend\Core\ApiBootstrap::requireAuth();
 
 $grcModel = new \Backend\Models\GrcModel($pdo);
 $metrics = $grcModel->getDashboardMetrics();

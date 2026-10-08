@@ -155,7 +155,7 @@ foreach ($assessment_list as $row) {
                                 </td>
                                 <td class="p-md text-right space-x-base whitespace-nowrap">
                                     <?php
-                                    $currentUserId = $_SESSION['user_id'] ?? 1;
+                                    $currentUserId = $_SESSION['user_id'] ?? 0;
                                     $currentUserRole = $_SESSION['role_id'] ?? 1;
                                     ?>
                                     <?php if ($statusVal !== 'Approved'): ?>

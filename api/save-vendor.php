@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $vaModel = new \Backend\Models\VendorAssessment($pdo);
         $vendorService = new \Backend\Services\VendorService($pdo, $vendorModel, $vaModel);
 
-        $userId = $_SESSION['user_id'] ?? 1;
+        $userId = $_SESSION['user_id'] ?? 0;
         $vendorService->createVendor($vendor_name, $service_type, 'Pending', 'Low', $userId);
 
         echo json_encode([

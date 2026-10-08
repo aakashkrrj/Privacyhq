@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../models/DashboardService.php';
 require_once __DIR__ . '/../../core/ApiBootstrap.php';
 
-\Backend\Core\ApiBootstrap::enforceAuth();
+\Backend\Core\ApiBootstrap::requireAuth();
 $dashboardService = new \Backend\Models\DashboardService($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

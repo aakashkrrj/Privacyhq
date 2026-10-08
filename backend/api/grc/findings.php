@@ -4,11 +4,11 @@ require_once __DIR__ . '/../../models/User.php';
 require_once __DIR__ . '/../../models/GrcModel.php';
 require_once __DIR__ . '/../../core/ApiBootstrap.php';
 
-\Backend\Core\ApiBootstrap::enforceAuth();
+\Backend\Core\ApiBootstrap::requireAuth();
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_REQUEST['action'] ?? ($method === 'POST' ? 'create' : 'list');
 $grcModel = new \Backend\Models\GrcModel($pdo);
-$userId = $_SESSION['user_id'] ?? 1;
+$userId = $_SESSION['user_id'] ?? 0;
 
 if ($method === 'POST') {
     \Backend\Core\ApiBootstrap::requireCsrf();

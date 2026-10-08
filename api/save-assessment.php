@@ -42,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $assessorId = $pdo->lastInsertId();
         }
 
-        $creatorId = $_SESSION['user_id'] ?? 1;
+        $creatorId = $_SESSION['user_id'] ?? 0;
 
         $model = new \Backend\Models\PrivacyAssessment($pdo);
         $service = new \Backend\Services\AssessmentService($model, $pdo);

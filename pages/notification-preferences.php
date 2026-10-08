@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$user_id = (int)($_SESSION['user_id'] ?? 1);
+$user_id = (int)($_SESSION['user_id'] ?? 0);
 
 // Fetch user notifications for Notification Center
 $all_notifications = [];

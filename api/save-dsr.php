@@ -39,7 +39,7 @@ try {
     $historyModel = new \Backend\Models\RequestHistory($pdo);
     $dsrService = new \Backend\Services\DsrService($pdo, $dsrModel, $subjectModel, $historyModel);
 
-    $userId = $_SESSION['user_id'] ?? 1;
+    $userId = $_SESSION['user_id'] ?? 0;
     $requestId = $dsrService->createRequest($subject_email, 'customer', $request_type_mapped, 'Medium', $userId);
 
     echo json_encode(['status' => 'success', 'message' => 'DSR logged successfully.']);

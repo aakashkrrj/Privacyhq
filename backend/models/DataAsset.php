@@ -69,7 +69,7 @@ class DataAsset {
         if ($res && function_exists('log_audit_event')) {
             // we assume user id is not passed, but we can try to guess it or pass it. 
             // In API we don't pass userId to updateAsset right now. I need to fix that or use session.
-            $userId = $_SESSION['user_id'] ?? 1;
+            $userId = $_SESSION['user_id'] ?? 0;
             log_audit_event($this->pdo, 'DSPM', 'Update Data Asset', $userId, $id, null, json_encode(['classification' => $data['classification'] ?? '']));
         }
         return $res;
@@ -79,7 +79,7 @@ class DataAsset {
         $stmt = $this->pdo->prepare("INSERT IGNORE INTO data_asset_categories (asset_id, category_name) VALUES (?, ?)");
         $res = $stmt->execute([$assetId, $categoryName]);
         if ($res && function_exists('log_audit_event')) {
-            $userId = $_SESSION['user_id'] ?? 1;
+            $userId = $_SESSION['user_id'] ?? 0;
             log_audit_event($this->pdo, 'DSPM', 'Link Asset to Category', $userId, $assetId, null, json_encode(['category' => $categoryName]));
         }
         return $res;
@@ -89,7 +89,7 @@ class DataAsset {
         $stmt = $this->pdo->prepare("INSERT IGNORE INTO data_asset_ropa (asset_id, processing_activity_id) VALUES (?, ?)");
         $res = $stmt->execute([$assetId, $ropaId]);
         if ($res && function_exists('log_audit_event')) {
-            $userId = $_SESSION['user_id'] ?? 1;
+            $userId = $_SESSION['user_id'] ?? 0;
             log_audit_event($this->pdo, 'DSPM', 'Link Asset to RoPA', $userId, $assetId, null, json_encode(['ropa_id' => $ropaId]));
         }
         return $res;
@@ -99,7 +99,7 @@ class DataAsset {
         $stmt = $this->pdo->prepare("INSERT IGNORE INTO data_asset_risks (asset_id, risk_id) VALUES (?, ?)");
         $res = $stmt->execute([$assetId, $riskId]);
         if ($res && function_exists('log_audit_event')) {
-            $userId = $_SESSION['user_id'] ?? 1;
+            $userId = $_SESSION['user_id'] ?? 0;
             log_audit_event($this->pdo, 'DSPM', 'Link Asset to Risk', $userId, $assetId, null, json_encode(['risk_id' => $riskId]));
         }
         return $res;
