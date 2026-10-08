@@ -34,6 +34,31 @@ class GrcModel {
         return $this->pdo->lastInsertId();
     }
 
+    public function updateControl($id, $data) {
+        $stmt = $this->pdo->prepare("
+            UPDATE grc_controls 
+            SET name = ?, description = ?, control_type = ?, category = ?, owner = ?, frequency = ?, status = ?, effectiveness = ?, review_date = ?, updated_at = NOW()
+            WHERE id = ? AND deleted_at IS NULL
+        ");
+        return $stmt->execute([
+            $data['name'],
+            $data['description'] ?? '',
+            $data['control_type'] ?? 'Preventive',
+            $data['category'] ?? 'Security',
+            $data['owner'] ?? '',
+            $data['frequency'] ?? 'Annual',
+            $data['status'] ?? 'Draft',
+            $data['effectiveness'] ?? 'Not Tested',
+            $data['review_date'] ?? null,
+            $id
+        ]);
+    }
+
+    public function deleteControl($id) {
+        $stmt = $this->pdo->prepare("UPDATE grc_controls SET deleted_at = NOW() WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+
     // --- Requirements ---
     public function createRequirement($data, $userId) {
         $stmtCount = $this->pdo->query("SELECT MAX(id) FROM grc_compliance_requirements");
@@ -56,6 +81,29 @@ class GrcModel {
             $userId
         ]);
         return $this->pdo->lastInsertId();
+    }
+
+    public function updateRequirement($id, $data) {
+        $stmt = $this->pdo->prepare("
+            UPDATE grc_compliance_requirements 
+            SET framework = ?, statement = ?, category = ?, applicable_scope = ?, owner = ?, status = ?, review_date = ?, updated_at = NOW()
+            WHERE id = ? AND deleted_at IS NULL
+        ");
+        return $stmt->execute([
+            $data['framework'] ?? 'GDPR',
+            $data['statement'] ?? '',
+            $data['category'] ?? 'General',
+            $data['applicable_scope'] ?? 'Global',
+            $data['owner'] ?? '',
+            $data['status'] ?? 'Active',
+            $data['review_date'] ?? null,
+            $id
+        ]);
+    }
+
+    public function deleteRequirement($id) {
+        $stmt = $this->pdo->prepare("UPDATE grc_compliance_requirements SET deleted_at = NOW() WHERE id = ?");
+        return $stmt->execute([$id]);
     }
 
     // --- Audits ---
@@ -82,6 +130,29 @@ class GrcModel {
         return $this->pdo->lastInsertId();
     }
 
+    public function updateAudit($id, $data) {
+        $stmt = $this->pdo->prepare("
+            UPDATE grc_audits 
+            SET name = ?, scope = ?, audit_type = ?, owner = ?, start_date = ?, end_date = ?, status = ?, updated_at = NOW()
+            WHERE id = ? AND deleted_at IS NULL
+        ");
+        return $stmt->execute([
+            $data['name'],
+            $data['scope'] ?? '',
+            $data['audit_type'] ?? 'Internal',
+            $data['owner'] ?? '',
+            $data['start_date'] ?? null,
+            $data['end_date'] ?? null,
+            $data['status'] ?? 'Planned',
+            $id
+        ]);
+    }
+
+    public function deleteAudit($id) {
+        $stmt = $this->pdo->prepare("UPDATE grc_audits SET deleted_at = NOW() WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+
     // --- Findings ---
     public function createFinding($data, $userId) {
         $stmtCount = $this->pdo->query("SELECT MAX(id) FROM grc_findings");
@@ -106,6 +177,30 @@ class GrcModel {
             $userId
         ]);
         return $this->pdo->lastInsertId();
+    }
+
+    public function updateFinding($id, $data) {
+        $stmt = $this->pdo->prepare("
+            UPDATE grc_findings 
+            SET title = ?, description = ?, severity = ?, owner = ?, due_date = ?, status = ?, remediation_plan = ?, remediation_status = ?, updated_at = NOW()
+            WHERE id = ? AND deleted_at IS NULL
+        ");
+        return $stmt->execute([
+            $data['title'],
+            $data['description'] ?? '',
+            $data['severity'] ?? 'Medium',
+            $data['owner'] ?? '',
+            $data['due_date'] ?? null,
+            $data['status'] ?? 'Open',
+            $data['remediation_plan'] ?? '',
+            $data['remediation_status'] ?? 'Pending',
+            $id
+        ]);
+    }
+
+    public function deleteFinding($id) {
+        $stmt = $this->pdo->prepare("UPDATE grc_findings SET deleted_at = NOW() WHERE id = ?");
+        return $stmt->execute([$id]);
     }
 
     // --- Metrics ---
