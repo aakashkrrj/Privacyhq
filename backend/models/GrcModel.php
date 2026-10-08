@@ -203,6 +203,110 @@ class GrcModel {
         return $stmt->execute([$id]);
     }
 
+    // --- Frameworks (Phase 9) ---
+    public function createFramework($data, $userId) {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO grc_frameworks (name, version, description, status, owner, effective_date, review_date, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([
+            $data['name'],
+            $data['version'] ?? '1.0',
+            $data['description'] ?? '',
+            $data['status'] ?? 'Draft',
+            $data['owner'] ?? '',
+            $data['effective_date'] ?? date('Y-m-d'),
+            $data['review_date'] ?? date('Y-m-d', strtotime('+1 year')),
+            $userId
+        ]);
+        return $this->pdo->lastInsertId();
+    }
+
+    public function getFramework($id) {
+        $stmt = $this->pdo->prepare("SELECT * FROM grc_frameworks WHERE id = ? AND deleted_at IS NULL");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    }
+
+    public function updateFramework($id, $data) {
+        $stmt = $this->pdo->prepare("
+            UPDATE grc_frameworks 
+            SET name = ?, version = ?, description = ?, status = ?, owner = ?, effective_date = ?, review_date = ?
+            WHERE id = ? AND deleted_at IS NULL
+        ");
+        return $stmt->execute([
+            $data['name'],
+            $data['version'] ?? '1.0',
+            $data['description'] ?? '',
+            $data['status'] ?? 'Draft',
+            $data['owner'] ?? '',
+            $data['effective_date'] ?? null,
+            $data['review_date'] ?? null,
+            $id
+        ]);
+    }
+
+    // --- Assessment & Scoring (Phase 9) ---
+    public function assessRequirement($reqId, $assessmentStatus, $notes = '') {
+        $stmt = $this->pdo->prepare("
+            UPDATE grc_compliance_requirements
+            SET assessment_status = ?, assessment_date = CURRENT_DATE, assessment_notes = ?
+            WHERE id = ? AND deleted_at IS NULL
+        ");
+        $stmt->execute([$assessmentStatus, $notes, $reqId]);
+        
+        // Recalculate framework score
+        $req = $this->pdo->query("SELECT framework_id FROM grc_compliance_requirements WHERE id = $reqId")->fetch();
+        if ($req && $req['framework_id']) {
+            $this->calculateFrameworkScore($req['framework_id']);
+        }
+        return true;
+    }
+
+    public function calculateFrameworkScore($frameworkId) {
+        $stmt = $this->pdo->prepare("
+            SELECT assessment_status, COUNT(*) as cnt 
+            FROM grc_compliance_requirements 
+            WHERE framework_id = ? AND deleted_at IS NULL 
+            GROUP BY assessment_status
+        ");
+        $stmt->execute([$frameworkId]);
+        $stats = $stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
+
+        $compliant = $stats['Compliant'] ?? 0;
+        $partial = $stats['Partially Compliant'] ?? 0;
+        $nonCompliant = $stats['Non-Compliant'] ?? 0;
+        $notAssessed = $stats['Not Assessed'] ?? 0;
+        $notApplicable = $stats['Not Applicable'] ?? 0;
+
+        $assessedCount = $compliant + $partial + $nonCompliant;
+        $totalApplicable = $assessedCount + $notAssessed;
+
+        // Scoring Formula: (Compliant*100 + Partial*50) / (Applicable Assessed)
+        $score = 0.00;
+        if ($assessedCount > 0) {
+            $score = (($compliant * 100) + ($partial * 50)) / $assessedCount;
+        }
+
+        $stmtUpdate = $this->pdo->prepare("
+            UPDATE grc_frameworks 
+            SET score = ?, assessed_count = ?, compliant_count = ?, partial_count = ?, non_compliant_count = ?, not_assessed_count = ?, calculated_at = NOW()
+            WHERE id = ?
+        ");
+        $stmtUpdate->execute([$score, $assessedCount, $compliant, $partial, $nonCompliant, $notAssessed, $frameworkId]);
+        return $score;
+    }
+
+    public function mapRequirementToControl($requirementId, $controlId) {
+        // Prevent duplicate mapping
+        $check = $this->pdo->prepare("SELECT 1 FROM grc_requirement_controls WHERE requirement_id = ? AND control_id = ?");
+        $check->execute([$requirementId, $controlId]);
+        if ($check->fetch()) return false;
+
+        $stmt = $this->pdo->prepare("INSERT INTO grc_requirement_controls (requirement_id, control_id) VALUES (?, ?)");
+        return $stmt->execute([$requirementId, $controlId]);
+    }
+
     // --- Metrics ---
     public function getDashboardMetrics() {
         $totalRisks = $this->pdo->query("SELECT COUNT(*) FROM assessment_risks WHERE deleted_at IS NULL")->fetchColumn();
@@ -211,12 +315,17 @@ class GrcModel {
         $activeAudits = $this->pdo->query("SELECT COUNT(*) FROM grc_audits WHERE deleted_at IS NULL AND status = 'Active'")->fetchColumn();
         $controlStatus = $this->pdo->query("SELECT status, COUNT(*) as cnt FROM grc_controls WHERE deleted_at IS NULL GROUP BY status")->fetchAll(\PDO::FETCH_KEY_PAIR);
 
+        $frameworks = $this->pdo->query("SELECT COUNT(*) FROM grc_frameworks WHERE deleted_at IS NULL")->fetchColumn();
+        $avgScore = $this->pdo->query("SELECT AVG(score) FROM grc_frameworks WHERE deleted_at IS NULL AND status = 'Active'")->fetchColumn();
+
         return [
             'total_risks' => (int)$totalRisks,
             'high_risks' => (int)$highRisks,
             'open_findings' => (int)$openFindings,
             'active_audits' => (int)$activeAudits,
-            'control_status' => $controlStatus
+            'control_status' => $controlStatus,
+            'total_frameworks' => (int)$frameworks,
+            'average_compliance_score' => round((float)$avgScore, 2)
         ];
     }
 }
